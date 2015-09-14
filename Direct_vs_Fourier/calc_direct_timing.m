@@ -2,7 +2,7 @@ function [timing_vector, whos_struct_cell_vector] = calc_direct_timing(number_po
 %CALC_DIRECT_TIMING Calculate the run time and memory use for a direct 
 %   calculation method of autocorrelations 
 %
-%   Calculates a radial pairwise autocorrelation curve form points
+%   Calculates a radial pairwise autocorrelation curve from points
 %   uniformaly distributed in a unit square and records the time of
 %   execution and the memory use for the calculation.
 %   Input:
@@ -54,14 +54,14 @@ for number_points_index = 1:size(number_points_vector, 1);
             % Calculate the distance
             dist_matrix = pdist2(points, points);
             
-            % Take each distance only oncd and exclude the distanct of a point to itself
-            dist_vector = dist_matrix(tril(true(size(dist_matrix)), -1));
+            % Take distance as a vector and exclude the distance of a point to itself
+            dist_vector = dist_matrix(~diag(true(1, length(dist_matrix))));
         
             
         % Calculate distances with custom algorthim that minimzes memory use    
         elseif strcmp(method, 'custom_memory')
             
-            % Initialize vecto ro distances
+            % Initialize vector of distances
             dist_vector = zeros(nchoosek(number_points, 2), 1);
             
             % Build distance on subset of measurements at a time
@@ -86,6 +86,9 @@ for number_points_index = 1:size(number_points_vector, 1);
                 last_filled_dist_index = end_index;
             end
             
+            % Double dist_vector
+            dist_vector = repmat(dist_vector, [2, 1]);
+            
         % Calculates distances with custom method that minimizes the number of function calls
         elseif strcmp(method, 'custom_func_calls')
             
@@ -100,8 +103,8 @@ for number_points_index = 1:size(number_points_vector, 1);
             % Calculate the distance
             dist_matrix = hypot(x_dist_array, y_dist_array);
             
-            % Take each distance only oncd and exclude the distanct of a point to itself
-            dist_vector = dist_matrix(tril(true(size(dist_matrix)), -1));
+            % Take distance as a vector and exclude the distance of a point to itself
+            dist_vector = dist_matrix(~diag(true(1, length(dist_matrix))));
         end
         
         % Calculate the radial autocorrelation
