@@ -20,7 +20,7 @@ function [timing_vector, whos_struct_cell_vector] = calc_Fourier_timing(number_p
 %       strucures.
 
 % Define repetition limits
-repeat_limits = [1e4, 1e6];
+repeat_limits = [5e3, 5e5];
 
 % Define pixel resolution and max length
 full_image_size = 5e4; % nanometers
@@ -36,9 +36,9 @@ for number_points_index = 1:size(number_points_vector, 1);
 
     % Determine the number of repeats
     if number_points <= repeat_limits(1)
-        number_repeats = 10;
+        number_repeats = 1;
     elseif number_points <= repeat_limits(2)
-        number_repeats = 3;
+        number_repeats = 1;
     else
         number_repeats = 1;
     end
@@ -65,14 +65,14 @@ for number_points_index = 1:size(number_points_vector, 1);
                 
                 % Add to the STORM image
                 STORM_image(row_index, column_index) = STORM_image(row_index, column_index) + 1;
-                
-                % Calculate the autocorrelation of the image
-                autocorrelation = calc_crosscorrelation(STORM_image, STORM_image, ceil(max_length/STORM_pixel_resolution)); 
-                
-                % Calculate radial average with binning
-                
             end
-
+            
+            % Calculate the autocorrelation of the image
+            autocorrelation = calc_crosscorrelation(STORM_image, STORM_image, ceil(max_length/STORM_pixel_resolution)); 
+                
+            % Calculate radial average with binning
+            [distance_vector, mean_vector, stdev_vector, sem_vector] = radial_average_2D_correlation_binning(autocorrelation);
+                
         % Create STORM image with a sampled Gaussian psf
         elseif strcmp(method, 'Gaussian_psf')
             
@@ -114,5 +114,4 @@ timing_vector = timing_vector.';
 whos_struct_cell_vector = whos_struct_cell_vector.';
 end
 
-end
 
