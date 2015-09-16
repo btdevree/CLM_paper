@@ -95,10 +95,7 @@ for number_points_index = 1:size(number_points_vector, 1);
                 % Update last_filled_dist_index
                 last_filled_dist_index = end_index;
             end
-            
-            % Double dist_vector
-            dist_vector = repmat(dist_vector, [2, 1]);
-            
+           
         % Calculates distances with custom method that minimizes the number of function calls
         elseif strcmp(method, 'custom_func_calls')
             
@@ -121,6 +118,9 @@ for number_points_index = 1:size(number_points_vector, 1);
         edges = [0:number_histogram_bins + 1] .* radial_resolution;
         counts = histc(dist_vector, edges);
         
+        % Double the counts if we're using the memory effecient method
+        counts = 2 * counts;
+        
         % We're done, get the timing
         timing_repeats(repeat_index) = toc;
         
@@ -140,6 +140,9 @@ for number_points_index = 1:size(number_points_vector, 1);
     
     % Record the whos vector
     whos_struct_cell_vector{number_points_index} = whos;
+    
+    % Clear the repeat vector
+    clear timing_repeats
 end
 
 % Convert outputs to column vectors

@@ -70,7 +70,7 @@ for number_points_index = 1:size(number_points_vector, 1);
             for coord_index = 1:size(points, 1);
                 
                 % Calculate the index values for the given coordinates
-                column_index = floor(points(coord_index, 1) * image_size); % x coord
+                column_index = ceil(points(coord_index, 1) * image_size); % x coord
                 row_index = ceil(image_size - points(coord_index, 2) * image_size); % y coord
                 
                 % Add to the STORM image
@@ -127,6 +127,9 @@ for number_points_index = 1:size(number_points_vector, 1);
     
     % Record the whos vector
     whos_struct_cell_vector{number_points_index} = whos;
+    
+    % Clear the repeat vector
+    clear timing_repeats
 end
 
 % Convert outputs to column vectors
