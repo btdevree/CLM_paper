@@ -1,4 +1,4 @@
-function [timing_vector, whos_struct_cell_vector] = calc_direct_timing(number_points_vector, method)
+function [timing_vector, whos_struct_cell_vector] = calc_direct_timing(number_points_vector, method, verbose_flag)
 %CALC_DIRECT_TIMING Calculate the run time and memory use for a direct 
 %   calculation method of autocorrelations 
 %
@@ -10,6 +10,8 @@ function [timing_vector, whos_struct_cell_vector] = calc_direct_timing(number_po
 %       use in the autocorrelation
 %   method: string denoting the method used for calculation. Choices are
 %       'pdist2', 'custom_memory', and 'custom_func_calls'.
+%   verbose_flag: logical value, default = false. Set to true so that the
+%       function report progress to the console.
 %   Output:
 %   timing_vector: Time of execution for calculating the correlation and
 %       the radial average. Best of 10 repetitions for number_of_points <= 
@@ -19,8 +21,16 @@ function [timing_vector, whos_struct_cell_vector] = calc_direct_timing(number_po
 %       requested number of points. Column vector of cells containing 
 %       strucures.
 
+% Set default values
+if nargin < 3; verbose_flag = false; end; 
+
+% Starting message
+if verbose_flag
+    fprintf(['Start direct with method ', method, ': \n']);
+end
+
 % Define repetition limits
-repeat_limits = [1e4, 1e6];
+repeat_limits = [1e4, 5e5];
 
 % Define radial resolution and max length
 radial_resolution = 2e-4; % 1/5000
@@ -35,11 +45,11 @@ for number_points_index = 1:size(number_points_vector, 1);
     
     % Determine the number of repeats
     if number_points <= repeat_limits(1)
-        number_repeats = 10;
+        number_repeats = 5;
     elseif number_points <= repeat_limits(2)
-        number_repeats = 3; 
+        number_repeats = 4; 
     else
-        number_repeats = 1;
+        number_repeats = 3;
     end
     
     % Repeat the specified number of times
@@ -113,10 +123,20 @@ for number_points_index = 1:size(number_points_vector, 1);
         
         % We're done, get the timing
         timing_repeats(repeat_index) = toc;
+        
+        % Report the repeat completion
+        if verbose_flag
+            fprintf('.');
+        end
     end
     
     % Take the best timing
     timing_vector(number_points_index) = min(timing_repeats);
+    
+    % Report the completion
+    if verbose_flag
+        fprintf([num2str(number_points), ' points: best time = ', num2str(min(timing_repeats)), ' seconds \n']);
+    end
     
     % Record the whos vector
     whos_struct_cell_vector{number_points_index} = whos;
