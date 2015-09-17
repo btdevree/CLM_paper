@@ -115,9 +115,12 @@ for number_points_index = 1:size(number_points_vector, 1);
         end
         
         % Calculate the radial autocorrelation
-        edges = [0:number_histogram_bins + 1] .* radial_resolution;
+        edges = [0:number_histogram_bins + 1].' .* radial_resolution;
         counts = histc(dist_vector, edges);
         
+        % Remove last count value, it's actually the just the number of values that are exactly equal to the end bin edge value
+        counts = counts(1:end - 1);
+                
         % Double the counts if we're using the memory effecient method
         if strcmp(method, 'custom_memory')
             counts = 2 * counts;

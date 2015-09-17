@@ -9,7 +9,7 @@ function [timing_vector, whos_struct_cell_vector] = calc_Fourier_timing(number_p
 %   number_points_vector: Column vector of doubles; the number of points to 
 %       use in the autocorrelation
 %   method: string denoting the method used for calculation. Choices are
-%       'binning' and 'Gaussian_pdf'.
+%       'binning',  'Gaussian_pdf', and 'Gaussian_pdf_parallel'.
 %   verbose_flag: logical value, default = false. Set to true so that the
 %       function report progress to the console.
 %   Output:
@@ -84,7 +84,7 @@ for number_points_index = 1:size(number_points_vector, 1);
             [distance_vector, mean_vector, stdev_vector, sem_vector] = radial_average_2D_correlation_binning(autocorrelation);
                 
         % Create STORM image with a sampled Gaussian psf
-        elseif strcmp(method, 'Gaussian_pdf')
+        elseif strcmp(method, 'Gaussian_pdf') || strcmp(method, 'Gaussian_pdf_parallel')
             
             % Convert points to a data structure
             data_struct = struct();

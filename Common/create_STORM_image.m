@@ -13,6 +13,8 @@ function sparse_image = create_STORM_image(data, resolution, sigma, dims, calc_c
     % be a scalar or 'per-point'.
     % dims: Desired image size in original pixel length. Given as a matrix
     %   [y_size, x_size].
+    % parallel_flag: logical, default = false. If set to true, image
+    %   creation will take place across multiple cores.
     % calculation_cutoff_sigma: maximum number of sigmas that the psf
     %   calculation will be made to. Default = 5 
     % zero_cutoff: minimum probability density value requried to not be 
@@ -43,9 +45,12 @@ function sparse_image = create_STORM_image(data, resolution, sigma, dims, calc_c
         calc_cutoff_pixels = ceil((calc_cutoff_sigmas * sigma)/resolution);
     end
    
-    % Calc image
+    % Calc image parameters
     total_number_pixels_x = ceil(dims(2)/resolution);
     total_number_pixels_y = ceil(dims(1)/resolution);
+    
+    %
+    
     dense_image = zeros(total_number_pixels_y, total_number_pixels_x);
     for data_ind = 1:length(data.x)
         

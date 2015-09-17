@@ -9,30 +9,26 @@
 %       given the specified number of points, dependent variable, column
 %       vector of doubles.
 
-% testdata
-number_points_vector = [1e2; 3e2; 1e3; 3e3; 1e4; 3e4; 1e5; 3e5; 1e6; 3e6; 1e7];
-binning_Fourier_times = [12; 13; 14; 15; 16; 17; 18; 20; 22; 25; 30];
-
-
 % Make new figure
 hfig = figure;
 
 % Make axes and set options
-haxes = axes('XScale', 'log', 'XLim', [1e2, 1e7], 'YLim', [0, 30],...
-    'XLabel', 'Number of points', 'YLabel', 'Time (sec)');
+haxes = axes('XScale', 'log', 'XLim', [1e2, 1e7], 'YScale', 'log', 'YLim', [1e-4, 1100]);
+xlabel('Number of points');
+ylabel('Time (sec)');
+title('Execution time of autocorrelation calculation algorithms')
 
 % Plot each dataset
-h1 = plot(haxes, number_points_vector, binning_Fourier_times, 'Marker', 'o',...
+h1 = line(number_points_vector, binning_Fourier_times, 'Marker', 'o',...
     'Color', 'black', 'LineStyle', '-');
-h2 = plot(haxes, number_points_vector, binning_Fourier_times-12, 'Marker', '+',...
+h2 = line(number_points_vector, pdf_Fourier_times, 'Marker', '+',...
     'Color', 'black', 'LineStyle', '-');
-h3 = plot(haxes, number_points_vector, binning_Fourier_times-5, 'Marker', 'x',...
+h3 = line(number_points_direct, pdist2_direct_times, 'Marker', 'x',...
     'Color', 'black', 'LineStyle', '-');
-h4 = plot(haxes, number_points_vector, binning_Fourier_times-10, 'Marker', '+',...
+h4 = line(number_points_memory, custom_memory_direct_times, 'Marker', '+',...
     'Color', 'black', 'LineStyle', '-');
 
 % Add Legend
 
-print(gcf, 'average_xcor', '-dpng');
-clf
+
 
