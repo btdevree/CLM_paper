@@ -5,6 +5,7 @@ number_points_vector = [1e2; 3e2; 1e3; 3e3; 1e4; 3e4; 1e5; 3e5; 1e6; 3e6; 1e7];
 number_points_direct = [1e2; 3e2; 1e3; 3e3; 1e4; 2.1e4];
 number_points_memory = [1e2; 3e2; 1e3; 3e3; 1e4; 3e4; 4.4e4];
 
+
 % Run the algorithms
 [binning_Fourier_times, binning_Fourier_memory] = calc_Fourier_timing(number_points_vector, 'binning', true);
 [pdf_Fourier_times, pdf_Fourier_memory] = calc_Fourier_timing(number_points_vector, 'Gaussian_pdf', true);
