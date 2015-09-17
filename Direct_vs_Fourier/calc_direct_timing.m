@@ -119,7 +119,9 @@ for number_points_index = 1:size(number_points_vector, 1);
         counts = histc(dist_vector, edges);
         
         % Double the counts if we're using the memory effecient method
-        counts = 2 * counts;
+        if strcmp(method, 'custom_memory')
+            counts = 2 * counts;
+        end
         
         % We're done, get the timing
         timing_repeats(repeat_index) = toc;
