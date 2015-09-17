@@ -123,6 +123,13 @@ for number_points_index = 1:size(number_points_vector, 1);
             counts = 2 * counts;
         end
         
+        % Normalize the counts
+        total_area = pi * edges.^2; % area of a circle
+        bin_area = total_area(2:end) - total_area(1:end - 1); % in 1/radial_resolution units
+        unit_expectation = number_points * radial_resolution.^2;
+        bin_expectation = bin_area * unit_expectation;
+        norm_counts = counts ./ bin_expectation;
+        
         % We're done, get the timing
         timing_repeats(repeat_index) = toc;
         
