@@ -35,7 +35,7 @@ repeat_limits = [5e3, 5e5];
 % Define pixel resolution and max length
 full_image_size = 5e4; % nanometers
 STORM_pixel_resolution = 7; % nanometers
-max_length = 1000; % nanometersm
+max_length = 1000; % nanometers
 
 % Loop through each number_of_points value
 for number_points_index = 1:size(number_points_vector, 1);
@@ -85,17 +85,20 @@ for number_points_index = 1:size(number_points_vector, 1);
                 
         % Create STORM image with a sampled Gaussian psf
         elseif strcmp(method, 'Gaussian_pdf') || strcmp(method, 'Gaussian_pdf_parallel')
-            
-            % Convert points to a data structure
-            data_struct = struct();
-            data_struct.x = points(:, 1);
-            data_struct.y = points(:, 2);
-            
-            % Call the STORM image creating function; pretend an origonal pixel size = 70 nm
+         
+            % Parameters needed for STORM image creating function; pretend an origonal pixel size = 70 nm
             original_pixel_size = 70;
             resolution = STORM_pixel_resolution/original_pixel_size; % fraction of original pixel, 7nm
             sigma = 25/original_pixel_size; % fraction of original pixel, 25nm
-            dims = repmat(ceil(full_image_size / original_pixel_size), [1, 2]); % in original pixels
+            full_image_original_pixels = ceil(full_image_size / original_pixel_size);
+            dims = repmat(full_image_original_pixels, [1, 2]); % in original pixels
+            
+            % Convert points to a data structure
+            data_struct = struct();
+            data_struct.x = points(:, 1) .* full_image_original_pixels;
+            data_struct.y = points(:, 2) .* full_image_original_pixels;
+            
+            % Call image generating function
             if strcmp(method, 'Gaussian_pdf')
                 STORM_image = create_STORM_image(data_struct, resolution, sigma, dims); % note that output is sparse
             elseif strcmp(method, 'Gaussian_pdf_parallel')
