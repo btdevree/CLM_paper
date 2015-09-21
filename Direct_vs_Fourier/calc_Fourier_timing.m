@@ -96,7 +96,11 @@ for number_points_index = 1:size(number_points_vector, 1);
             resolution = STORM_pixel_resolution/original_pixel_size; % fraction of original pixel, 7nm
             sigma = 25/original_pixel_size; % fraction of original pixel, 25nm
             dims = repmat(ceil(full_image_size / original_pixel_size), [1, 2]); % in original pixels
-            STORM_image = create_STORM_image(data_struct, resolution, sigma, dims); % note that output is sparse
+            if strcmp(method, 'Gaussian_pdf')
+                STORM_image = create_STORM_image(data_struct, resolution, sigma, dims); % note that output is sparse
+            elseif strcmp(method, 'Gaussian_pdf_parallel')
+                STORM_image = create_STORM_image(data_struct, resolution, sigma, dims, true); % note that output is sparse
+            end                
             
             % Convert to dense image
             STORM_image = full(STORM_image);

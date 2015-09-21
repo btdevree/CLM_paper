@@ -43,10 +43,10 @@ function sparse_image = create_STORM_image(data, resolution, sigma, dims, parall
         covar_inv = inv(covar_matrix);
         covar_det = det(covar_matrix);
         calc_cutoff_pixels = ceil((calc_cutoff_sigmas * sigma)/resolution);
-    else % value does not matter, but we want these to exit
-        covar_matrix = [];
+    elseif strcmp(sigma, 'per-point') % value does not matter, but we want these to exit
         covar_inv = [];
         covar_det = [];
+        calc_cutoff_pixels = [];
     end
    
     % Calc image parameters
@@ -68,45 +68,43 @@ function sparse_image = create_STORM_image(data, resolution, sigma, dims, parall
                 calc_cutoff_pixels = ceil((calc_cutoff_sigmas * sigma)/resolution);
             end
             
-            % Add pdf to the image
-            full_image = add_pdf_to_image(full_image, data.x(data_ind), data.y(data_ind), covar_inv, covar_det, calc_cutoff_pixels);
+            % Calc index range for the point
+            center_row = round(total_number_pixels_y - data.y(data_ind)/resolution + 0.5);
+            center_column = round(data.x(data_ind)/resolution + 0.5);
+            min_row = center_row - calc_cutoff_pixels;
+            max_row = center_row + calc_cutoff_pixels;
+            min_column = center_column - calc_cutoff_pixels;
+            max_column = center_column + calc_cutoff_pixels;
+
+            % Make sure that the point and the index range does not go off the 
+            % edges of the image.
+            if center_row < 1 || center_row > total_number_pixels_y; continue; end
+            if center_column < 1 || center_column > total_number_pixels_x; continue; end
+            if min_row < 1; min_row = 1; end
+            if max_row > total_number_pixels_y; max_row = total_number_pixels_y; end
+            if min_column < 1; min_column = 1; end
+            if max_column > total_number_pixels_x; max_column = total_number_pixels_x; end
+
+            % Calc mesh x and y values in original pixel units
+            x_vector = resolution .* [min_column-0.5:1:max_column-0.5];
+            y_vector = resolution .* [total_number_pixels_y-min_row+0.5:-1:total_number_pixels_y-max_row+0.5];
+            [x_mesh, y_mesh] = meshgrid(x_vector, y_vector);
+            X = [x_mesh(:).'; y_mesh(:).'];
+
+            % Calc pdf
+            X_shifted = X - repmat([data.x(data_ind); data.y(data_ind)], 1, size(X, 2)); 
+            pdf = (2 .* pi .* sqrt(covar_det))^-1 .* exp(-0.5 .* sum(X_shifted.' * covar_inv .* X_shifted.', 2));
+
+            % Add to total
+            full_image(min_row:max_row, min_column:max_column) =...
+                full_image(min_row:max_row, min_column:max_column) + reshape(pdf, size(x_mesh));
         end
-        % Calc index range for the point
-        center_row = round(total_number_pixels_y - y/resolution + 0.5);
-        center_column = round(x/resolution + 0.5);
-        min_row = center_row - calc_cutoff_pixels;
-        max_row = center_row + calc_cutoff_pixels;
-        min_column = center_column - calc_cutoff_pixels;
-        max_column = center_column + calc_cutoff_pixels;
-
-        % Make sure that the point and the index range does not go off the 
-        % edges of the image.
-        if center_row < 1 || center_row > total_number_pixels_y; return; end
-        if center_column < 1 || center_column > total_number_pixels_x; return; end
-        if min_row < 1; min_row = 1; end
-        if max_row > total_number_pixels_y; max_row = total_number_pixels_y; end
-        if min_column < 1; min_column = 1; end
-        if max_column > total_number_pixels_x; max_column = total_number_pixels_x; end
-
-        % Calc mesh x and y values in original pixel units
-        x_vector = resolution .* [min_column-0.5:1:max_column-0.5];
-        y_vector = resolution .* [total_number_pixels_y-min_row+0.5:-1:total_number_pixels_y-max_row+0.5];
-        [x_mesh, y_mesh] = meshgrid(x_vector, y_vector);
-        X = [x_mesh(:).'; y_mesh(:).'];
-
-        % Calc pdf
-        X_shifted = X - repmat([x; y], 1, size(X, 2)); 
-        pdf = (2 .* pi .* sqrt(covar_det))^-1 .* exp(-0.5 .* sum(X_shifted.' * covar_inv .* X_shifted.', 2));
-
-        % Add to total
-        full_image(min_row:max_row, min_column:max_column) =...
-            full_image(min_row:max_row, min_column:max_column) + reshape(pdf, size(x_mesh));
     end
     
     % Evaluate on one core
     if ~parallel_flag
         
-       
+       full_image = make_image(data, covar_inv, covar_det, calc_cutoff_pixels);
     
     % Evaluate in parallel
     elseif parallel_flag
@@ -129,43 +127,33 @@ function sparse_image = create_STORM_image(data, resolution, sigma, dims, parall
         end
         
         % Split the data vector
-        data_chunks = cell(num_workers);
+        data_chunks = cell(num_workers, 1);
         for chunk_index = 1:num_workers
             newdata = struct();
-            newdata.x = data.x(start_index(chunk_index), end_index(chunk_index));
-            newdata.y = data.y(start_index(chunk_index), end_index(chunk_index));
+            newdata.x = data.x(start_index(chunk_index):end_index(chunk_index));
+            newdata.y = data.y(start_index(chunk_index):end_index(chunk_index));
             if strcmp(sigma, 'per-point')
-                 newdata.sigma = data.sigma(start_index(chunk_index), end_index(chunk_index));
+                 newdata.sigma = data.sigma(start_index(chunk_index):end_index(chunk_index));
             end
             data_chunks{chunk_index} = newdata;
         end
         
-        % create nested function to evaluate a chunk        
-        for data_ind = 1:length(data.x)
-            F(data_ind) = parfeval(@rand,1,1,10); % One row each future
-end
-R = fetchOutputs(F); % 10-by-10 concatenated output
-        
-        % Initalize image array and loop through each point
-        full_image = zeros(total_number_pixels_y, total_number_pixels_x);
-        
-        
-            % Recalc the psf parameters if each sigma value is given independently
-            if strcmp(sigma, 'per-point');
-                sigma = data.sigma(data_ind);
-                covar_matrix = [sigma.^2, 0; 0, sigma.^2];
-                covar_inv = inv(covar_matrix);
-                covar_det = det(covar_matrix);
-                calc_cutoff_pixels = ceil((calc_cutoff_sigmas * sigma)/resolution);
-            end
-            
-            % Add pdf to the image
-            full_image = add_pdf_to_image(full_image, data.x(data_ind), data.y(data_ind), covar_inv, covar_det, calc_cutoff_pixels);
+        % Evaluate the chunks in parallel
+        for chunk_index = 1:num_workers
+            F = parfeval(gcp(), @make_image, 1, data_chunks(chunk_index), covar_inv, covar_det, calc_cutoff_pixels);
         end
         
+        % Add results together as they become available.
+        full_image = zeros(total_number_pixels_y, total_number_pixels_x);
+        for chunk_index = 1:num_workers
+          [~,current_result] = fetchNext(F);
+          full_image = full_image + current_result;
+        end
+    end
+    
     % Convert very low values to zero
-    dense_image(dense_image < zero_cutoff) = 0;
+    full_image(full_image < zero_cutoff) = 0;
     
     % Convert to sparse image to save space
-    sparse_image = sparse(dense_image);
+    sparse_image = sparse(full_image);
 end
