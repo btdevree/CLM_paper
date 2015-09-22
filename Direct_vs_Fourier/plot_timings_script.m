@@ -14,7 +14,7 @@
 hfig = figure;
 
 % Make axes and set options
-haxes = axes('XScale', 'log', 'XLim', [1e2, 1e7], 'YScale', 'log', 'YLim', [1e-4, 1100]);
+haxes = axes('XScale', 'log', 'XLim', [1e2, 3e7], 'YScale', 'log', 'YLim', [2e-4, 2e3]);
 xlabel('Number of points');
 ylabel('Time (sec)');
 title('Execution time of autocorrelation calculation algorithms')
@@ -24,15 +24,15 @@ h1 = line(number_points_binning, binning_Fourier_times, 'Marker', 'o',...
     'Color', 'black', 'LineStyle', '-');
 h2 = line(number_points_pdf, pdf_Fourier_times, 'Marker', '*',...
     'Color', 'black', 'LineStyle', '-');
-%h3 = line(number_points_pdf_parallel, pdf_Fourier_times, 'Marker', '.',...
-%    'Color', 'black', 'LineStyle', '-');
+h3 = line(number_points_pdf_parallel, pdf_parallel_Fourier_times, 'Marker', '.',...
+    'Color', 'black', 'LineStyle', '-');
 h4 = line(number_points_direct, pdist2_direct_times, 'Marker', 'x',...
     'Color', 'black', 'LineStyle', '-');
 h5 = line(number_points_memory, custom_memory_direct_times, 'Marker', '+',...
     'Color', 'black', 'LineStyle', '-');
 
 % Add Legend
-legend('Fourier - binning','Fourier - pdf',...%'Fourier - parallel pdf',...
+legend('Fourier - binning','Fourier - pdf','Fourier - parallel pdf',...
     'Direct - MATLAB', 'Direct - memory saving','Location','southeast');
 
 % Save figure
