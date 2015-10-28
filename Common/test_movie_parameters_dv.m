@@ -187,13 +187,6 @@ params.STORM_precision = 25; % in nanometers
 params.ch1_color = [0, 1, 0]; % green
 params.ch2_color = [1, 0, 1]; % purple
 
-% ------ Skipping Steps --------------------
-
-% Make these true to skip parts of the movie or image making process
-params.skip_movie = True;
-params.skip_all_STORM_images = False;
-params.skip_STORM_RGB_image = False;
-
 % ----- Cleanup ------------------------------
 
 % Rename params to something more descriptive for the function return
