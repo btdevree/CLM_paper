@@ -13,7 +13,8 @@ params = struct();
 % given as [min x, min y, max x, max y]
 choice1 = [0, 0, 51200, 25600]; % Dualview
 choice2 = [0, 0, 51200, 51200]; % Full frame
-params.bounds = choice1; 
+choice3 = [0, 0, 25600, 25600]; % Quarter frame
+params.bounds = choice3;
 
 % Define cell center in nanometers
 choice1 = 'centered'; % Centered in the coordinate bounds at the beginning of the movie.
@@ -28,8 +29,8 @@ params.cell_radius = choice1;
 % ------ Cellular event distribution -----------------
 
 % Define number of events in cell per movie
-params.number_events_ch1 = 500;
-params.number_events_ch2 = 1500;
+params.number_events_ch1 = 1000;
+params.number_events_ch2 = 0;
 
 % Define channel 1 autocorrelation model
 choice1 = 'random'; % random distribution of events
@@ -108,7 +109,13 @@ choice1 = [20]; % standard deviation of gaussian displacement, in nm
 %choice3 = null % no parameters are needed, argument is ignored
 params.resampling_model_params = choice1;
 
-% ------ Background-----------------------------
+% ------- Background events ---------------------
+
+% Define the number of random points to add to each channel
+params.number_background_events_ch1 = 1000;
+params.number_background_events_ch2 = 0;
+
+% ------ Background -----------------------------
 
 % Define overall background noise model
 choice1 = 'Gaussian'; 

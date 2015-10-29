@@ -1,4 +1,4 @@
-function [ch1_data, ch2_data, movie_variables_structure ] = create_test_data_dv(parameters_struct, seed)
+function [ch1_data, ch2_data, movie_variables_structure, STORM_variables_structure ] = create_test_data_dv(parameters_struct, seed)
 %CREATE_TEST_DATA_DV Creates data points for a test movie with the given 
 %   parameters. Assumes a dualview configuration.
 
@@ -27,13 +27,13 @@ end
 % Rename parameters for convenience
 params = parameters_struct; 
 
+% ----- Create event distribution in cell------
+
 % Determine coordinate bounds
 min_x_bound = params.bounds(1);
 min_y_bound = params.bounds(2);
 max_x_bound = params.bounds(3);
 max_y_bound = params.bounds(4);
-
-% ----- Create event distribution in cell------
 
 % Determine cell center
 if strcmp(params.cell_center, 'centered')
@@ -183,11 +183,35 @@ for coord_index = 1:size(ch2_assignments, 1)
     end
 end
 
+% ------- Create background events ---------
+
+% Calculate coordinate scaling factors
+coord_range_x = max_x_bound - min_x_bound;
+coord_range_y = max_y_bound - min_y_bound;
+
+% Generate random background events
+ch1_background_coords = rand(params.number_background_events_ch1, 2) .*...
+    repmat([coord_range_x, coord_range_y], params.number_background_events_ch1, 1) +...
+    repmat([min_x_bound, min_y_bound], params.number_background_events_ch1, 1);
+ch2_background_coords = rand(params.number_background_events_ch2, 2) .*...
+    repmat([coord_range_x, coord_range_y], params.number_background_events_ch2, 1) +...
+    repmat([min_x_bound, min_y_bound], params.number_background_events_ch2, 1);
+
+% Append to main coordinate lists
+ch1_event_coords = [ch1_event_coords; ch1_background_coords];
+ch2_event_coords = [ch2_event_coords; ch2_background_coords];
+
+
 % ------- Prepare output data ------------
 
 % Rename event coords
 ch1_data = ch1_event_coords;
 ch2_data = ch2_event_coords;
+
+% NOTE: Unhappy about splitting off movie and STORM functions, but MATLAB
+% can't use nested functions with flow control statements (if/then, etc.). 
+% For now we just pass any required variables from the data making into the
+% movie or STORM function namespace.
 
 % Collect required variables for movie
 s = struct();
@@ -195,6 +219,14 @@ s.cell_center_x = cell_center_x;
 s.cell_center_y = cell_center_y; 
 s.cell_radius = cell_radius;
 movie_variables_structure = s;
+
+% Collect required variables for movie
+s = struct();
+s.min_x_bound = min_x_bound;
+s.min_y_bound = min_y_bound;
+s.max_x_bound = max_x_bound;
+s.max_y_bound = max_y_bound;
+STORM_variables_structure = s;
 end
 
 function [coords] = random_events_in_cell(number_events, cell_center, cell_radius)

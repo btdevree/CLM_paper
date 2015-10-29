@@ -91,7 +91,9 @@ else % Per-channel methods
     
     % Apply divisors
     for channel_index = 1:length(channel_pd_data),
-        channel_pd_data{channel_index} = channel_pd_data{channel_index}./divisors{channel_index};
+        if ~divisors{channel_index} == 0 % Ignore empty channels, don't try to divide by zero.
+            channel_pd_data{channel_index} = channel_pd_data{channel_index}./divisors{channel_index};
+        end
     end
 end
 

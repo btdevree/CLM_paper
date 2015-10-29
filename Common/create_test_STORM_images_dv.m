@@ -1,4 +1,4 @@
-function [ ch1_STORM_image, ch2_STORM_image, STORM_RGB_image ] = create_test_STORM_images_dv( parameters_struct, ch1_data, ch2_data, STORM_variables_structure )
+function [ ch1_STORM_image, ch2_STORM_image, STORM_RGB_image ] = create_test_STORM_images_dv( parameters_structure, ch1_data, ch2_data, STORM_variables_structure )
 %CREATE_TEST_STORM_IMAGES_DV Creates a test movie with the given parameters. Assumes
 %   a dualview configuration.
 
@@ -13,6 +13,22 @@ function [ ch1_STORM_image, ch2_STORM_image, STORM_RGB_image ] = create_test_STO
 %   ch1/ch2_STORM_image: sparse double 
 %   STORM_RGB_image: An RGB image (8 bit per color channel) for display of 
 %       the STORM ground-truth image
+
+% ------ Collect and rename variables ------------
+
+% Rename the data that was generated with create_test_data_dv
+ch1_event_coords = ch1_data;
+ch2_event_coords = ch2_data;
+
+% Unpack STORM_variables_structure
+s = STORM_variables_structure;
+min_x_bound = s.min_x_bound;
+min_y_bound = s.min_y_bound;
+max_x_bound = s.max_y_bound;
+max_y_bound = s.max_y_bound;
+
+% Rename parameters_structure for convenience
+params = parameters_structure; 
 
 % ----------- Create STORM images --------------
 
