@@ -61,7 +61,9 @@ ch2_color = params.ch2_color;
 STORM_RGB_image = convert_STORM_image_to_RGB({ch1_STORM_image, ch2_STORM_image}, {ch1_color, ch2_color}, 3, 'channel_max');
 
 % Save images as mat files
-save('testmovie_STORM_images', 'ch1_STORM_image', 'ch2_STORM_image', 'STORM_RGB_image');
+if params.save_STORM_images_flag;
+    save('testmovie_STORM_images', 'ch1_STORM_image', 'ch2_STORM_image', 'STORM_RGB_image');
+end
 
 end
 

@@ -194,6 +194,9 @@ params.STORM_precision = 25; % in nanometers
 params.ch1_color = [0, 1, 0]; % green
 params.ch2_color = [1, 0, 1]; % purple
 
+% Flag to save movies to file
+params.save_STORM_images_flag = false;
+
 % ----- Cleanup ------------------------------
 
 % Rename params to something more descriptive for the function return
