@@ -43,7 +43,7 @@ function sparse_image = create_STORM_image(data, resolution, sigma, dims, parall
         covar_inv = inv(covar_matrix);
         covar_det = det(covar_matrix);
         calc_cutoff_pixels = ceil((calc_cutoff_sigmas * sigma)/resolution);
-    elseif strcmp(sigma, 'per-point') % value does not matter, but we want these to exit
+    elseif strcmp(sigma, 'per-point') % value does not matter, but we want these to exist
         covar_inv = [];
         covar_det = [];
         calc_cutoff_pixels = int32([]);

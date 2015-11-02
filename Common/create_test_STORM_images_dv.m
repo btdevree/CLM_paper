@@ -46,7 +46,7 @@ function [STORM_image] = calc_STORM_image(STORM_resolution, STORM_sigma, STORM_d
     data_struct.y = event_coords(:, 2);
 
     % Call image generating function, use parallel processing if possible
-    STORM_image = create_STORM_image(data_struct, STORM_resolution, STORM_sigma, STORM_dims, true); % note that output is spars
+    STORM_image = create_STORM_image(data_struct, STORM_resolution, STORM_sigma, STORM_dims, true); % note that output is sparse
 end
 
 % Run STORM image function for each channel
