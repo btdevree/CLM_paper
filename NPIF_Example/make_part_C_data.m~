@@ -11,7 +11,8 @@ ideal_image = calculate_ideal_image(param_array{1}); % Assume same relevent para
 
 % Turn into RGB to match the images_array from Part B - NOT IDEAL, MUST CHANGE!!!
 ideal_RGB_image = convert_STORM_image_to_RGB({ideal_image}, {[0, 1, 0]}, 3, 'channel_max');
-ideal_image = double(ideal_RGB_image(:, :, 2));
+ideal_image = ideal_RGB_image(:, 
+
 
 % Get the surprisal value of a zero image
 image_size = size(ideal_image);
@@ -28,3 +29,4 @@ end
 % Take the ratio of the surprisal to the zero image surprisal
 surprisal_ratios = surprisal_values ./ zero_image_surprisal;
 
+gork

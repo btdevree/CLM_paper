@@ -22,17 +22,8 @@ if issparse(ideal_image)
     ideal_image = full(ideal_image);
 end
 
-% Enforce double conversion and normalize images
-experimental_image = double(experimental_image);
-experimental_image = experimental_image - min(experimental_image(:));
-if max(experimental_image(:)) > 0 % Don't divide by zero!
-    experimental_image = experimental_image / max(experimental_image(:));
-end
-ideal_image = double(ideal_image);
-ideal_image = ideal_image - min(ideal_image(:));
-if max(ideal_image(:)) > 0 % Don't divide by zero!
-    ideal_image = ideal_image / max(ideal_image(:));
-end
+% Normalize images
+experimental_image = experimental_image - min(e 
 
 % Calculate the discrepency as the squared distance
 if strcmp(method, 'squared_distance')
