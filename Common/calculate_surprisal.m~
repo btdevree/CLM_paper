@@ -1,4 +1,4 @@
-function [ surprisal_value ] = calculate_surprisal( experimental_image, ideal_image, method )
+function [ discrepency_value ] = calculate_discrepency( experimental_image, ideal_image, method )
 %CALCULATE_SURPRISAL Calculate the surprisal, or self-information of the 
 %   experimental image according the the chosen method.
 
@@ -7,9 +7,15 @@ function [ surprisal_value ] = calculate_surprisal( experimental_image, ideal_im
 %       sparse matrix of doubles
 %   ideal_image: ideal image used as the expected result, possibly sparse 
 %       matrix of doubles
-%   method: method used for estimating the discrepency. Choices are
-%       'Entropy' (real-valued functions) and 'Discrepency' (positive real-
-%       valued functions). FOR NOW: 'squared_distance'
+%   method: method used for estimating the discrepency. Choices are:
+%       'squared_distance': the sum of the sqared differences between the 
+%           pixel values.
+%       'discrimination': sum of (a*log(a/b) - a + b) where a is the
+%           pixel value of the ideal image and b is the pixel value of the
+%           approximation
+%       'normalized_variation_of_information': 1 - variation of information
+%           (i.e. the mutual information normalized by the joint entropy 
+%           calculated from intensity histograms.
 %
 % Outputs:
 %   surprisal_value: self-information or surprisal value, given in bits.
@@ -22,8 +28,17 @@ if issparse(ideal_image)
     ideal_image = full(ideal_image);
 end
 
-% Normalize images
-experimental_image = experimental_image - min(e 
+% Enforce double conversion and normalize images
+experimental_image = double(experimental_image);
+experimental_image = experimental_image - min(experimental_image(:));
+if max(experimental_image(:)) > 0 % Don't divide by zero!
+    experimental_image = experimental_image / max(experimental_image(:));
+end
+ideal_image = double(ideal_image);
+ideal_image = ideal_image - min(ideal_image(:));
+if max(ideal_image(:)) > 0 % Don't divide by zero!
+    ideal_image = ideal_image / max(ideal_image(:));
+end
 
 % Calculate the discrepency as the squared distance
 if strcmp(method, 'squared_distance')
