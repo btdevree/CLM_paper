@@ -1,4 +1,4 @@
-function [ discrepency_value ] = calculate_discrepency( experimental_image, ideal_image, method )
+function [ discrepency_value ] = calculate_discrepency( experimental_image, ideal_image, method, NVI_entropy_bins, direct_NVI_output_flag )
 %CALCULATE_SURPRISAL Calculate a discrepency measure of the experimental
 %   image to the ideal image according the the chosen method.
 %
@@ -24,10 +24,20 @@ function [ discrepency_value ] = calculate_discrepency( experimental_image, idea
 %       'normalized_variation_of_information': 1 - variation of information
 %           (i.e. the mutual information normalized by the joint entropy 
 %           calculated from intensity histograms.
+%   NVI_entropy_bins: number of bins to use in for the normalized variation
+%       of information method. Integer, ignored for ssq or discrimination 
+%       methods. Default = 100
+%   direct_NVI_output_flag: Binary flag that specifies using the NVI value 
+%       for output instead of the zero-image normalized value. Default =
+%       false.
 %
 % Outputs:
 %   discrepency_value: floating-point double, normalized value of 
 %       discrpency between the experimental and ideal image.
+
+% Set defaults
+if nargin < 4; NVI_entropy_bins = 100; end;
+if nargin < 5; direct_NVI_output_flag = false; end;
 
 % Convert to full matrices, if needed
 if issparse(experimental_image)
@@ -81,13 +91,19 @@ end
 if strcmp(method, 'normalized_variation_of_information')
     
     % Calc zero image NVI
-    zero_image_NVI = calc_NVI(ideal_image, zeros(size(experimental_image));
+    if ~direct_NVI_output_flag
+        zero_image_NVI = calc_NVI(ideal_image, zeros(size(experimental_image)), '2', NVI_entropy_bins);
+    end
     
     % Calc experimental value
-    experimental_NVI = calc_NVI(ideal_image, experimental_image);
+    experimental_NVI = calc_NVI(ideal_image, experimental_image, '2', NVI_entropy_bins);
     
     % Get the normalized discrepency
-    discrepency_value = experimental_NVI / zero_image_NVI;
+    if ~direct_NVI_output_flag
+        discrepency_value = experimental_NVI / zero_image_NVI;
+    else
+        discrepency_value = experimental_NVI;
+    end
 end
 
 end
@@ -99,8 +115,12 @@ function [value] = calc_discrim(A, B)
 end
 
 % Local function to calculate the NVI
-function [value] = calc_NVI(A, B)
-    value = calc_image_entropy(A) + calc_image_entropy(B) - calc_image_joint_entropy(A, B); % Use defaults; log base = 2 and 256 levels
+function [NVI] = calc_NVI(A, B, log_base, number_bins)
+    H_A = calc_image_entropy(A, log_base, number_bins);
+    H_B = calc_image_entropy(B, log_base, number_bins);
+    H_AB = calc_image_joint_entropy(A, B, log_base, number_bins);
+    I_AB = H_A + H_B - H_AB;
+    NVI = 1 - (I_AB/H_AB); % Bounded between 1 and 0; 0 = perfect identity
 end
 
 
