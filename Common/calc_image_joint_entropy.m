@@ -37,23 +37,24 @@ max_value_A = max(image_A(:));
 min_value_B = min(image_B(:));
 max_value_B = max(image_B(:));
 
-% Make bin ranges for use with imquantize (negative valued and reversed)
+% Get step sizes
 step_A = (max_value_A - min_value_A) / number_bins;
-bin_edges_A = [-max_value_A:step_A:-min_value_A];
-assert(length(bin_edges_A) == number_bins + 1); % double check that floating-point errors didn't throw us off
 step_B = (max_value_B - min_value_B) / number_bins;
-bin_edges_B = [-min_value_B:step_B:-max_value_B];
-assert(length(bin_edges_B) == number_bins + 1);
 
-% Get bin counts and add endpoint to last true bin
-discrete_A = imquantize(-image_A, bin_edges_A); % level 1 = endpoint at max_value, level N = full bin  from min_value to level (N-1) cutoff
+% Divide images by the step and take the integer part
+integer_A = floor(image_A ./ step_A) + 1; % Add 1 to make the indices on MATLAB-style 1-based indexing
+integer_B = floor(image_B ./ step_B) + 1;
 
-bincounts = histc(image(:), bin_edges);
-bincounts = [bincounts(1:end-2); bincounts(end-1) + bincounts(end)];
+% Count the number of each 2D integer pair
+counts = accumarray([integer_A(:), integer_B(:)], 1, [number_bins + 1, number_bins + 1]);
+
+% Add the last endpoint to the previous row or column
+counts = [counts(1:end-2, :); counts(end-1, :) + counts(end, :)];
+counts = [counts(:, 1:end-2), counts(:, end-1) + counts(:, end)];
 
 % Normalize to a pdf
-total_counts = sum(bincounts(:));
-pdf = bincounts ./ total_counts;
+total_counts = sum(counts(:));
+pdf = counts ./ total_counts;
 
 % Calculate entropy
 if strcmp(log_base, '2')
