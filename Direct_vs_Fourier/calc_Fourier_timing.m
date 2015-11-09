@@ -102,7 +102,7 @@ for number_points_index = 1:size(number_points_vector, 1);
             if strcmp(method, 'Gaussian_pdf')
                 STORM_image = create_STORM_image(data_struct, resolution, sigma, dims); % note that output is sparse
             elseif strcmp(method, 'Gaussian_pdf_parallel')
-                STORM_image = create_STORM_image(data_struct, resolution, sigma, dims, true); % note that output is sparse
+                STORM_image = create_STORM_image(data_struct, resolution, sigma, dims, true, true); % note that output is sparse
             end                
             
             % Convert to dense image

@@ -1,4 +1,4 @@
-function sparse_image = create_STORM_image(data, resolution, sigma, dims, parallel_flag, calc_cutoff_sigmas, zero_cutoff)
+function image = create_STORM_image(data, resolution, sigma, dims, sparse_output_flag, parallel_flag, calc_cutoff_sigmas, zero_cutoff)
     % CREATE_STORM_IMAGE Creates a high-resolution image built from 
     %   Gaussian pdfs. 
     %
@@ -30,12 +30,13 @@ function sparse_image = create_STORM_image(data, resolution, sigma, dims, parall
     %   sigma value for relative errors that are maxiamlly 5% off. By 1/10 
     %   the sigma value, the difference between the sampled and integrated 
     %   pdf is vanishinly small for all real purposes.) Returned as a
-    %   sparse matrix.
+    %   sparse or full matrix of .
     
     % Set defaults
-    if nargin < 7; zero_cutoff = 1e-6; end 
-    if nargin < 6; calc_cutoff_sigmas = 5; end
-    if nargin < 5; parallel_flag = false; end 
+    if nargin < 8; zero_cutoff = 1e-6; end 
+    if nargin < 7; calc_cutoff_sigmas = 5; end
+    if nargin < 6; parallel_flag = false; end 
+    if nargin < 5; sparse_output_flag = true; end 
         
     % Calc parameters for psfs of all the same size
     if isscalar(sigma)
@@ -107,8 +108,12 @@ function sparse_image = create_STORM_image(data, resolution, sigma, dims, parall
     % Convert very low values to zero
     full_image(full_image < zero_cutoff) = 0;
     
-    % Convert to sparse image to save space
-    sparse_image = sparse(full_image);
+    if sparse_output_flag
+        % Convert to sparse image to save space
+        image = sparse(full_image);
+    else
+        image = full_image;
+    end
 end
 
 % Create function for adding a pdf to the image

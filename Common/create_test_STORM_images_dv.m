@@ -1,4 +1,4 @@
-function [ ch1_STORM_image, ch2_STORM_image, STORM_RGB_image ] = create_test_STORM_images_dv( parameters_structure, ch1_data, ch2_data, STORM_variables_structure )
+function [ ch1_STORM_image, ch2_STORM_image, STORM_RGB_image ] = create_test_STORM_images_dv( parameters_structure, ch1_data, ch2_data, STORM_variables_structure, sparse_output_flag )
 %CREATE_TEST_STORM_IMAGES_DV Creates a test movie with the given parameters. Assumes
 %   a dualview configuration.
 
@@ -9,12 +9,19 @@ function [ ch1_STORM_image, ch2_STORM_image, STORM_RGB_image ] = create_test_STO
 %       that function for more documentation.
 %   ch1/ch2_data: matrix of event coordiantes calculated with 
 %       create_test_data_dv
+%   STORM_variables__structure: Required variables from
+%       create_test_movie_data
+%   sparse_output_flag: if true, output image is a sparse matrix. Default =
+%       true. 
 %   Outputs:
 %   ch1/ch2_STORM_image: sparse double 
 %   STORM_RGB_image: An RGB image (8 bit per color channel) for display of 
 %       the STORM ground-truth image
 
 % ------ Collect and rename variables ------------
+
+% Set defaults
+if nargin < 5, sparse_output_flag = true; end;
 
 % Rename the data that was generated with create_test_data_dv
 ch1_event_coords = ch1_data;
@@ -46,7 +53,7 @@ function [STORM_image] = calc_STORM_image(STORM_resolution, STORM_sigma, STORM_d
     data_struct.y = event_coords(:, 2);
 
     % Call image generating function, use parallel processing if possible
-    STORM_image = create_STORM_image(data_struct, STORM_resolution, STORM_sigma, STORM_dims, true); % note that output is sparse
+    STORM_image = create_STORM_image(data_struct, STORM_resolution, STORM_sigma, STORM_dims, sparse_output_flag, true);
 end
 
 % Run STORM image function for each channel
