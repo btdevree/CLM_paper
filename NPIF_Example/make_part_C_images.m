@@ -3,13 +3,13 @@
 % We assume that we're in the CLM_paper repository, and we want to save the
 % big binary figure and data files to CLM_figures_and_data folder, not on 
 % the repository but on the same file level as CLM_paper.
-% binary_path_parts = strsplit(pwd, 'CLM_paper');
-% binary_path = [binary_path_parts{1}, 'CLM_figures_and_data/'];
-binary_path = '/home/btdevree/large_file_temp/'; % Network drive is just too slow and causes process to get killed
+binary_path_parts = strsplit(pwd, 'CLM_paper');
+binary_path = [binary_path_parts{1}, 'CLM_figures_and_data/'];
+% binary_path = '/home/btdevree/large_file_temp/'; % Network drive is just too slow and causes process to get killed
 
 % Define variable quantities for the S/N and event_number
 SN_ratios = [10];
-true_event_numbers = [1e3; 2e3; 5e3; 1e4; 2e4; 5e4; 1e5; 2e5; 5e5; 1e6; 2e6; 5e6; 1e7];
+true_event_numbers = [1e3; 2e3; 5e3; 1e4; 2e4; 5e4; 1e5];%; 2e5; 5e5; 1e6; 2e6; 5e6; 1e7];
 replicates = 3;
 num_ratios = size(SN_ratios, 1);
 num_eventnums = size(true_event_numbers, 1);
@@ -53,7 +53,7 @@ image_height = size(test_image, 1);
 image_width = size(test_image, 2);
 
 % Initialize hdf5 array to hold images directly on disc
-image_filepath = [binary_path, 'NPIF_part_C_images_HDF5_SN10.h5'];
+image_filepath = [binary_path, 'NPIF_part_C_images_SN10.h5'];
 array_dims = [image_height, image_width, num_ratios, num_eventnums, replicates]; 
 h5create(image_filepath, '/images_array', array_dims, 'ChunkSize', [image_height, image_width, 1, 1, 1]); % Chunks optimized for writing or reading full images
 

@@ -42,8 +42,17 @@ step_A = (max_value_A - min_value_A) / number_bins;
 step_B = (max_value_B - min_value_B) / number_bins;
 
 % Divide images by the step and take the integer part
-integer_A = floor((image_A - min_value_A) ./ step_A) + 1; % Add 1 to make the indices on MATLAB-style 1-based indexing
-integer_B = floor((image_B - min_value_B) ./ step_B) + 1;
+% Add 1 to make the indices on MATLAB-style 1-based indexing
+if step_A ~= 0
+    integer_A = floor((image_A - min_value_A) ./ step_A) + 1;
+else % If step == 0, it means the image is flat. We'll assume that we want a flat, zero-valued image.
+    integer_A = ones(size(image_A));
+end
+if step_B ~= 0
+    integer_B = floor((image_B - min_value_B) ./ step_B) + 1;
+else % If step == 0, it means the image is flat. We'll assume that we want a flat, zero-valued image.
+    integer_B = ones(size(image_B));
+end
 
 % Count the number of each 2D integer pair
 counts = accumarray([integer_A(:), integer_B(:)], 1, [number_bins + 1, number_bins + 1]);

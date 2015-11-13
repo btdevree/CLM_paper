@@ -18,8 +18,8 @@ function image = create_STORM_image(data, resolution, sigma, dims, sparse_output
     %   already be activated.
     % calculation_cutoff_sigma: maximum number of sigmas that the psf
     %   calculation will be made to. Default = 5 
-    % zero_cutoff: minimum probability density value requried to not be 
-    %   counted as a zero in the final map. Default = 1E-6.
+    % zero_cutoff: minimum probability value requried to not be 
+    %   counted as a zero in the final map. Default = 1E-9.
     %
     % Ouptuts:
     % image: Super-resolution image of the detected points. Each point has
@@ -33,7 +33,7 @@ function image = create_STORM_image(data, resolution, sigma, dims, sparse_output
     %   sparse or full matrix of .
     
     % Set defaults
-    if nargin < 8; zero_cutoff = 1e-6; end 
+    if nargin < 8; zero_cutoff = 1e-9; end 
     if nargin < 7; calc_cutoff_sigmas = 5; end
     if nargin < 6; parallel_flag = false; end 
     if nargin < 5; sparse_output_flag = true; end 
@@ -61,6 +61,7 @@ function image = create_STORM_image(data, resolution, sigma, dims, sparse_output
         full_image = make_image(data, covar_inv, covar_det, calc_cutoff_pixels, sigma, resolution, total_number_pixels_y, total_number_pixels_x);
     
     % Evaluate in parallel
+    % NOTE - TO DO: Should change this to use spmd command.
     elseif parallel_flag
         
         % Determine indices needed to split data list into equal parts for each cluster
@@ -98,7 +99,7 @@ function image = create_STORM_image(data, resolution, sigma, dims, sparse_output
             image_chunks{chunk_index} = make_image(data_chunks{chunk_index}, covar_inv, covar_det, calc_cutoff_pixels, sigma, resolution, total_number_pixels_y, total_number_pixels_x);
         end
         
-        % Add results together as they become available.
+        % Add results together.
         full_image = zeros(total_number_pixels_y, total_number_pixels_x);
         for chunk_index = 1:num_workers
             full_image = full_image + image_chunks{chunk_index};
@@ -157,7 +158,7 @@ function full_image = make_image(data, covar_inv, covar_det, calc_cutoff_pixels,
 
         % Calc pdf
         X_shifted = X - repmat([data.x(data_ind); data.y(data_ind)], 1, size(X, 2)); 
-        pdf = (2 .* pi .* sqrt(covar_det))^-1 .* exp(-0.5 .* sum(X_shifted.' * covar_inv .* X_shifted.', 2));
+        pdf = resolution^2 .* (2 .* pi .* sqrt(covar_det))^-1 .* exp(-0.5 .* sum(X_shifted.' * covar_inv .* X_shifted.', 2));
         
         % Add to total
         full_image(min_row:max_row, min_column:max_column) =...

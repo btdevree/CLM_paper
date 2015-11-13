@@ -33,7 +33,13 @@ max_value = max(image(:));
 
 % Make bin ranges
 step = (max_value - min_value) / number_bins;
-bin_edges = [min_value:step:max_value];
+if step ~= 0
+    bin_edges = [min_value:step:max_value];
+else % If step == 0, it means the image is flat. We'll assume that we want a flat, zero-valued image.
+    step = 1/number_bins;
+    max_value = min_value + 1;
+    bin_edges = [min_value:step:max_value];
+end
 assert(length(bin_edges) == number_bins + 1); % double check that floating-point errors didn't throw us off
 
 % Get bin counts and add endpoint to last true bin

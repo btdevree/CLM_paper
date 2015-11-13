@@ -7,10 +7,9 @@
 % We assume that we're in the CLM_paper repository, and we want to save the
 % big binary figure and data files to CLM_figures_and_data folder, not on 
 % the repository but on the same file level as CLM_paper.
-% binary_path_parts = strsplit(pwd, 'CLM_paper');
-% binary_path = [binary_path_parts{1}, 'CLM_figures_and_data/'];
-
-binary_path = '/home/btdevree/large_file_temp/'; % Network drive is just too slow and causes process to get killed
+binary_path_parts = strsplit(pwd, 'CLM_paper');
+binary_path = [binary_path_parts{1}, 'CLM_figures_and_data/'];
+% binary_path = '/home/btdevree/large_file_temp/'; % Network drive is just too slow and causes process to get killed
 
 % Read in the data file
 load([binary_path, 'NPIF_part_C_data_SN10.mat']);
@@ -33,7 +32,7 @@ ideal_completeness_index = zeros(size(param_array));
 approx_completeness_index = zeros([size(param_array), approx_pseudoreplicates]);
 
 % Get image size
-imagefile_pathname = [binary_path, 'NPIF_part_C_images_HDF5_SN10.h5'];
+imagefile_pathname = [binary_path, 'NPIF_part_C_images_SN10.h5'];
 image_info = h5info(imagefile_pathname, '/images_array');
 image_dims = image_info.Dataspace.Size; % Note that Matlab translates this to row-major standard
 image_height = image_dims(1);
@@ -62,10 +61,10 @@ for param_index = 1:length(param_array(:));
             
         % Generate a logical index array for splitting the data
         number_datapoints_100pct = size(data_100pct, 1);
-        number_datapoints_1pct = ceil(number_datapoints/100);
+        number_datapoints_1pct = ceil(number_datapoints_100pct/100);
         number_datapoints_99pct = number_datapoints_100pct - number_datapoints_1pct;
         bool_selection = false(size(data_100pct));
-        integers_1pct = randsample(number_datapoints, number_datapoints_1pct);
+        integers_1pct = randsample(number_datapoints_100pct, number_datapoints_1pct);
         for int_index = 1:length(integers_1pct);
             integer_value = integers_1pct(int_index);
             bool_selection(integer_value, :) = true;
