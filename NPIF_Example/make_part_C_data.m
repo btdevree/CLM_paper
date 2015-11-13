@@ -7,9 +7,9 @@
 % We assume that we're in the CLM_paper repository, and we want to save the
 % big binary figure and data files to CLM_figures_and_data folder, not on 
 % the repository but on the same file level as CLM_paper.
-binary_path_parts = strsplit(pwd, 'CLM_paper');
-binary_path = [binary_path_parts{1}, 'CLM_figures_and_data/'];
-% binary_path = '/home/btdevree/large_file_temp/'; % Network drive is just too slow and causes process to get killed
+%binary_path_parts = strsplit(pwd, 'CLM_paper');
+%binary_path = [binary_path_parts{1}, 'CLM_figures_and_data/'];
+binary_path = '/home/btdevree/large_file_temp/'; % Network drive is just too slow and causes process to get killed
 
 % Read in the data file
 load([binary_path, 'NPIF_part_C_data_SN10.mat']);
@@ -42,6 +42,10 @@ image_width = image_dims(2);
 for param_index = 1:length(param_array(:));
     params = param_array{param_index};
     
+    % Give user feedback
+    disp(['Working on, S/N ratio = ', num2str(params.SN_ratio), ', event number = ',...
+        num2str(params.number_events_ch1), ', replicate = ', num2str(params.replicate)]);
+    
     % Channge the random number generator seed
     rng(seeds(param_index));
     
@@ -58,7 +62,7 @@ for param_index = 1:length(param_array(:));
     % Calculate the approximated completeness index
     % Repeat multiple times for pseudo-replicates 
     for pseudorep_index = 1:approx_pseudoreplicates
-            
+        
         % Generate a logical index array for splitting the data
         number_datapoints_100pct = size(data_100pct, 1);
         number_datapoints_1pct = ceil(number_datapoints_100pct/100);
@@ -82,10 +86,11 @@ for param_index = 1:length(param_array(:));
         discrepency_1pct = calculate_discrepency(image_1pct, image_99pct, 'normalized_variation_of_information', 100, false);
         
         % Get the information increase by adding the 1% image to the 99% image
-        discrepency_100pct = calculate_discrepency(image_1pct, image_99pct, 'normalized_variation_of_information', 100, false);
+        discrepency_100pct = calculate_discrepency(image, image_99pct, 'normalized_variation_of_information', 100, false);
         
         % Calculate completeness approximation
-        approx_completeness_index([params.output_indices, pseudorep_index]) = 1-(discrepency_100pct/discrepency_1pct);
+        out_ind = params.output_indices;
+        approx_completeness_index(out_ind(1), out_ind(2), out_ind(3), pseudorep_index) = 1-(1-discrepency_100pct/discrepency_1pct);
     end
 end
 

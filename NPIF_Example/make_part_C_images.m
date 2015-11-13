@@ -3,9 +3,9 @@
 % We assume that we're in the CLM_paper repository, and we want to save the
 % big binary figure and data files to CLM_figures_and_data folder, not on 
 % the repository but on the same file level as CLM_paper.
-binary_path_parts = strsplit(pwd, 'CLM_paper');
-binary_path = [binary_path_parts{1}, 'CLM_figures_and_data/'];
-% binary_path = '/home/btdevree/large_file_temp/'; % Network drive is just too slow and causes process to get killed
+% binary_path_parts = strsplit(pwd, 'CLM_paper');
+% binary_path = [binary_path_parts{1}, 'CLM_figures_and_data/'];
+binary_path = '/home/btdevree/large_file_temp/'; % Network drive is just too slow and causes process to get killed
 
 % Define variable quantities for the S/N and event_number
 SN_ratios = [10];
