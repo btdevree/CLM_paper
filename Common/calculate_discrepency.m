@@ -1,4 +1,4 @@
-function [ discrepency_value ] = calculate_discrepency( experimental_image, ideal_image, method, NVI_entropy_bins, direct_NVI_output_flag )
+function [ discrepency_value ] = calculate_discrepency( experimental_image, ideal_image, method, NVI_entropy_bins)
 %CALCULATE_SURPRISAL Calculate a discrepency measure of the experimental
 %   image to the ideal image according the the chosen method.
 %
@@ -20,24 +20,19 @@ function [ discrepency_value ] = calculate_discrepency( experimental_image, idea
 %           pixel values.
 %       'discrimination': sum of (a*log(a/b) - a + b) where a is the
 %           pixel value of the ideal image and b is the pixel value of the
-%           approximation
+%           approximation. Images cannot have zeros values.
 %       'normalized_variation_of_information': 1 - variation of information
 %           (i.e. the mutual information normalized by the joint entropy 
 %           calculated from intensity histograms.
 %   NVI_entropy_bins: number of bins to use in for the normalized variation
 %       of information method. Integer, ignored for ssq or discrimination 
 %       methods. Default = 100
-%   direct_NVI_output_flag: Binary flag that specifies using the NVI value 
-%       for output instead of the zero-image normalized value. Default =
-%       false.
-%
 % Outputs:
 %   discrepency_value: floating-point double, normalized value of 
 %       discrpency between the experimental and ideal image.
 
 % Set defaults
 if nargin < 4; NVI_entropy_bins = 100; end;
-if nargin < 5; direct_NVI_output_flag = false; end;
 
 % Convert to full matrices, if needed
 if issparse(experimental_image)
@@ -76,7 +71,7 @@ end
 
 % Calculate the discrepency as the sum of the discrimination
 if strcmp(method, 'discrimination')
-       
+        
     % Calc zero image value
     zero_image_discrim = calc_discrim(ideal_image, zeros(size(experimental_image)));
    
@@ -90,28 +85,16 @@ end
 % Calculate the discrepency with mutual information based Normalized Variation of Information
 if strcmp(method, 'normalized_variation_of_information')
     
-    % Calc zero image NVI
-    if ~direct_NVI_output_flag
-        zero_image_NVI = calc_NVI(ideal_image, zeros(size(experimental_image)), '2', NVI_entropy_bins);
-    end
-    
-    % Calc experimental value
-    experimental_NVI = calc_NVI(ideal_image, experimental_image, '2', NVI_entropy_bins);
-    
-    % Get the normalized discrepency
-    if ~direct_NVI_output_flag
-        discrepency_value = experimental_NVI / zero_image_NVI;
-    else
-        discrepency_value = experimental_NVI;
-    end
+    % Calc discrepency
+    discrepency_value = calc_NVI(ideal_image, experimental_image, '2', NVI_entropy_bins);
+  
 end
-
 end
 
 % Local function to calculate the discrimination
 function [value] = calc_discrim(A, B)
     all_values = A .* log2(A ./ B) - A + B;
-    value = sum(all_values);
+    value = sum(all_values(:));
 end
 
 % Local function to calculate the NVI
