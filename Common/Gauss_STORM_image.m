@@ -1,10 +1,10 @@
 function [ image ] = Gauss_STORM_image(resolution, xy_data, covar_inv, covar_det, calc_cutoff_pixels_x, calc_cutoff_pixels_y, xmesh, ymesh)
-%Gauss_STORM_image Creates a STORM image from the list of (x,y) data; 
+% Gauss_STORM_image Creates a STORM image from the list of (x,y) data; 
 %   mirrors the C MEX function Gauss_STORM_image_MEX.cpp. 
-%
+% 
 % Creates a STORM image as a matrix of floating-point doubles. Assumes a
 % Cartesian coordinate system. 
-%
+% 
 % Inputs
 %   resolution: floating-point double, number of nanometers per final image
 %       pixel
@@ -23,7 +23,7 @@ function [ image ] = Gauss_STORM_image(resolution, xy_data, covar_inv, covar_det
 %       the center of each pixel, generated with meshgrid.
 
 % Create the output image
-image = zeros(size(xmesh));
+image = zeros(10, 10);
 
 % 
 
