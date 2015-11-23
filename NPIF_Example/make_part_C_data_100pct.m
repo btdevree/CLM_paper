@@ -12,7 +12,7 @@
 binary_path = '/home/btdevree/large_file_temp/'; % Network drive is just too slow and causes process to get killed
 
 % Re-define SN-ratios
-SN_ratios = [1: 4; 10];
+SN_ratios = [1; 4; 10];
 
 % These files are pretty big, so we'll have to make each SNratio seperately
 for SN_index = 1:length(SN_ratios)
@@ -97,16 +97,16 @@ for SN_index = 1:length(SN_ratios)
             
             % Get the discrepency in a blank image
             zero_image = zeros(size(image));
-            discrepency_0pct_method1 = calculate_discrepency(zero_image, image_99pct, 'sum_of_squares');
-            discrepency_0pct_method2 = calculate_discrepency(zero_image, image_99pct, 'l2_norm');
+            discrepency_0pct_method1 = calculate_discrepency(zero_image, image, 'sum_of_squares');
+            discrepency_0pct_method2 = calculate_discrepency(zero_image, image, 'l2_norm');
             
             % Get the discrepency in the 1% image
-            discrepency_1pct_method1 = calculate_discrepency(image_1pct, image_99pct, 'sum_of_squares');
-            discrepency_1pct_method2 = calculate_discrepency(image_1pct, image_99pct, 'l2_norm');
+            discrepency_1pct_method1 = calculate_discrepency(image_1pct, image, 'sum_of_squares');
+            discrepency_1pct_method2 = calculate_discrepency(image_1pct, image, 'l2_norm');
 
             % Get the discrepency increase by adding the 1% image to the 99% image
-            discrepency_100pct_method1 = calculate_discrepency(image, image_99pct, 'sum_of_squares');
-            discrepency_100pct_method2 = calculate_discrepency(image, image_99pct, 'l2_norm');
+            discrepency_100pct_method1 = calculate_discrepency(image_99pct, image, 'sum_of_squares');
+            discrepency_100pct_method2 = calculate_discrepency(image_99pct, image, 'l2_norm');
 
             % Calculate completeness approximation
             CI_method1 = discrepency_100pct_method1 / (discrepency_0pct_method1 - discrepency_1pct_method1);
@@ -119,7 +119,7 @@ for SN_index = 1:length(SN_ratios)
     end
     
     % Save CI info
-    CI_filename = ['NPIF_part_C_CIdata_ssq99_SN', num2str(SN_ratio), '.mat'];
+    CI_filename = ['NPIF_part_C_CIdata_ssq100_SN', num2str(SN_ratio), '.mat'];
     save(CI_filename, 'ideal_CI_method1', 'ideal_CI_method2', 'approx_CI_method1', 'approx_CI_method2',...
         'param_array', 'SN_ratios', 'true_event_numbers', 'seeds');
 end

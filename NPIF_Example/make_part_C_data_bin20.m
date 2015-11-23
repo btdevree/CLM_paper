@@ -12,7 +12,7 @@
 binary_path = '/home/btdevree/large_file_temp/'; % Network drive is just too slow and causes process to get killed
 
 % Re-define SN-ratios
-SN_ratios = [1: 4; 10];
+SN_ratios = [1; 4; 10];
 
 % These files are pretty big, so we'll have to make each SNratio seperately
 for SN_index = 1:length(SN_ratios)
@@ -24,6 +24,8 @@ for SN_index = 1:length(SN_ratios)
    
     % Read in the data file
     load(data_filepath);
+    % Re-define SN-ratios - quick fix to the fact that SN_ratios is getting overwritten
+    SN_ratios = [1; 4; 10];
 
     % Define number of pseudoreplicates for the approximation completeness index, get number of replicates
     approx_pseudoreplicates = 5;
@@ -64,8 +66,8 @@ for SN_index = 1:length(SN_ratios)
         image = h5read(image_filepath, '/images_array', [1, 1, 1, params.output_indices(2:3)], [image_height, image_width, 1, 1, 1]);
 
         % Calculate the ideal completeness index
-        ideal_discrepency_method1 = calculate_discrepency(image, ideal_image, 'sum_of_squares');
-        ideal_discrepency_method2 = calculate_discrepency(image, ideal_image, 'l2_norm');
+        ideal_discrepency_method1 = calculate_discrepency(image, ideal_image, 'normalized_variation_of_information', 50);
+        ideal_discrepency_method2 = calculate_discrepency(image, ideal_image, 'normalized_variation_of_information', 20);
         ideal_CI_method1(param_index) = 1-ideal_discrepency_method1;
         ideal_CI_method2(param_index) = 1-ideal_discrepency_method2;
 
@@ -94,32 +96,24 @@ for SN_index = 1:length(SN_ratios)
             % Create images for the 1% and 99% datasets
             [image_1pct, ~, ~] = create_test_STORM_images_dv(params, data_1pct, data_ch2, STORMvars, false);
             [image_99pct, ~, ~] = create_test_STORM_images_dv(params, data_99pct, data_ch2, STORMvars, false);
-            
-            % Get the discrepency in a blank image
-            zero_image = zeros(size(image));
-            discrepency_0pct_method1 = calculate_discrepency(zero_image, image_99pct, 'sum_of_squares');
-            discrepency_0pct_method2 = calculate_discrepency(zero_image, image_99pct, 'l2_norm');
-            
-            % Get the discrepency in the 1% image
-            discrepency_1pct_method1 = calculate_discrepency(image_1pct, image_99pct, 'sum_of_squares');
-            discrepency_1pct_method2 = calculate_discrepency(image_1pct, image_99pct, 'l2_norm');
 
-            % Get the discrepency increase by adding the 1% image to the 99% image
-            discrepency_100pct_method1 = calculate_discrepency(image, image_99pct, 'sum_of_squares');
-            discrepency_100pct_method2 = calculate_discrepency(image, image_99pct, 'l2_norm');
+            % Get the inherent information increase in the 1% image
+            discrepency_1pct_method1 = calculate_discrepency(image_1pct, image_99pct, 'normalized_variation_of_information', 50);
+            discrepency_1pct_method2 = calculate_discrepency(image_1pct, image_99pct, 'normalized_variation_of_information', 20);
+
+            % Get the information increase by adding the 1% image to the 99% image
+            discrepency_100pct_method1 = calculate_discrepency(image, image_99pct, 'normalized_variation_of_information', 50);
+            discrepency_100pct_method2 = calculate_discrepency(image, image_99pct, 'normalized_variation_of_information', 20);
 
             % Calculate completeness approximation
-            CI_method1 = discrepency_100pct_method1 / (discrepency_0pct_method1 - discrepency_1pct_method1);
-            CI_method2 = discrepency_100pct_method2 / (discrepency_0pct_method2 - discrepency_1pct_method2);
-            
             out_ind = params.output_indices;
-            approx_CI_method1(1, out_ind(2), out_ind(3), pseudorep_index) = CI_method1;
-            approx_CI_method2(1, out_ind(2), out_ind(3), pseudorep_index) = CI_method2;
+            approx_CI_method1(1, out_ind(2), out_ind(3), pseudorep_index) = 1-((1-discrepency_100pct_method1)/discrepency_1pct_method1);
+            approx_CI_method2(1, out_ind(2), out_ind(3), pseudorep_index) = 1-((1-discrepency_100pct_method2)/discrepency_1pct_method2);
         end
     end
     
     % Save CI info
-    CI_filename = ['NPIF_part_C_CIdata_ssq99_SN', num2str(SN_ratio), '.mat'];
+    CI_filename = ['NPIF_part_C_CIdata_bin20_SN', num2str(SN_ratio), '.mat'];
     save(CI_filename, 'ideal_CI_method1', 'ideal_CI_method2', 'approx_CI_method1', 'approx_CI_method2',...
         'param_array', 'SN_ratios', 'true_event_numbers', 'seeds');
 end

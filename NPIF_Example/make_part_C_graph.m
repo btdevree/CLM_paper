@@ -4,15 +4,27 @@
 % For only one SN ratio only
 
 % Load the CI data
-load NPIF_part_C_CIdata_SN1
+SN_ratio = 10;
+load(['NPIF_part_C_CIdata_bin20_SN', num2str(SN_ratio), '.mat']);
 
 % Pick the method used
-approx_CI = approx_CI_method1;
-ideal_CI = ideal_CI_method1;
-method_name = 'NVI - 100 bins';
+
+% approx_CI = approx_CI_method1;
+% ideal_CI = ideal_CI_method1;
+% method_name = 'NVI-100';
+
 % approx_CI = approx_CI_method2;
 % ideal_CI = ideal_CI_method2;
 % method_name = 'SSQ';
+ 
+% approx_CI = approx_CI_method1;
+% ideal_CI = ideal_CI_method1;
+% method_name = 'NVI-50';
+
+approx_CI = approx_CI_method2;
+ideal_CI = ideal_CI_method2;
+method_name = 'NVI-20';
+
 
 % Collapse the replicates and pseudoreplicates for the approximate CI data
 approx_CI_values = permute(reshape(permute(approx_CI, [4, 3, 2, 1]),...
@@ -30,7 +42,7 @@ ideal_CI_stdev = std(ideal_CI, 0, 3);
 
 % Make figure
 hfig = figure;
-set(gcf, 'Position', [100, 100, 1000, 1000]);
+set(gcf, 'Position', [100, 100, 800, 600]);
 set(gcf, 'PaperPositionMode', 'auto');
 hold on
 errorbar(true_event_numbers, ideal_CI_mean, ideal_CI_stdev, 'ko-', 'markerfacecolor', 'k', 'markersize', 3);
@@ -43,3 +55,7 @@ ylim([0, 1]);
 xlim([1e3, 1e7]);
 title({'Ideal vs Approximated Completeness Index', ['S/N ratio = ', num2str(SN_ratio), '; Method = ', method_name]});
 hold off
+
+figure_path_parts = strsplit(pwd, 'CLM_paper');
+figure_path = [figure_path_parts{1}, 'CLM_figures_and_data/'];
+print([figure_path, 'NPIF_SN', num2str(SN_ratio), '_', method_name, '.png'], '-dpng');

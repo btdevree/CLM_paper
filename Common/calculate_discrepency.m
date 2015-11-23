@@ -1,14 +1,6 @@
 function [ discrepency_value ] = calculate_discrepency( experimental_image, ideal_image, method, NVI_entropy_bins)
-%CALCULATE_SURPRISAL Calculate a discrepency measure of the experimental
+%CALCULATE_DISCREPENCY Calculate a discrepency measure of the experimental
 %   image to the ideal image according the the chosen method.
-%
-%   Experimental discrepency measures are normalized to the discrepency 
-%   between the ideal image and a zero-valued image so that 0 = perfect
-%   agreement between the ideal and experimental image and 1 = the same
-%   dissimilarity as the discrepency between ideal and zero images. This
-%   means that an experimental image could have a negative discrepency
-%   (less similar than even a zero image), but probably shouldn't under 
-%   normal imaging conditions. 
 %
 % Inputs:
 %   experimental_image: image to be compared with the ideal, possibly 
@@ -18,6 +10,8 @@ function [ discrepency_value ] = calculate_discrepency( experimental_image, idea
 %   method: method used for estimating the discrepency. Choices are:
 %       'sum_of_squares': the sum of the sqared differences between the 
 %           pixel values.
+%       'l2_norm': the sum of the l^2 or Euclidean distances between the 
+%           two pixel values, also know as sum of absolute distances. 
 %       'discrimination': sum of (a*log(a/b) - a + b) where a is the
 %           pixel value of the ideal image and b is the pixel value of the
 %           approximation. Images cannot have zeros values.
@@ -25,11 +19,11 @@ function [ discrepency_value ] = calculate_discrepency( experimental_image, idea
 %           (i.e. the mutual information normalized by the joint entropy 
 %           calculated from intensity histograms.
 %   NVI_entropy_bins: number of bins to use in for the normalized variation
-%       of information method. Integer, ignored for ssq or discrimination 
-%       methods. Default = 100
+%       of information method. Integer, ignored for other methods. 
+%       Default = 100
 % Outputs:
-%   discrepency_value: floating-point double, normalized value of 
-%       discrpency between the experimental and ideal image.
+%   discrepency_value: floating-point double, value of discrpency between 
+%       the experimental and ideal image.
 
 % Set defaults
 if nargin < 4; NVI_entropy_bins = 100; end;
@@ -56,30 +50,28 @@ end
 
 % Calculate the discrepency as the sum of squared distance
 if strcmp(method, 'sum_of_squares')
-    
-    % Calc zero image ssq value
-    zero_image_squares = (ideal_image - zeros(size(experimental_image))).^2;
-    zero_image_ssq = sum(zero_image_squares(:));
-    
+   
     % Calc experimental ssq value
-    experimental_squares = (ideal_image - experimental_image).^2;
-    experimental_ssq = sum(experimental_squares(:));
+    squares = (ideal_image - experimental_image).^2;
+    discrepency_value = sum(squares(:));
     
-    % Get the normalized discrepency
-    discrepency_value = experimental_ssq / zero_image_ssq;
+end
+
+% Calculate the discrepency as the sum of l2 distance
+if strcmp(method, 'l2_norm')
+   
+    % Calc experimental l2 norm sum value
+    squares = (ideal_image - experimental_image).^2;
+    discrepency_value = sum(sqrt(squares(:)));
+    
 end
 
 % Calculate the discrepency as the sum of the discrimination
 if strcmp(method, 'discrimination')
-        
-    % Calc zero image value
-    zero_image_discrim = calc_discrim(ideal_image, zeros(size(experimental_image)));
    
     % Calc experimental value
-    experimental_discrim = calc_discrim(ideal_image, experimental_image);
+    discrepency_value = calc_discrim(ideal_image, experimental_image);
     
-    % Get the normalized discrepency
-    discrepency_value = experimental_discrim / zero_image_discrim;
 end
 
 % Calculate the discrepency with mutual information based Normalized Variation of Information
