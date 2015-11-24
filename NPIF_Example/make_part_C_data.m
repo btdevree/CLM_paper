@@ -12,7 +12,7 @@
 binary_path = '/home/btdevree/large_file_temp/'; % Network drive is just too slow and causes process to get killed
 
 % Re-define SN-ratios
-SN_ratios = [1: 4; 10];
+SN_ratios = [1; 4; 10];
 
 % These files are pretty big, so we'll have to make each SNratio seperately
 for SN_index = 1:length(SN_ratios)
@@ -24,6 +24,8 @@ for SN_index = 1:length(SN_ratios)
    
     % Read in the data file
     load(data_filepath);
+    % Re-define SN-ratios
+    SN_ratios = [1; 4; 10];
 
     % Define number of pseudoreplicates for the approximation completeness index, get number of replicates
     approx_pseudoreplicates = 5;

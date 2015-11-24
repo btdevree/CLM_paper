@@ -24,6 +24,8 @@ for SN_index = 1:length(SN_ratios)
    
     % Read in the data file
     load(data_filepath);
+    % Re-define SN-ratios
+    SN_ratios = [1; 4; 10];
 
     % Define number of pseudoreplicates for the approximation completeness index, get number of replicates
     approx_pseudoreplicates = 5;
