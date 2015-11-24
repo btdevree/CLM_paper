@@ -1,4 +1,4 @@
-function [ image ] = Gauss_STORM_image(resolution, xy_data, covar_inv, covar_det, calc_cutoff_pixels_x, calc_cutoff_pixels_y, xmesh, ymesh)
+function [ image ] = Gauss_STORM_image(xy_data, resolution, covar_inv, covar_det, calc_cutoff_pixels_x, calc_cutoff_pixels_y, xmesh, ymesh)
 % Gauss_STORM_image Creates a STORM image from the list of (x,y) data; 
 %   mirrors the C MEX function Gauss_STORM_image_MEX.cpp. 
 % 
@@ -6,10 +6,10 @@ function [ image ] = Gauss_STORM_image(resolution, xy_data, covar_inv, covar_det
 % Cartesian coordinate system. 
 % 
 % Inputs
-%   resolution: floating-point double, number of nanometers per final image
-%       pixel
 %   xy_data: n by 2 array of floating-point doubles, center of each
 %       gaussian pdf
+%   resolution: floating-point double, number of nanometers per final image
+%       pixel
 %   covar_inv:  2 by 2 array of floating-point doubles, the inverse of the
 %       2D gaussian covariance matrix
 %   covar_inv: floating-point double, the determinant of the 2D gaussian
