@@ -14,7 +14,9 @@
  *  Cartesian coordinate system, but the image does not need to contain the 
  *  origin.
  *
- * Note: Type checking is done by the calling MATLAB function!!!
+ * Note: Type checking is done by the calling MATLAB function!!! The C++ 
+ *  function can handle xy data points outside of the image boundries, but
+ *  most other errors are not checked. Don't give it bad values.
  *
  * Inputs
  *  resolution: floating-point double, number of nanometers per final image
@@ -30,8 +32,12 @@
  *      out to
  *  total_number_pixels_x\y: 32 bit integer, number of pixels in the x and
  *      y dimension of the final image.
- *  xmesh\ymesh: array of floating-point doubles with the coordinate of
- *      the center of each pixel, generated with meshgrid.
+ *  x_vector\y_vector: Column vector arrays of floating-point doubles with 
+ *      the coordinate of the center of each pixel in the x or y direction.
+ *      Values are in increasing order (i.e., starting from the bottom-left 
+ *      corner of the Cartesian plane of the image). 
+ * Outputs
+ *  image: MATLAB array of floating-point double values. 
 */
 
 // Define the input and output names for convenience
@@ -41,8 +47,8 @@
 # define COVAR_DET_IN   prhs[3]
 # define CUTOFF_PX_X_IN prhs[4]
 # define CUTOFF_PX_Y_IN prhs[5]
-# define XMESH_IN       prhs[6]
-# define YMESH_IN       prhs[7]
+# define X_VECTOR_IN    prhs[6]
+# define Y_VECTOR_IN    prhs[7]
 # define IMAGE_OUT      plhs[0]
 
 void mexFunction(int nlhs, mxArray *plhs[], 
@@ -51,7 +57,7 @@ void mexFunction(int nlhs, mxArray *plhs[],
     // Define variables
     int cutoff_x, cutoff_y, x_ctrpx, y_ctrpx, x_minpx, y_minpx, x_maxpx, y_maxpx;
     mxArray *image_ptr;
-    double *image, *xy_data, *covar_inv, *xmesh, *ymesh;
+    double *image, *xy_data, *covar_inv, *x_vector, *y_vector;
     double resolution, covar_det;
     mwSize image_m, image_n, xy_data_m; // Equlivent to int or size_t, depending on system and -largeArrayDims compiler flag
     double x, y, half_res, left_edge, right_edge, bottom_edge, top_edge;
@@ -61,12 +67,12 @@ void mexFunction(int nlhs, mxArray *plhs[],
     //Assign array variables from pointers
     xy_data = mxGetPr(XY_DATA_IN);
     covar_inv = mxGetPr(COVAR_INV_IN);
-    xmesh = mxGetPr(XMESH_IN);
-    ymesh = mxGetPr(YMESH_IN);
+    x_vector = mxGetPr(X_VECTOR_IN);
+    y_vector = mxGetPr(Y_VECTOR_IN);
         
     // Get the dimensions of the image and data
-    image_m = mxGetM(XMESH_IN); 
-    image_n = mxGetN(XMESH_IN);
+    image_n = mxGetM(X_VECTOR_IN); //Both x and y vectors given as column vectors
+    image_m = mxGetM(Y_VECTOR_IN);
     xy_data_m = mxGetM(XY_DATA_IN);
     
     // Get the cutoff distances and resolution
@@ -81,17 +87,13 @@ void mexFunction(int nlhs, mxArray *plhs[],
     
     // Calculate Cartesian boundries of the image
     half_res = resolution * 0.5;
-    left_edge = *(std::min_element(xmesh, xmesh + image_m*image_n) - half_res);
-    right_edge = *(std::max_element(xmesh, xmesh + image_m*image_n) + half_res);
-    bottom_edge = *(std::min_element(ymesh, ymesh + image_m*image_n) - half_res);
-    top_edge = *(std::max_element(ymesh, ymesh + image_m*image_n) + half_res);
+    left_edge = *(std::min_element(x_vector, x_vector + image_n) - half_res);
+    right_edge = *(std::max_element(x_vector, x_vector + image_n) + half_res);
+    bottom_edge = *(std::min_element(y_vector, y_vector + image_m) - half_res);
+    top_edge = *(std::max_element(y_vector, y_vector + image_m) + half_res);
     
     // Precalculate the scaling factor for the 2D Gausian
     gauss_scale_factor = (resolution * resolution) / (2 * M_PI * sqrt(covar_det));
-    
-    // Print stuff
-    mexPrintf("image_m = %u, image_n = %u, xy_data_m = %u\n", image_m, image_n, xy_data_m);
-    mexPrintf("x min = %.2f, x max = %.2f, y min = %.2f, y max = %.2f\n", left_edge, right_edge, bottom_edge, top_edge);
     
     // Loop through each datapoint
     for(mwSize xy_data_index = 0; xy_data_index < xy_data_m; xy_data_index++) 
@@ -99,8 +101,6 @@ void mexFunction(int nlhs, mxArray *plhs[],
         // Copy the x and y value
         x = xy_data[xy_data_index];
         y = xy_data[xy_data_index + xy_data_m];
-        
-        mexPrintf("index = %u, x = %.2f, y = %.2f\n", xy_data_index, x, y);
 
         // Calculate the center pixel for the xy_datapoint, uses 0-based 2D indexing from top left corner
         x_ctrpx = static_cast<int>floor((x - left_edge) / resolution);
@@ -122,14 +122,14 @@ void mexFunction(int nlhs, mxArray *plhs[],
         y_maxpx = y_ctrpx + y_cutoff;
         y_maxpx = (y_maxpx >= image_m) ? image_m - 1 : y_maxpx;
         
-        // Loop through each pixel in the box
+        // Loop through each pixel in the box; Use 
         for(int x_index = x_minpx; x_index <= x_maxpx; x_index++);
         {
             for(int y_index = y_minpx; y_index <= y_maxpx; y_index++);
             {
                  // Calculate value of 2D Gaussian at the pixel
-                delta_x = xmesh[x_index * image_m + y_index] - x;
-                delta_y = ymesh[x_index * image_m + y_index] - y;
+                delta_x = x_vector[x_index] - x;
+                delta_y = y_vector[image_m - 1 - y_index] - y; // y_vector runs opposite direction of the pixel indices
                 exponent = -0.5 * (delta_x * delta_x * covar_inv[0] 
                         + delta_x * delta_y * (covar_inv[1] + [covar_inv[2]) + delta_y * delta_y * covar_inv[3]);
                 value = gauss_scale_factor * exp(exponent);
@@ -137,21 +137,20 @@ void mexFunction(int nlhs, mxArray *plhs[],
                 // Add value to the image matrix
                 image[x_index * image_m + y_index] = image[x_index * image_m + y_index] + value;
             }
-        }
-    }
-   
+        } // Close pixel loop
+    } //Close datapoint loop
     
-    // Testing junk
-    mexPrintf("Hello world\n");
-
-    
-    image[4] = 13;
-    value = cutoff_x;
-        
+    // Set the output pointer to the image
     IMAGE_OUT = image_ptr;
-    
 }
 
-
+/*
+ *
+    // Print stuff
+    mexPrintf("image_m = %u, image_n = %u, xy_data_m = %u\n", image_m, image_n, xy_data_m);
+    mexPrintf("x min = %.2f, x max = %.2f, y min = %.2f, y max = %.2f\n", left_edge, right_edge, bottom_edge, top_edge);
+ *
+        mexPrintf("index = %u, x = %.2f, y = %.2f\n", xy_data_index, x, y);
+*/
 
 
