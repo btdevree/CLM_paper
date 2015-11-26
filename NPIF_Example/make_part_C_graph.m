@@ -4,7 +4,7 @@
 % For only one SN ratio only
 
 % Load the CI data
-SN_ratio = 4;
+SN_ratio = 10;
 load(['NPIF_part_C_CIdata_ssq99_SN', num2str(SN_ratio), '.mat']);
 
 % Pick the method used
@@ -17,13 +17,13 @@ load(['NPIF_part_C_CIdata_ssq99_SN', num2str(SN_ratio), '.mat']);
 % ideal_CI = ideal_CI_method2;
 % method_name = 'SSQ';
 
-approx_CI = approx_CI_method1;
-ideal_CI = ideal_CI_method1;
-method_name = 'SSQ-99';
+% approx_CI = approx_CI_method1;
+% ideal_CI = ideal_CI_method1;
+% method_name = 'SSQ-100';
 
-% approx_CI = approx_CI_method2;
-% ideal_CI = ideal_CI_method2;
-% method_name = 'l2-99';
+approx_CI = approx_CI_method2;
+ideal_CI = ideal_CI_method2;
+method_name = 'l2-99';
 
 
 % Collapse the replicates and pseudoreplicates for the approximate CI data
