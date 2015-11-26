@@ -61,8 +61,9 @@ void mexFunction(int nlhs, mxArray *plhs[],
     double resolution, covar_det;
     mwSize image_m, image_n, xy_data_m; // Equlivent to int or size_t, depending on system and -largeArrayDims compiler flag
     double x, y, half_res, left_edge, right_edge, bottom_edge, top_edge;
-    double delta_x, delta_y, gauss_scale_factor, value;
-    
+    double delta_x, delta_y, gauss_scale_factor, exponent, value;
+    mwSize xy_data_index; // We use the index values outside of the loop definition, so we want to delcare them along with all other variables (-fpermissive issue)
+    int x_index = -10, y_index = -10;
     
     //Assign array variables from pointers
     xy_data = mxGetPr(XY_DATA_IN);
@@ -87,70 +88,61 @@ void mexFunction(int nlhs, mxArray *plhs[],
     
     // Calculate Cartesian boundries of the image
     half_res = resolution * 0.5;
-    left_edge = *(std::min_element(x_vector, x_vector + image_n) - half_res);
-    right_edge = *(std::max_element(x_vector, x_vector + image_n) + half_res);
-    bottom_edge = *(std::min_element(y_vector, y_vector + image_m) - half_res);
-    top_edge = *(std::max_element(y_vector, y_vector + image_m) + half_res);
+    left_edge = *(std::min_element(x_vector, x_vector + image_n)) - half_res;
+    right_edge = *(std::max_element(x_vector, x_vector + image_n)) + half_res;
+    bottom_edge = *(std::min_element(y_vector, y_vector + image_m)) - half_res;
+    top_edge = *(std::max_element(y_vector, y_vector + image_m)) + half_res;
     
     // Precalculate the scaling factor for the 2D Gausian
-    gauss_scale_factor = (resolution * resolution) / (2 * M_PI * sqrt(covar_det));
-    
+    gauss_scale_factor = pow(resolution, 2) / (2 * M_PI * sqrt(covar_det));
+        
     // Loop through each datapoint
-    for(mwSize xy_data_index = 0; xy_data_index < xy_data_m; xy_data_index++) 
+    for(xy_data_index = 0; xy_data_index < xy_data_m; xy_data_index++) 
     {    
         // Copy the x and y value
         x = xy_data[xy_data_index];
         y = xy_data[xy_data_index + xy_data_m];
-
+        
         // Calculate the center pixel for the xy_datapoint, uses 0-based 2D indexing from top left corner
-        x_ctrpx = static_cast<int>floor((x - left_edge) / resolution);
-        y_ctrpx = static_cast<int>(image_m - ceil((y - bottom_edge) / resolution));
+        x_ctrpx = static_cast<int>(floor((x - left_edge) / resolution));
+        y_ctrpx = static_cast<int>(image_m) - static_cast<int>(ceil((y - bottom_edge) / resolution));
         
         // Check if the center pixel is out of bounds
         if(x_ctrpx < 0 || x_ctrpx >= image_n || y_ctrpx < 0 || y_ctrpx >= image_m)
         {
-            continue // Skip datapoint if it lies outside of image bounds
+            continue; // Skip datapoint if it lies outside of image bounds
         }
         
         // Calculate the pixel indices for the box of values we are going to compute
-        x_minpx = x_ctrpx - x_cutoff;
+        x_minpx = x_ctrpx - cutoff_x;
         x_minpx = (x_minpx < 0) ? 0 : x_minpx; // Ternary operator works like: x = (condition) ? (value_if_true) : (value_if_false);
-        x_maxpx = x_ctrpx + x_cutoff;
+        x_maxpx = x_ctrpx + cutoff_x;
         x_maxpx = (x_maxpx >= image_n) ? image_n - 1 : x_maxpx;
-        y_minpx = y_ctrpx - y_cutoff;
+        y_minpx = y_ctrpx - cutoff_y;
         y_minpx = (y_minpx < 0) ? 0 : y_minpx; 
-        y_maxpx = y_ctrpx + y_cutoff;
+        y_maxpx = y_ctrpx + cutoff_y;
         y_maxpx = (y_maxpx >= image_m) ? image_m - 1 : y_maxpx;
         
-        // Loop through each pixel in the box; Use 
-        for(int x_index = x_minpx; x_index <= x_maxpx; x_index++);
+        // Loop through each pixel in the box 
+        for(x_index = x_minpx ; x_index <= x_maxpx; x_index++)
         {
-            for(int y_index = y_minpx; y_index <= y_maxpx; y_index++);
+            for(y_index = y_minpx; y_index <= y_maxpx; y_index++)
             {
-                 // Calculate value of 2D Gaussian at the pixel
+                // Calculate value of 2D Gaussian at the pixel
                 delta_x = x_vector[x_index] - x;
-                delta_y = y_vector[image_m - 1 - y_index] - y; // y_vector runs opposite direction of the pixel indices
-                exponent = -0.5 * (delta_x * delta_x * covar_inv[0] 
-                        + delta_x * delta_y * (covar_inv[1] + [covar_inv[2]) + delta_y * delta_y * covar_inv[3]);
+                delta_y = y_vector[y_index] - y; // y_vector runs opposite direction of the pixel indices
+                exponent = -0.5 * (delta_x * delta_x * covar_inv[0] + delta_x * delta_y * (covar_inv[1] + covar_inv[2]) 
+                                                                                    + delta_y * delta_y * covar_inv[3]);
                 value = gauss_scale_factor * exp(exponent);
                 
                 // Add value to the image matrix
                 image[x_index * image_m + y_index] = image[x_index * image_m + y_index] + value;
             }
-        } // Close pixel loop
+        } // Close pixel loops    
     } //Close datapoint loop
     
     // Set the output pointer to the image
     IMAGE_OUT = image_ptr;
 }
-
-/*
- *
-    // Print stuff
-    mexPrintf("image_m = %u, image_n = %u, xy_data_m = %u\n", image_m, image_n, xy_data_m);
-    mexPrintf("x min = %.2f, x max = %.2f, y min = %.2f, y max = %.2f\n", left_edge, right_edge, bottom_edge, top_edge);
- *
-        mexPrintf("index = %u, x = %.2f, y = %.2f\n", xy_data_index, x, y);
-*/
 
 

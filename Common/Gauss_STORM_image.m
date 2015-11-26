@@ -43,6 +43,9 @@ right_edge = max(x_vector) + half_resolution;
 top_edge = max(y_vector) + half_resolution;
 bottom_edge = min(y_vector) - half_resolution;
 
+% Precalculate the 2D Gaussian scale factor
+gauss_scale_factor = resolution^2 / (2 .* pi .* sqrt(covar_det));
+
 % Initalize image array and loop through each point
 image = zeros(image_m, image_n);
 num_datapoints = size(xy_data, 1);
@@ -77,7 +80,7 @@ for data_ind = 1:num_datapoints
 
     % Calc pdf
     X_shifted = X - repmat([x; y], 1, size(X, 2)); 
-    pdf = resolution^2 .* (2 .* pi .* sqrt(covar_det))^-1 .* exp(-0.5 .* sum(X_shifted.' * covar_inv .* X_shifted.', 2));
+    pdf = gauss_scale_factor * exp(-0.5 .* sum(X_shifted.' * covar_inv .* X_shifted.', 2));
 
     % Add to total
     image(min_row:max_row, min_column:max_column) =...
