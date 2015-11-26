@@ -1,13 +1,4 @@
-// Include needed libraries
-# include <math.h>
-# include <matrix.h>
-# include <mex.h>
-# include <algorithm> // min_element, max_element
-
-# define _USE_MATH_DEFINES // to get pi from math.h
-
-/*
- * Gauss_STORM_image_MEX Creates a STORM image from the list of (x,y) data; 
+/* Gauss_STORM_image_MEX Creates a STORM image from the list of (x,y) data; 
  *  mirrors the MATLAB function Gauss_STORM_image.cpp. 
  *
  * Creates a STORM image as a matrix of floating-point doubles. Assumes a
@@ -39,6 +30,15 @@
  * Outputs
  *  image: MATLAB array of floating-point double values. 
 */
+
+// Include needed libraries
+# include <math.h>
+# include <matrix.h>
+# include <mex.h>
+# include <algorithm> // min_element, max_element
+
+// Get the math constants from the math.h header
+# define _USE_MATH_DEFINES // to get pi
 
 // Define the input and output names for convenience
 # define XY_DATA_IN     prhs[0]
