@@ -1,4 +1,5 @@
-function [ ch1_STORM_image, ch2_STORM_image, STORM_RGB_image ] = create_test_STORM_images_dv( parameters_structure, ch1_data, ch2_data, STORM_variables_structure, sparse_output_flag, parallel_image_creation_flag )
+function [ ch1_STORM_image, ch2_STORM_image, STORM_RGB_image ] = create_test_STORM_images_dv( parameters_structure, ch1_data, ch2_data,...
+    STORM_variables_structure, sparse_output_flag, parallel_image_creation_flag, use_MEX_flag )
 %CREATE_TEST_STORM_IMAGES_DV Creates a test movie with the given parameters. Assumes
 %   a dualview configuration.
 
@@ -15,6 +16,9 @@ function [ ch1_STORM_image, ch2_STORM_image, STORM_RGB_image ] = create_test_STO
 %       true.
 %   parallel_image_creation_flag; if true, the image is created using all
 %       available cores. Default = true.
+%   use_MEX_flage: logical, default = false. If set to true, the core image 
+%       creation will be done with the Gauss_STORM_image_MEX command, which
+%       needs to be pre-compiled from the Gauss_STORM_image_MEX.cpp source.
 %   Outputs:
 %   ch1/ch2_STORM_image: sparse double 
 %   STORM_RGB_image: An RGB image (8 bit per color channel) for display of 
@@ -25,6 +29,7 @@ function [ ch1_STORM_image, ch2_STORM_image, STORM_RGB_image ] = create_test_STO
 % Set defaults
 if nargin < 5, sparse_output_flag = true; end;
 if nargin < 6, parallel_image_creation_flag = true; end;
+if nargin < 7, use_MEX_flag = false; end;
 
 % Rename the data that was generated with create_test_data_dv
 ch1_event_coords = ch1_data;
@@ -56,7 +61,7 @@ function [STORM_image] = calc_STORM_image(STORM_resolution, STORM_sigma, STORM_d
     data_struct.y = event_coords(:, 2);
 
     % Call image generating function, use parallel processing if requested
-    STORM_image = create_STORM_image(data_struct, STORM_resolution, STORM_sigma, STORM_dims, sparse_output_flag, parallel_image_creation_flag);
+    STORM_image = create_STORM_image(data_struct, STORM_resolution, STORM_sigma, STORM_dims, sparse_output_flag, parallel_image_creation_flag, use_MEX_flag);
 end
 
 % Run STORM image function for each channel
