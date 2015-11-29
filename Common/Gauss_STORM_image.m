@@ -75,7 +75,7 @@ for data_ind = 1:num_datapoints
     if max_column > image_n; max_column = image_n; end
 
     % Calc x_mesh and y_mesh values in original pixel units
-    [x_mesh, y_mesh] = meshgrid(x_vector(min_column:max_column, :), y_vector(min_row:max_row, :));
+    [x_mesh, y_mesh] = meshgrid(x_vector(min_column:max_column), y_vector(image_m - min_row + 1: -1: image_m - max_row + 1));
     X = [x_mesh(:).'; y_mesh(:).'];
 
     % Calc pdf

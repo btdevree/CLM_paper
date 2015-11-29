@@ -54,7 +54,7 @@ total_number_pixels_y = ceil(dims(1)/resolution);
 if ~parallel_flag
 
     % make_image defined below
-    full_image = make_image(data, covar_inv, covar_det, calc_cutoff_pixels, sigma, resolution,...
+    full_image = make_image(data, covar_inv, covar_det, calc_cutoff_pixels, resolution,...
         total_number_pixels_y, total_number_pixels_x, dims, use_MEX_flag);
 
 % Evaluate in parallel
@@ -124,8 +124,8 @@ data.y = dims(1) - data.y;
 xy_data = [data.x, data.y];
 
 % Create x and y pixel coordinate vectors
-x_vector = [0.5 : 1 : total_number_pixels_x - 0.5] .* resolution;
-y_vector = [0.5 : 1 : total_number_pixels_y - 0.5] .* resolution;
+x_vector = [0.5 : 1 : total_number_pixels_x - 0.5].' * resolution;
+y_vector = [0.5 : 1 : total_number_pixels_y - 0.5].' * resolution;
 
 % Assume square cutoff box
 calc_cutoff_pixels_y = calc_cutoff_pixels;
@@ -136,13 +136,14 @@ if ~use_MEX_flag
     full_image = Gauss_STORM_image(xy_data, resolution, covar_inv, covar_det, calc_cutoff_pixels_x, calc_cutoff_pixels_y, x_vector, y_vector);
 else
     % Type checking to make sure we don't end up giving the MEX file bad inputs and cause a seg-fault
-    assert(ismatrix(xy_data) && size(xy_data, 2) == 2 && isdouble(xy_data));
+    assert(ismatrix(xy_data) && size(xy_data, 2) == 2 && isa(xy_data,'double'));
     assert(isnumeric(resolution) && isscalar(resolution));
-    assert(size(covar_inv) == [2, 2] && isdouble(covar_inv));
+    assert(all(size(covar_inv) == [2, 2]) && isa(covar_inv, 'double'));
     assert(isnumeric(covar_det) && isscalar(covar_det));
     assert(isnumeric(calc_cutoff_pixels_x) && isscalar(calc_cutoff_pixels_x) && calc_cutoff_pixels_x >= 0);
     assert(isnumeric(calc_cutoff_pixels_y) && isscalar(calc_cutoff_pixels_y) && calc_cutoff_pixels_y >= 0);
-    assert(ismatrix(x_vector) && isdouble(x_vector) && size(xy_data, 2) == 1);
+    assert(ismatrix(x_vector) && isa(x_vector, 'double') && size(x_vector, 2) == 1);
+    assert(ismatrix(y_vector) && isa(y_vector, 'double') && size(y_vector, 2) == 1);
     
     % Get the image with verified inputs
     full_image = Gauss_STORM_image_MEX(xy_data, resolution, covar_inv, covar_det, calc_cutoff_pixels_x, calc_cutoff_pixels_y, x_vector, y_vector);
