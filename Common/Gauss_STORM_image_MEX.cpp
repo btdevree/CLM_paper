@@ -108,12 +108,12 @@ void mexFunction(int nlhs, mxArray *plhs[],
         y_ctrpx = static_cast<int>(image_m) - static_cast<int>(ceil((y - bottom_edge) / resolution));
         
         // Check if the center pixel is out of bounds
-        if(x_ctrpx < 0 || x_ctrpx >= image_n || y_ctrpx < 0 || y_ctrpx >= image_m)
+        if(x_ctrpx < 0 || x_ctrpx > image_n || y_ctrpx < 0 || y_ctrpx > image_m)
         {
             continue; // Skip datapoint if it lies outside of image bounds
         }
         
-        // Calculate the pixel indices for the box of values we are going to compute
+       // Calculate the pixel indices for the box of values we are going to compute
         x_minpx = x_ctrpx - cutoff_x;
         x_minpx = (x_minpx < 0) ? 0 : x_minpx; // Ternary operator works like: x = (condition) ? (value_if_true) : (value_if_false);
         x_maxpx = x_ctrpx + cutoff_x;
@@ -130,7 +130,7 @@ void mexFunction(int nlhs, mxArray *plhs[],
             {
                 // Calculate value of 2D Gaussian at the pixel
                 delta_x = x_vector[x_index] - x;
-                delta_y = y_vector[y_index] - y; // y_vector runs opposite direction of the pixel indices
+                delta_y = top_edge - y_vector[y_index] - y; // y_vector runs opposite direction of the pixel indices
                 exponent = -0.5 * (delta_x * delta_x * covar_inv[0] + delta_x * delta_y * (covar_inv[1] + covar_inv[2]) 
                                                                                     + delta_y * delta_y * covar_inv[3]);
                 value = gauss_scale_factor * exp(exponent);
@@ -144,5 +144,3 @@ void mexFunction(int nlhs, mxArray *plhs[],
     // Set the output pointer to the image
     IMAGE_OUT = image_ptr;
 }
-
-
