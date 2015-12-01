@@ -84,9 +84,6 @@ elseif parallel_flag
         newdata = struct();
         newdata.x = data.x(start_index(chunk_index):end_index(chunk_index));
         newdata.y = data.y(start_index(chunk_index):end_index(chunk_index));
-        if strcmp(sigma, 'per-point')
-             newdata.sigma = data.sigma(start_index(chunk_index):end_index(chunk_index));
-        end
         data_chunks{chunk_index} = newdata;
     end
 
@@ -94,7 +91,7 @@ elseif parallel_flag
     image_chunks = cell(num_workers, 1);
     parfor chunk_index = 1:num_workers
         image_chunks{chunk_index} = make_image(data_chunks{chunk_index}, covar_inv, covar_det,...
-            calc_cutoff_pixels, sigma, resolution, total_number_pixels_y, total_number_pixels_x, dims, use_MEX_flag);
+            calc_cutoff_pixels, resolution, total_number_pixels_y, total_number_pixels_x, dims, use_MEX_flag);
     end
 
     % Add results together

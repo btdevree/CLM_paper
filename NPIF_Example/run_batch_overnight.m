@@ -1,5 +1,13 @@
 % Batch run script for overnight run
 
-make_part_C_data
 clear all
-make_part_C_data_100pct
+parpool(7)
+
+FD_curves_script
+clear all
+cd ..
+cd Direct_vs_Fourier
+
+get_timings_script
+
+delete(gcp)

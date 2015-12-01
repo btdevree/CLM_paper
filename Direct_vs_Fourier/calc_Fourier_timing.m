@@ -1,4 +1,4 @@
-function [timing_vector, whos_struct_cell_vector] = calc_Fourier_timing(number_points_vector, method, verbose_flag)
+function [timing_vector, whos_struct_cell_vector] = calc_Fourier_timing(number_points_vector, method, verbose_flag, reduced_repeat_flag)
 %CALC_FOURIER_TIMING Calculate the run time and memory use for a Fourier 
 %   calculation method of autocorrelations 
 %
@@ -9,9 +9,12 @@ function [timing_vector, whos_struct_cell_vector] = calc_Fourier_timing(number_p
 %   number_points_vector: Column vector of doubles; the number of points to 
 %       use in the autocorrelation
 %   method: string denoting the method used for calculation. Choices are
-%       'binning',  'Gaussian_pdf', and 'Gaussian_pdf_parallel'.
+%       'binning',  'Gaussian_pdf', 'Gaussian_pdf_parallel', 'pdf_MEX' and 
+%       'pdf_parallel_MEX'.
 %   verbose_flag: logical value, default = false. Set to true so that the
 %       function report progress to the console.
+%   reduced_repeat_flag: logical value, default = false. Set to true so
+%       that less repetitions are made for quicker testing.
 %   Output:
 %   timing_vector: Time of execution for calculating the correlation and
 %       the radial average. Best of 10 repetitions for number_of_points <= 
@@ -22,7 +25,8 @@ function [timing_vector, whos_struct_cell_vector] = calc_Fourier_timing(number_p
 %       strucures.
 
 % Set default values
-if nargin < 3; verbose_flag = false; end; 
+if nargin < 3; verbose_flag = false; end;
+if nargin < 4; reduced_repeat_flag = false; end;
 
 % Starting message
 if verbose_flag
@@ -45,10 +49,14 @@ for number_points_index = 1:size(number_points_vector, 1);
     points = rand(number_points, 2);
 
     % Determine the number of repeats
-    if number_points <= repeat_limits(1)
-        number_repeats = 5;
-    elseif number_points <= repeat_limits(2)
-        number_repeats = 4;
+    if reduced_repeat_flag
+        if number_points <= repeat_limits(1)
+            number_repeats = 3;
+        elseif number_points <= repeat_limits(2)
+            number_repeats = 2;
+        else
+            number_repeats = 1;
+        end
     else
         number_repeats = 3;
     end
@@ -84,7 +92,8 @@ for number_points_index = 1:size(number_points_vector, 1);
             [distance_vector, mean_vector, stdev_vector, sem_vector] = radial_average_2D_correlation_binning(autocorrelation);
                 
         % Create STORM image with a sampled Gaussian psf
-        elseif strcmp(method, 'Gaussian_pdf') || strcmp(method, 'Gaussian_pdf_parallel')
+        elseif strcmp(method, 'Gaussian_pdf') || strcmp(method, 'Gaussian_pdf_parallel') ||...
+                strcmp(method, 'pdf_MEX') || strcmp(method, 'pdf_parallel_MEX')
          
             % Parameters needed for STORM image creating function; pretend an origonal pixel size = 70 nm
             original_pixel_size = 70;
@@ -100,13 +109,14 @@ for number_points_index = 1:size(number_points_vector, 1);
             
             % Call image generating function
             if strcmp(method, 'Gaussian_pdf')
-                STORM_image = create_STORM_image(data_struct, resolution, sigma, dims); % note that output is sparse
+                STORM_image = create_STORM_image(data_struct, resolution, sigma, dims, false);
             elseif strcmp(method, 'Gaussian_pdf_parallel')
-                STORM_image = create_STORM_image(data_struct, resolution, sigma, dims, true, true); % note that output is sparse
-            end                
-            
-            % Convert to dense image
-            STORM_image = full(STORM_image);
+                STORM_image = create_STORM_image(data_struct, resolution, sigma, dims, false, true);
+            elseif strcmp(method, 'pdf_MEX')
+                STORM_image = create_STORM_image(data_struct, resolution, sigma, dims, false, false, true);
+            elseif strcmp(method, 'pdf_parallel_MEX')
+                STORM_image = create_STORM_image(data_struct, resolution, sigma, dims, false, true, true);
+            end
 
             % Calculate the autocorrelation of the image
             autocorrelation = calc_crosscorrelation(STORM_image, STORM_image, ceil(max_length/STORM_pixel_resolution));
