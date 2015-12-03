@@ -29,7 +29,7 @@ event_num_indices = [1:13].';
 dataset_replicate_indices = [1:3].';
 
 % Define repeats
-number_repeats = 3;
+number_repeats = 3; 
 
 % Fraction of events to calculate ideal-SSQ and SSQ-100 measures at
 event_fractions_larger = [.95; .90; .85; .8; .75; .7; .65; .6; .55]; % Special calculation for 1, 0, and .5
@@ -50,8 +50,8 @@ testparams.number_background_events_ch1 = 10;
 [ ~, data_ch2, ~, STORMvars] = create_test_data_dv(testparams, 10);
 
 % Initialize result matrix
-ideal_SSQ_results = zeros(size(event_fractions, 1), number_repeats, length(dataset_replicate_indices), length(event_num_indices));
-approx_SSQ_results = zeros(size(event_fractions, 1), number_repeats, length(dataset_replicate_indices), length(event_num_indices));
+ideal_SSQ_results = zeros(length(event_fractions), number_repeats, length(dataset_replicate_indices), length(event_num_indices));
+approx_SSQ_results = zeros(length(event_fractions), number_repeats, length(dataset_replicate_indices), length(event_num_indices));
 
 % Loop through each event number
 for event_num_index_index = 1:length(event_num_indices)
@@ -79,12 +79,12 @@ for event_num_index_index = 1:length(event_num_indices)
             fprintf('\b%u', repeat_index);
                       
             % Calculate the result with full image
-            ideal_SSQ_results(1, repeat_index) = calculate_discrepency(image_100, ideal_image, 'sum_of_squares');
-            approx_SSQ_results(1, repeat_index) = calculate_discrepency(image_100, image_100, 'sum_of_squares');
+            ideal_SSQ_results(1, repeat_index, dataset_replicate_index, event_num_index) = calculate_discrepency(image_100, ideal_image, 'sum_of_squares');
+            approx_SSQ_results(1, repeat_index, dataset_replicate_index, event_num_index) = calculate_discrepency(image_100, image_100, 'sum_of_squares');
 
             % Calculate the result with zero image
-            ideal_SSQ_results(end, repeat_index) = calculate_discrepency(zeros(size(image_100)), ideal_image, 'sum_of_squares');
-            approx_SSQ_results(end, repeat_index) = calculate_discrepency(zeros(size(image_100)), image_100, 'sum_of_squares');
+            ideal_SSQ_results(end, repeat_index, dataset_replicate_index, event_num_index) = calculate_discrepency(zeros(size(image_100)), ideal_image, 'sum_of_squares');
+            approx_SSQ_results(end, repeat_index, dataset_replicate_index, event_num_index) = calculate_discrepency(zeros(size(image_100)), image_100, 'sum_of_squares');
 
             % Split dataset and calculate indices with the larger and smaller halves
             fractions = [event_fractions_larger; 0.5]; % The half-half split will be the one from the "smaller" half image
@@ -95,25 +95,23 @@ for event_num_index_index = 1:length(event_num_indices)
                 number_datapoints_larger = round(number_datapoints * fractions(split_index));
                 number_datapoints_smaller = number_datapoints - number_datapoints_larger;
                 bool_selection = false(size(dataset));
-                integers_larger = randsample(number_datapoints, number_datapoints_larger);
-                for int_index = 1:length(integers_larger);
-                    integer_value = integers_larger(int_index);
-                    bool_selection(integer_value, :) = true;
-                end
+                index_integers = randsample(number_datapoints, number_datapoints_larger);                
+                bool_selection(index_integers) = true;
+                bool_selection(index_integers + number_datapoints) = true;
 
                 % Split the dataset into larger and smaller datasets
                 dataset_larger = reshape(dataset(bool_selection), [number_datapoints_larger, 2]);
                 dataset_smaller = reshape(dataset(~bool_selection), [number_datapoints_smaller, 2]);
 
                 % Create images for the larger and smaller datasets
-                [image_larger, ~, ~] = create_test_STORM_images_dv(params, dataset_larger, data_ch2, STORMvars, false, true, true);
-                [image_smaller, ~, ~] = create_test_STORM_images_dv(params, dataset_smaller, data_ch2, STORMvars, false, true, true);
+                [image_larger] = create_test_STORM_images_dv(params, dataset_larger, data_ch2, STORMvars, false, true, true);
+                [image_smaller] = create_test_STORM_images_dv(params, dataset_smaller, data_ch2, STORMvars, false, true, true);
 
                 % Get the discrepency for the larger and smaller dataset images
-                ideal_SSQ_results(split_index + 1, repeat_index) = calculate_discrepency(image_larger, ideal_image, 'sum_of_squares');
-                ideal_SSQ_results(end - split_index, repeat_index) = calculate_discrepency(image_smaller, ideal_image, 'sum_of_squares');
-                approx_SSQ_results(split_index + 1, repeat_index) = calculate_discrepency(image_larger, image_100, 'sum_of_squares');
-                approx_SSQ_results(end - split_index, repeat_index) = calculate_discrepency(image_smaller, image_100, 'sum_of_squares');
+                ideal_SSQ_results(split_index + 1, repeat_index, dataset_replicate_index, event_num_index) = calculate_discrepency(image_larger, ideal_image, 'sum_of_squares');
+                ideal_SSQ_results(end - split_index, repeat_index, dataset_replicate_index, event_num_index) = calculate_discrepency(image_smaller, ideal_image, 'sum_of_squares');
+                approx_SSQ_results(split_index + 1, repeat_index, dataset_replicate_index, event_num_index) = calculate_discrepency(image_larger, image_100, 'sum_of_squares');
+                approx_SSQ_results(end - split_index, repeat_index, dataset_replicate_index, event_num_index) = calculate_discrepency(image_smaller, image_100, 'sum_of_squares');
             end     
         end
 

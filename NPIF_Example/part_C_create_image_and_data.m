@@ -8,7 +8,7 @@ function [ image, data, parameter_structure ] = part_C_create_image_and_data( pa
 % Create image and save it in cell array, don't use parallel processing
 % because the task is already distributed with parfeval in the calling
 % function
-[image, ~, ~] = create_test_STORM_images_dv(parameter_structure, data, data_ch2, STORMvars, false);
+[image] = create_test_STORM_images_dv(parameter_structure, data, data_ch2, STORMvars, false, false, true);
 
 end
 

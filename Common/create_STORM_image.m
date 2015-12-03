@@ -58,7 +58,9 @@ if ~parallel_flag
         total_number_pixels_y, total_number_pixels_x, dims, use_MEX_flag);
 
 % Evaluate in parallel
-% NOTE - TO DO: Should change this to use spmd command.
+% NOTE - TO DO: Should change this to use spmd command. Adding loop is slow
+% at end, maybe distribute the matrix, collect it, and then sum along 3rd
+% dim?
 elseif parallel_flag
 
     % Determine indices needed to split data list into equal parts for each cluster
