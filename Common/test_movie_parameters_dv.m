@@ -32,11 +32,17 @@ params.cell_radius = choice1;
 params.number_events_ch1 = 1000;
 params.number_events_ch2 = 0;
 
-% Define channel 1 autocorrelation model
+% Define channel 1 distribution/autocorrelation model
 choice1 = 'random'; % random distribution of events
-params.ch1_autocor = choice1;
+choice2 = 'mapped'; % distributed according to an image-sized pdf map 
+params.ch1_distribution = choice2;
 % NOTE: Would like to have better options for ch1 distribution
 % (double/triple detections, "holes", etc.)
+
+% Define channel 1 distribution model parameters
+%choice1 = null % no parameters are needed, argument is ignored
+choice2 = 'testimage_ch1_distribution_map'; % name of the map to use, expected in the current directory  
+params.ch1_distribution_params = choice2;
 
 % Define channel 2 assignment distribution model
 choice1 = 'random'; % ch2 events assigned to a ch1 event at random

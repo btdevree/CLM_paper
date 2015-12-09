@@ -58,8 +58,17 @@ end
 
 % Place channel one events 
 % Random distribution
-if strcmp(params.ch1_autocor, 'random')
-     ch1_event_coords = random_events_in_cell(params.number_events_ch1, [cell_center_x, cell_center_y], cell_radius);
+if strcmp(params.ch1_distribution, 'random')
+    ch1_event_coords = random_events_in_cell(params.number_events_ch1, [cell_center_x, cell_center_y], cell_radius);
+
+% Distributed according to a pdf map
+elseif strcmp(params.ch1_distribution, 'mapped')
+    
+    % Load in the map
+    params.ch1_event_pdf_map = eval(params.ch1_distribution_params);
+    
+    % Get points according to the pdf map
+    ch1_event_coords = random_mapped_events(params.number_events_ch1, params.ch1_event_pdf_map);
 end
 
 % Assign channel two events to channel one events
@@ -230,7 +239,7 @@ STORM_variables_structure = s;
 end
 
 function [coords] = random_events_in_cell(number_events, cell_center, cell_radius)
-% Creates the specified number of randomly places events inside the cell
+% Creates the specified number of randomly placed events inside the cell
 
 %   Inupts:
 %   number_events: positive integer, the number of events to generate.
@@ -250,6 +259,56 @@ while event_counter < number_events
     if sqrt(sum(event_coord.^2)) <= cell_radius
        event_counter = event_counter + 1;
        coords(event_counter, :) = event_coord + cell_center;
+    end
+end
+end
+
+function [coords] = random_mapped_events(number_events, event_map, map_resolution, map_origin_offset)
+% Creates the specified number of randomly placed events according to the
+%   given pdf map. We assume a Carteisian coordinate system
+%
+%   Based on a very simple rejection-based stocastic sampler. Might be way
+%   too ineffecient for some purposes.
+%   
+% Inupts:
+%   number_events: positive integer, the number of events to generate.
+%   event_map: array of floating-point doubles that represents a (possibly)
+%       unnormalized probability density function of finding an event.
+%   map_resolution: resolution of the pixels in the map, given in
+%       nanometers
+%   map_origin_offset: 1x2 double array. The Coordinate value of the lower 
+%       lefthand corner of the lower, lefthand pixel. Added to all outputs 
+%       values.
+% Output:
+%   coords: nx2 floating-point double array of coordinates.
+
+% Scale the map so it contains values normalized between 0 and 1
+event_map = event_map ./ max(event_map(:));
+
+% Get the size of the map
+range = [size(event_map, 2), size(event_map, 1)] * map_resolution;
+
+% Make coordinate arrays for interpolation of the map
+[xmesh, ymesh] = meshgrid([0.5:1:size(event_map, 2) - 0.5] * map_resolution, [size(event_map, 1) - 0.5:-1:0.5] * map_resolution);
+
+% Initialize variables
+coords = zeros(number_events, 2);
+event_counter = 0;
+
+% Repeat loop until enough random events are generated
+while event_counter < number_events 
+    
+    % Create a uniformly random point and a random decision making value  
+    event_coord = rand(1,2) .* range;
+    decision_value = rand;
+    
+    % If the decision value is low enough, we keep the event. Otherwise, we throw it away and make a new point.
+    decision_threshold = interp2(xmesh, ymesh, event_map, event_coord(1), event_coord(2));
+    if decision_value <= decision_threshold
+       event_counter = event_counter + 1;
+       coords(event_counter, :) = event_coord + map_origin_offset;
+    else
+        continue
     end
 end
 end
