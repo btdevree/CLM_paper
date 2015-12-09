@@ -17,6 +17,9 @@ binary_path = '/home/btdevree/large_file_temp/'; % Network drive is just too slo
 % Use the most accurate images
 SN_ratio = 10;
 
+% Choose discrepency method
+method = 'l2_norm';
+
 % Initialize hdf5 array to hold images directly on disc
 image_filepath = [binary_path, 'NPIF_part_C_images_SN', num2str(SN_ratio), '.h5'];
 data_filepath = [binary_path, 'NPIF_part_C_data_SN', num2str(SN_ratio), '.mat']; 
@@ -79,12 +82,12 @@ for event_num_index_index = 1:length(event_num_indices)
             fprintf('\b%u', repeat_index);
                       
             % Calculate the result with full image
-            ideal_SSQ_results(1, repeat_index, dataset_replicate_index, event_num_index) = calculate_discrepency(image_100, ideal_image, 'sum_of_squares');
-            approx_SSQ_results(1, repeat_index, dataset_replicate_index, event_num_index) = calculate_discrepency(image_100, image_100, 'sum_of_squares');
+            ideal_SSQ_results(1, repeat_index, dataset_replicate_index, event_num_index) = calculate_discrepency(image_100, ideal_image, method);
+            approx_SSQ_results(1, repeat_index, dataset_replicate_index, event_num_index) = calculate_discrepency(image_100, image_100, method);
 
             % Calculate the result with zero image
-            ideal_SSQ_results(end, repeat_index, dataset_replicate_index, event_num_index) = calculate_discrepency(zeros(size(image_100)), ideal_image, 'sum_of_squares');
-            approx_SSQ_results(end, repeat_index, dataset_replicate_index, event_num_index) = calculate_discrepency(zeros(size(image_100)), image_100, 'sum_of_squares');
+            ideal_SSQ_results(end, repeat_index, dataset_replicate_index, event_num_index) = calculate_discrepency(zeros(size(image_100)), ideal_image, method);
+            approx_SSQ_results(end, repeat_index, dataset_replicate_index, event_num_index) = calculate_discrepency(zeros(size(image_100)), image_100, method);
 
             % Split dataset and calculate indices with the larger and smaller halves
             fractions = [event_fractions_larger; 0.5]; % The half-half split will be the one from the "smaller" half image
@@ -108,10 +111,10 @@ for event_num_index_index = 1:length(event_num_indices)
                 [image_smaller] = create_test_STORM_images_dv(params, dataset_smaller, data_ch2, STORMvars, false, true, true);
 
                 % Get the discrepency for the larger and smaller dataset images
-                ideal_SSQ_results(split_index + 1, repeat_index, dataset_replicate_index, event_num_index) = calculate_discrepency(image_larger, ideal_image, 'sum_of_squares');
-                ideal_SSQ_results(end - split_index, repeat_index, dataset_replicate_index, event_num_index) = calculate_discrepency(image_smaller, ideal_image, 'sum_of_squares');
-                approx_SSQ_results(split_index + 1, repeat_index, dataset_replicate_index, event_num_index) = calculate_discrepency(image_larger, image_100, 'sum_of_squares');
-                approx_SSQ_results(end - split_index, repeat_index, dataset_replicate_index, event_num_index) = calculate_discrepency(image_smaller, image_100, 'sum_of_squares');
+                ideal_SSQ_results(split_index + 1, repeat_index, dataset_replicate_index, event_num_index) = calculate_discrepency(image_larger, ideal_image, method);
+                ideal_SSQ_results(end - split_index, repeat_index, dataset_replicate_index, event_num_index) = calculate_discrepency(image_smaller, ideal_image, method);
+                approx_SSQ_results(split_index + 1, repeat_index, dataset_replicate_index, event_num_index) = calculate_discrepency(image_larger, image_100, method);
+                approx_SSQ_results(end - split_index, repeat_index, dataset_replicate_index, event_num_index) = calculate_discrepency(image_smaller, image_100, method);
             end     
         end
 
@@ -121,5 +124,5 @@ for event_num_index_index = 1:length(event_num_indices)
     end
 end
 
-save(['fractional_discrepency_curves_SN', num2str(SN_ratio), '.mat'], 'ideal_SSQ_results', 'approx_SSQ_results', 'event_fractions',...
+save(['fractional_discrepency_curves_l2norm_SN', num2str(SN_ratio), '.mat'], 'ideal_SSQ_results', 'approx_SSQ_results', 'event_fractions',...
     'number_repeats', 'event_num_indices', 'dataset_replicate_indices', 'true_event_numbers')
