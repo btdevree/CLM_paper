@@ -54,7 +54,7 @@ if ~parallel_flag
 
     % make_image defined below
     full_image = make_image(data, covar_inv, covar_det, calc_cutoff_pixels, resolution,...
-        total_number_pixels_y, total_number_pixels_x, use_MEX_flag);
+        total_number_pixels_y, total_number_pixels_x, dims, use_MEX_flag);
 
 % Evaluate in parallel
 % NOTE - TO DO: Should change this to use spmd command. Adding loop is slow
@@ -92,7 +92,7 @@ elseif parallel_flag
     image_chunks = cell(num_workers, 1);
     parfor chunk_index = 1:num_workers
         image_chunks{chunk_index} = make_image(data_chunks{chunk_index}, covar_inv, covar_det,...
-            calc_cutoff_pixels, resolution, total_number_pixels_y, total_number_pixels_x, use_MEX_flag);
+            calc_cutoff_pixels, resolution, total_number_pixels_y, total_number_pixels_x, dims, use_MEX_flag);
     end
 
     % Add results together
@@ -115,9 +115,10 @@ end
 
 % Create function for adding a pdf to the image
 function full_image = make_image(data, covar_inv, covar_det, calc_cutoff_pixels,...
-    resolution, total_number_pixels_y, total_number_pixels_x, use_MEX_flag)
+    resolution, total_number_pixels_y, total_number_pixels_x, dims, use_MEX_flag)
 
-% Create xy_data matrix for the Gauss_STORM_image function 
+% Translate data into Cartesian system and create xy_data matrix for the Gauss_STORM_image function 
+
 xy_data = [data.x, data.y];
 
 % Create x and y pixel coordinate vectors
