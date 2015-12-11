@@ -29,7 +29,7 @@ params.cell_radius = choice1;
 % ------ Cellular event distribution -----------------
 
 % Define number of events in cell per movie
-params.number_events_ch1 = 1000;
+params.number_events_ch1 = 1e4;
 params.number_events_ch2 = 0;
 
 % Define channel 1 distribution/autocorrelation model
