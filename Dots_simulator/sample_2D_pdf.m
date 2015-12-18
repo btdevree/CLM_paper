@@ -62,7 +62,7 @@ while num_completed_samples < number_samples
       
     % Get the pixel indices using inverse sampling
     new_rands = rand(num_new_samples);
-    [~, new_pixel_indices] = histc(new_rands, enclosing_cdf);
+    [new_pixel_indices] = calc_inverse_samples_cdf_index(new_rands, enclosing_cdf);
     
     % The last two bins of the histogram should be added together (default for newer histcounts function)
     new_pixel_indices(new_pixel_indices == length(enclosing_cdf)) = length(enclosing_cdf) - 1;
@@ -117,5 +117,27 @@ while num_completed_samples < number_samples
         num_completed_samples = num_completed_samples + num_accepted;
     end
 end
+end
+
+function [new_pixel_indices] = calc_inverse_samples_cdf_index(new_rands, enclosing_cdf, use_MEX_flag)
+% Wrapper for calling MATLAB or MEX sample_inverse_cdf function.
+
+% Set default
+if nargin < 3; use_MEX_flag = false; end;
+
+if use_MEX_flag
+    
+    % Type checking to make sure we don't end up giving the MEX file bad inputs and cause a seg-fault
+    assert(ismatrix(new_rands) && size(new_rands, 2) == 1 && isa(new_rands,'double'));
+    assert(ismatrix(enclosing_cdf) && size(enclosing_cdf, 2) == 1 && isa(enclosing_cdf,'double'));
+    
+    % Call MEX function
+    new_pixel_indices = sample_inverse_cdf_MEX(new_rands, enclosing_cdf);
+else
+    
+    % Call MATLAB function
+    new_pixel_indices = sample_inverse_cdf(new_rands, enclosing_cdf);
+end
+
 end
 
