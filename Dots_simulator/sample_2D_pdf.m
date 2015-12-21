@@ -1,4 +1,4 @@
-function [ xy_samples ] = sample_2D_pdf( number_samples, pdf_image, resolution )
+function [ xy_samples ] = sample_2D_pdf( number_samples, pdf_image, resolution, use_MEX_flag )
 %SAMPLE_2D_PDF Samples 2D random variables from an arbitrary 2D pdf image.
 %
 % Uses linear interpolation to determine sampling rates between the pixel
@@ -14,12 +14,16 @@ function [ xy_samples ] = sample_2D_pdf( number_samples, pdf_image, resolution )
 %       sampled from. Does not have to be normalized.
 %   resolution: optional, the number of measurment units per pixel. 
 %       Default = 1.
+%   use_MEX_flag: boolean flag, when true the core sample_inverse_cdf
+%       funciton is replaced by the C++ version cample_inverse_cdf_MEX. 
+%       Optional, default = false.
 % Outputs:
 %   xy_samples: n by 2 array to floating point doubles. Given in the
 %       measurement units supplied in the resolution parameter.
 
 % Set defaults
 if nargin < 3; resolution = 1; end;
+if nargin < 4; use_MEX_flag = false; end;
 
 % Get dimensions
 image_n = size(pdf_image, 1);
@@ -34,8 +38,10 @@ y_vec = resolution * [image_n - 0.5: -1: 0.5].';
 se = strel('square',3);
 enclosing_pdf = imdilate(pdf_image, se);
 
-% Average dilated and original pdfs to get the maximum sampling rate that will be needed for each pixel (given linear interpolation)
-enclosing_pdf = (enclosing_pdf + pdf_image) / 2;
+% Given bilinear interpolation, the enclosing pdf can be reduced slightly
+% so that the excess sampling rate above each point is .75 times the 
+% largest difference in rates between that point and its largest neighbor.
+enclosing_pdf = (3 * enclosing_pdf + pdf_image) / 4;
 
 % Calculate the expected rejection rate in rejected points per created point
 acceptance_rate = sum(pdf_image(:)) / sum(enclosing_pdf(:));
@@ -61,19 +67,16 @@ while num_completed_samples < number_samples
     num_new_samples = ceil(((-b + sqrt(b.^2 - 4*a*c)) / (2*a)).^2);
       
     % Get the pixel indices using inverse sampling
-    new_rands = rand(num_new_samples);
-    [new_pixel_indices] = calc_inverse_samples_cdf_index(new_rands, enclosing_cdf);
-    
-    % The last two bins of the histogram should be added together (default for newer histcounts function)
-    new_pixel_indices(new_pixel_indices == length(enclosing_cdf)) = length(enclosing_cdf) - 1;
-    
+    new_rands = rand(num_new_samples, 1);
+    [new_pixel_indices] = calc_inverse_samples_cdf_index(new_rands, enclosing_cdf, use_MEX_flag);
+           
     % Calculate the x coordinate
-    new_rands = rand(num_new_samples);
-    new_x = resolution * (floor((new_pixel_indices - 1) / image_n) + new_rands);
+    new_rands = rand(num_new_samples, 1);
+    new_x = resolution * (floor(double(new_pixel_indices - 1) / image_n) + new_rands);
     
     % Calculate the y coordinate
-    new_rands = rand(num_new_samples);
-    new_y = resolution * (floor(mod(new_pixel_indices - 1, image_n)) + new_rands);
+    new_rands = rand(num_new_samples, 1);
+    new_y = resolution * (floor(image_n - mod(double(new_pixel_indices), image_n)) + new_rands);
     
     % Interpolate the pdf map with the new points
     new_pdf_values = interp2(x_mesh, y_mesh, pdf_image, new_x, new_y);
@@ -82,7 +85,7 @@ while num_completed_samples < number_samples
     acceptance_threshold = new_pdf_values ./ enclosing_pdf(new_pixel_indices);
     
     % Decide whether to accecpt or reject the new point
-    new_rands = rand(num_new_samples);
+    new_rands = rand(num_new_samples, 1);
     selection_booleans = new_rands <= acceptance_threshold;
     num_accepted = sum(selection_booleans(:));
     
