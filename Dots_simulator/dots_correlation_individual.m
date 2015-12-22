@@ -1,4 +1,4 @@
-function [correlation_stack] = dots_correlation_individual(image, dot_center_coords, dot_radius, correlation_max, image_resolution, image_mask, image_origin)
+function [correlation_stack] = dots_correlation_individual(image, dot_center_coords, dot_center_sigma, correlation_max, image_resolution, image_mask, image_origin)
 %DOTS_CORRELATION_INDIVIDUAL Compute a cross-correlation between the center
 %   of each individual dot and the given image. 
 %
@@ -9,8 +9,8 @@ function [correlation_stack] = dots_correlation_individual(image, dot_center_coo
 %       Assumed to be zero padded and have the mask applied. 
 %   dot_center_coords: n-by-2 array of (x, y) floating point double
 %       coordinates.
-%   dot_radius: sigma value for creating a Gaussian peak at the center of 
-%       the dot region.
+%   dot_center_sigma: sigma value for creating a Gaussian peak at the 
+%       center of the dot region.
 %   correlation_max: maximum correlation distance to return, in nanometers.
 %   image_resolution: resolution of the image, in nanometers (or whatever 
 %       unit the coordinates are given in). Optional, default = 1.
@@ -34,19 +34,24 @@ if issparse(image);
     image = full(image);
 end
 
-% Calculate the radius of the correlation in pixels 
+% Calculate needed constants
 max_radius = ceil(correlation_max / image_resolution);
+dims = [size(image, 2), size(image, 1)] * image_resolution;
 
 % Initialize the results matrix
 correlation_stack = zeros(2 * max_radius + 1, 2 * max_radius + 1, size(dot_center_coords, 1));
 
 % Loop through each dot
 for dot_index = 1:size(dot_center_coords, 1)
-    dot_center = dot_center_coords(dot_index);
     
-    % Create dot image
+    % Create dot image and apply mask
+    data = struct();
+    data.x = dot_center_coords(dot_index, 1) + image_origin(1, 1);
+    data.y = dot_center_coords(dot_index, 2) + image_origin(1, 2);
+    dot_image = create_STORM_image(data, image_resolution, dot_center_sigma, dims);
+    dot_image = dot_image .* image_mask;
     
-
-
+    % Calculate the correlation
+    correlation_stack(:, :, dot_index) = calc_normalized_correlation(image, dot_image, image_mask, max_radius);
 end
 

@@ -10,6 +10,8 @@ function image = create_STORM_image(data, resolution, sigma, dims, sparse_output
 % sigma: Desired psf width in fractions of original pixel length. 
 % dims: Desired image size in original pixel length. Given as a matrix
 %   [x_size, y_size].
+% sparse_output_flag: logical, default = false. If set to true, image
+%   will be retuned as a sparse array.
 % parallel_flag: logical, default = false. If set to true, image
 %   creation will take place across multiple cores. Parallel pool must
 %   already be activated.
@@ -37,7 +39,7 @@ if nargin < 9; zero_cutoff = 1e-9; end
 if nargin < 8; calc_cutoff_sigmas = 5; end
 if nargin < 7; use_MEX_flag = false; end
 if nargin < 6; parallel_flag = false; end 
-if nargin < 5; sparse_output_flag = true; end 
+if nargin < 5; sparse_output_flag = false; end 
 
 % Calc parameters for psf
 covar_matrix = [sigma.^2, 0; 0, sigma.^2];

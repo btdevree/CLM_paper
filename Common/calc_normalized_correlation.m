@@ -4,7 +4,7 @@ function normalized_corr_image = calc_normalized_correlation(image1, image2, mas
 %
 %   Calculate the normalized correlation between image1 and image 2
 %   according to the normalization region given in the mask. 
-%   Inputs:
+% Inputs:
 %   image1 and image2: floating-point double image matrices. Assumed to be
 %       zero padded and have the mask applied.
 %   mask: floating-point double matrix with intensity range from 1 to 0. 
