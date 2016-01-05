@@ -1,4 +1,4 @@
-function [ pdf_map, center_coords ] = dots_pdf_map(number_of_dots, dot_radius, dot_to_background_ratio, parameter_struct)
+function [ pdf_map, center_coords, mask] = dots_pdf_map(number_of_dots, dot_radius, dot_to_background_ratio, parameter_struct)
 %DOTS_PDF_MAP Makes a pdf map of circular regions with uniform density 
 %   inside the main cell density of a simulated movie dataset.
 %
@@ -15,6 +15,8 @@ function [ pdf_map, center_coords ] = dots_pdf_map(number_of_dots, dot_radius, d
 %   pdf_map: array of floating-point doubles, normalized sampling of the
 %       analytical pdf.
 %   center_coords: coordinates of the centers of the circular regions
+%   mask: If requested, output a mask image that covers the simulated cell 
+%       region. default = false;
 
 % Find the cell center, radius, points in the circle - copied from create_test_data_dv
 %   Not ideal, but not sure how I want to functionalize/abstract this part yet. 
@@ -94,6 +96,11 @@ delta_dist = sqrt(delta_x.^2 + delta_y.^2);
 % Add 1 to the pdf map for the pixels that are within the cell radius
 dist_bools = delta_dist <= cell_radius;
 pdf_map = pdf_map + dist_bools; % Logical 1's are automatically upcast to doubles
+
+% Copy to the image mask if requested
+if nargout == 3
+    mask = pdf_map;
+end
 
 % Multiply all pixels inside spot radius by deisred dot to background ratio
 for dot_index = 1:size(center_coords, 1)

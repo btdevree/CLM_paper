@@ -15,7 +15,7 @@ function [ xy_samples ] = sample_2D_pdf( number_samples, pdf_image, resolution, 
 %   resolution: optional, the number of measurment units per pixel. 
 %       Default = 1.
 %   use_MEX_flag: boolean flag, when true the core sample_inverse_cdf
-%       funciton is replaced by the C++ version cample_inverse_cdf_MEX. 
+%       funciton is replaced by the C++ version sample_inverse_cdf_MEX. 
 %       Optional, default = false.
 % Outputs:
 %   xy_samples: n by 2 array to floating point doubles. Given in the
