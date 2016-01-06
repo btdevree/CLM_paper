@@ -39,10 +39,6 @@ max_radius = ceil(correlation_max / image_resolution);
 pixel_dims = [size(STORM_image, 2), size(STORM_image, 1)];
 dims =  pixel_dims * image_resolution;
 
-% Apply mask and zero-pad image
-image1 = zeros(pixel_dims + 2 * max_radius);
-image1(max_radius + 1 : pixel_dims(2) + max_radius, max_radius + 1 : pixel_dims(1) + max_radius) = STORM_image .* image_mask;
-
 % Initialize the results matrix
 correlation_stack = zeros(2 * max_radius + 1, 2 * max_radius + 1, size(dot_center_coords, 1));
 
@@ -54,13 +50,9 @@ for dot_index = 1:size(dot_center_coords, 1)
     data.x = dot_center_coords(dot_index, 1) + image_origin(1, 1);
     data.y = dot_center_coords(dot_index, 2) + image_origin(1, 2);
     dot_image = create_STORM_image(data, image_resolution, dot_center_sigma, dims);
-    
-    % Apply mask and zero-pad image
-    image2 = zeros(pixel_dims + 2 * max_radius);
-    image2(max_radius + 1 : pixel_dims(2) + max_radius, max_radius + 1 : pixel_dims(1) + max_radius) = dot_image .* image_mask;
-
+  
     % Calculate the correlation
-    correlation_stack(:, :, dot_index) = calc_normalized_correlation(image1, image2, image_mask, max_radius);
+    correlation_stack(:, :, dot_index) = calc_crosscorrelation(STORM_image, dot_image, max_radius, image_mask);
 end
 end
 

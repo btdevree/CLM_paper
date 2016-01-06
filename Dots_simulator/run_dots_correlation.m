@@ -8,7 +8,7 @@ figure_path = [figure_path_parts{1}, 'CLM_figures_and_data/'];
 load('dots_params.mat') % loads as 'params'
 
 % Create a pdf map for the image
-[pdf_map, center_list, mask] = dots_pdf_map(25, 150, 5, params, true);
+[pdf_map, center_list, mask] = dots_pdf_map(25, 150, 5, params);
 
 % Create a dataset
 map_resolution = params.ch1_distribution_params{2};
@@ -24,15 +24,3 @@ STORM_image = create_STORM_image(data, 7, 25, STORM_dims, false, true, true);
 % Get a stack of correlations for the dots
 [correlation_stack] = dots_correlation_individual(STORM_image, center_list, 25, 1000, 7, mask);
 
-
-
-
-
-
-
-
-
-
-
-
-print([figure_path, 'NPIF_SN', num2str(SN_ratio), '_', method_name, '.png'], '-dpng');
