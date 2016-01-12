@@ -66,7 +66,6 @@ function [STORM_image] = calc_STORM_image(STORM_resolution, STORM_sigma, STORM_d
 
     % Call image generating function, use parallel processing if requested
     STORM_image = create_STORM_image(data_struct, STORM_resolution, STORM_sigma, STORM_dims, sparse_output_flag, parallel_image_creation_flag, use_MEX_flag);
-    %STORM_image = create_STORM_image_oldversion(data_struct, STORM_resolution, STORM_sigma, STORM_dims, sparse_output_flag, parallel_image_creation_flag);
 end
 
 % Run STORM image function 

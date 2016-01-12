@@ -8,8 +8,7 @@ function [ch1_data, ch2_data, movie_variables_structure, STORM_variables_structu
 %       template created by the test_movie_parameters function. Please see 
 %       that function for more documentation.
 %   seed: random seed to start image creation from. Optional. If seed is 
-%       empty or not given, matlab's native random seeding method will be 
-%       used. 
+%       empty or not given, the RNG will not be reseeded.
 %   Output:
 %   ch1_data/ch2_data: datapoints for use in making a test movie and/or 
 %       test STORM images
@@ -17,11 +16,9 @@ function [ch1_data, ch2_data, movie_variables_structure, STORM_variables_structu
 % Set defaults
 if nargin < 2; seed = []; end;
 
-% Initialize the random number generator
+% Initialize the random number generator if requested
 if ~isempty(seed)
     rng(seed);
-else
-    rng('default');
 end
 
 % Rename parameters for convenience
@@ -92,6 +89,22 @@ if strcmp(params.ch2_distribution, 'random')
             ch2_assignments(index) = ceil(rand*size(ch1_event_coords, 1));
         end
     end
+    
+% One event and then random assignment    
+elseif strcmp(params.ch2_distribution, 'once_then_random')
+    
+    % Get parameters
+    number_ch1 = params.number_events_ch1;
+    number_ch2 = params.number_events_ch2;
+    fraction_assigned = params.ch2_distribution_params(1);
+    number_assigned = ceil(fraction_assigned*number_ch2);
+    assert(number_ch1 <= number_assigned, 'There must be at least as many assigned ch2 points as ch1 points to use the once_then_random distribution method');
+    
+    % Assign a ch2 event to each ch1 event
+    ch2_assignments(1:number_ch1) = randperm(number_ch1);
+    
+    % Assign the rest randomly
+    ch2_assignments(number_ch1 + 1:number_assigned) = randi(number_ch1, number_assigned - number_ch1, 1); 
 
 % Even assignment
 elseif strcmp(params.ch2_distribution, 'evenly_distributed')
