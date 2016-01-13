@@ -62,9 +62,9 @@ if strcmp(params.ch1_distribution, 'random')
 elseif strcmp(params.ch1_distribution, 'mapped')
     
     % Load in the map and rename parameters
-    ch1_event_pdf_map = eval(params.ch1_distribution_params{1});
+    ch1_event_pdf_map = evalin('caller', params.ch1_distribution_params{1});
     ch1_event_map_resolution = params.ch1_distribution_params{2};
-    ch1_event_map_origin = params.ch1.distribtion_params{3};
+    ch1_event_map_origin = params.ch1_distribution_params{3};
     
     % Get points according to the pdf map
     ch1_event_coords = random_mapped_events(params.number_events_ch1, ch1_event_pdf_map, ch1_event_map_resolution, ch1_event_map_origin);
@@ -316,7 +316,7 @@ while event_counter < number_events
     % Create a uniformly random point and a random decision making value  
     random_values = rand(1,3);
     event_coord = random_values(1, 1:2) .* range;
-    decision_value = random_value(1,3);
+    decision_value = random_values(1,3);
     
     % If the decision value is low enough, we keep the event. Otherwise, we throw it away and make a new point.
     decision_threshold = interp2(xmesh, ymesh, event_map, event_coord(1), event_coord(2));

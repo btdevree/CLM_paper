@@ -5,7 +5,10 @@ function [correlation_stack, number_cells] = collect_dot_correlations(parameter_
 %   cells with "dot" type well-defined centers of interest
 %
 %   This function handles the logic needed to run a dot simulation with the
-%   given parameters. 
+%   given parameters. Strategy is a bit hacky, need to think about a
+%   refactor once it's working. We create the specified number of labeled
+%   spots as channel 1, and then sample them one (or more) times in channel
+%   2. We only use channel 2 in the end. 
 %   
 % Inputs:
 %   param_struct: structure that holds the parameters needed for simulating
@@ -75,19 +78,16 @@ end
 
 % Calculate required constant values
 max_corr_px = ceil(max_corr_length / STORM_pixel_resolution);
-cell_area = pi * cell_radius^2;
+cell_area = pi * (cell_radius / 1000)^2; % in micrometers^2
+logn_mu = log((label_density_mean^2) / sqrt(label_density_stdev^2 + label_density_mean^2));
+logn_sigma = sqrt(log(label_density_stdev^2 / (label_density_mean^2) + 1));
 
 % Initialize the results matrix
 correlation_stack = zeros(2 * max_corr_px + 1, 2 * max_corr_px + 1, number_dots);
 
 % Edit param values for all cells
 params.STORM_pixel_size = STORM_pixel_resolution;
-params.ch1_distribution_params = {'pdf_map', 5, [0,0]}; % Constant 5nm pdf map resolution
-params.ch2_distribution = 'once_then_random';
-params.ch2_distribution_params = 1;
-params.ch2_crosscor = 'Gaussian';
 params.ch2_crosscor_params = [0, event_precision];
-params.number_background_events_ch1 = 0;
 
 % Initialize counter variables
 num_cells_screened = 0;
@@ -102,7 +102,7 @@ while number_dots_complete < number_dots
         num_cells_screened = num_cells_screened + 1;
         continue % Try again if there are no dots in cell
     end
-    label_density_cell = lognrnd(label_density_mean, label_density_stdev);
+    label_density_cell = lognrnd(logn_mu, logn_sigma);
     
     % Calculate required values per cell
     num_base_events = round(cell_area * label_density_cell);   
@@ -121,10 +121,33 @@ while number_dots_complete < number_dots
     % Get event data for the image
     [~, event_data, ~, STORM_vars ] = create_test_data_dv(params);
     
+    % Create the event STORM image
+    data = struct();
+    data.x = event_data(:, 1);
+    data.y = event_data(:, 2);
+    STORM_image = create_STORM_image(data, params.STORM_pixel_size, event_precision, [x_length, y_length], false, true, true);
+  
+    % Correlate the dots in the cell
+    [cell_stack] = dots_correlation_individual(STORM_image, dot_center_coords, dot_center_precision,...
+        max_corr_px, params.STORM_pixel_size, cell_mask, [0, 0]);
     
+    % Write the cell stack into the final results stack
+    num_needed = number_dots - number_dots_complete;
+    if num_dots_cell <= num_needed
+        correlation_stack(:, :, number_dots_complete + 1:number_dots_complete + num_dots_cell) = cell_stack;
+        number_dots_complete = number_dots_complete + num_dots_cell;
+    else
+        needed_indices = randperm(num_dots_cell, num_needed);
+        correlation_stack(:, :, number_dots_complete + 1:number_dots_complete + num_dots_cell) = cell_stack(:, :, needed_indices);
+        number_dots_complete = number_dots_complete + num_needed;
+    end
     
+    % Count cell
+    num_cells_screened = num_cells_screened + 1;
 end
 
-
+% Return number of cells if requested
+if nargout > 1
+    number_cells = num_cells_screened;
 end
 

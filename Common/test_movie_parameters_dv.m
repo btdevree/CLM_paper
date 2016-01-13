@@ -29,8 +29,8 @@ params.cell_radius = choice1;
 % ------ Cellular event distribution -----------------
 
 % Define number of events in cell per movie
-params.number_events_ch1 = 1e4;
-params.number_events_ch2 = 0;
+params.number_events_ch1 = 100;
+params.number_events_ch2 = 100;
 
 % Define channel 1 distribution/autocorrelation model
 choice1 = 'random'; % random distribution of events
@@ -41,7 +41,7 @@ params.ch1_distribution = choice2;
 
 % Define channel 1 distribution model parameters
 %choice1 = null % no parameters are needed, argument is ignored
-choice2 = {'testimage_ch1_distribution_map', 7, [0,0]}; % name of the map to use(expected in the current namespace), map resolution, and map origin given in STORM image coordinates.  
+choice2 = {'pdf_map', 5, [0,0]}; % name of the map to use(expected in the current namespace), map resolution, and map origin given in STORM image coordinates.  
 params.ch1_distribution_params = choice2;
 
 % Define channel 2 assignment distribution model
@@ -51,7 +51,7 @@ choice3 = 'evenly_distributed'; % ch2 event assigned as evenly as possible to ch
 params.ch2_distribution = choice2;
 
 % Define channel 2 assignment distribution model parameters
-choice1 = [.8]; % fraction of ch2 points that are assigned to ch1 events
+choice1 = [1]; % fraction of ch2 points that are assigned to ch1 events
 choice2 = [3]; % maximum number of ch2 points that are assigned to each ch1. Note: fractional values allowed (eg, 2.5 means 1/2 of ch1 events have 2 ch2 events assigned, and 1/2 have 3 events assigned).
 params.ch2_distribution_params = choice1;
 
@@ -60,7 +60,7 @@ choice1 = 'random'; % no relation to channel 1, random distribution
 choice2 = 'exact'; % all channel 2 events are exactly a certain distance from a channel 1 event
 choice3 = 'Gaussian'; % Gaussian distribution of channel 2 events from the channel 1 event centers
 choice4 = 'critical'; % channel 2 events obey a 2D critical phase distribution
-params.ch2_crosscor = choice2;
+params.ch2_crosscor = choice3;
 
 % Define channel 2 crosscorrelation model parameters
 %choice1 = null % no parameters are needed, argument is ignored
@@ -119,7 +119,7 @@ params.resampling_model_params = choice1;
 % ------- Background events ---------------------
 
 % Define the number of random points to add to each channel
-params.number_background_events_ch1 = 1000;
+params.number_background_events_ch1 = 0;
 params.number_background_events_ch2 = 0;
 
 % ------ Background -----------------------------
