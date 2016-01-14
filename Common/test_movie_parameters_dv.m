@@ -65,9 +65,9 @@ params.ch2_crosscor = choice3;
 % Define channel 2 crosscorrelation model parameters
 %choice1 = null % no parameters are needed, argument is ignored
 choice2 = [0]; % distance between ch1 and ch2 events, in nanometers
-choice3 = [0, 30]; % mean distance from ch1 event (mu) and standard deviation (sigma) given as [mu, sigma] in nanometers
+choice3 = [0, 25]; % mean distance from ch1 event (mu) and standard deviation (sigma) given as [mu, sigma] in nanometers
 %choice4 = ???? % TODO parameters for the critical model
-params.ch2_crosscor_params = choice2;
+params.ch2_crosscor_params = choice3;
 
 % -------- Temporal event distribution ------------------
 

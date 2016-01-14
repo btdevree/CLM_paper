@@ -1,12 +1,12 @@
-function [ xy_samples ] = sample_2D_pdf( number_samples, pdf_image, resolution, use_MEX_flag )
+function [ xy_samples ] = sample_2D_pdf( number_samples, pdf_image, resolution, pdf_origin_offset, use_MEX_flag )
 %SAMPLE_2D_PDF Samples 2D random variables from an arbitrary 2D pdf image.
 %
 % Uses linear interpolation to determine sampling rates between the pixel
 %   centers. Assumes a Cartesian coordinate system with the origin in the 
-%   bottom left corner of the bottom left pixel. Algorithm employs inverse 
-%   sampling of a greyscale dilated image to sample points at a slightly 
-%   higher rate than needed and then corrects the rate with rejection 
-%   sampling. 
+%   bottom left corner of the bottom left pixel by default. Algorithm 
+%   employs inverse sampling of a greyscale dilated image to sample points
+%   at a slightly higher rate than needed and then corrects the rate with 
+%   rejection sampling. 
 %
 % Inputs:
 %   number_samples: number of samples to return.
@@ -14,6 +14,9 @@ function [ xy_samples ] = sample_2D_pdf( number_samples, pdf_image, resolution, 
 %       sampled from. Does not have to be normalized.
 %   resolution: optional, the number of measurment units per pixel. 
 %       Default = 1.
+%   map_origin_offset: 1x2 double array. The coordinate value of the lower 
+%       lefthand corner of the lower, lefthand pixel. Added to all outputs 
+%       values. Optional, default = [0, 0].
 %   use_MEX_flag: boolean flag, when true the core sample_inverse_cdf
 %       funciton is replaced by the C++ version sample_inverse_cdf_MEX. 
 %       Optional, default = false.
@@ -23,7 +26,8 @@ function [ xy_samples ] = sample_2D_pdf( number_samples, pdf_image, resolution, 
 
 % Set defaults
 if nargin < 3; resolution = 1; end;
-if nargin < 4; use_MEX_flag = false; end;
+if nargin < 4; pdf_origin_offset = [0,0]; end;
+if nargin < 5; use_MEX_flag = false; end;
 
 % Get dimensions
 image_n = size(pdf_image, 1);
@@ -100,7 +104,7 @@ while num_completed_samples < number_samples
                 
         % Copy the needed points from the beginning of the list of accepted points
         num_points_needed = number_samples - num_completed_samples;
-        xy_samples(1 + num_completed_samples:number_samples, :) = new_points(1:num_points_needed, :);
+        xy_samples(1 + num_completed_samples:number_samples, :) = new_points(1:num_points_needed, :) + repmat(pdf_origin_offset, num_points_needed, 1);
         
         % Keep track of the number of points added
         num_completed_samples = num_completed_samples + num_points_needed;
@@ -114,7 +118,7 @@ while num_completed_samples < number_samples
         new_points(:, 2) = new_y(selection_booleans);
         
         % Copy the accepted points to the output list
-        xy_samples(1 + num_completed_samples:num_accepted + num_completed_samples, :) = new_points;
+        xy_samples(1 + num_completed_samples:num_accepted + num_completed_samples, :) = new_points + repmat(pdf_origin_offset, size(new_points, 1), 1);
         
         % Keep track of the number of points added
         num_completed_samples = num_completed_samples + num_accepted;

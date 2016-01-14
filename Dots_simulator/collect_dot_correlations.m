@@ -113,7 +113,7 @@ while number_dots_complete < number_dots
     % Edit param values for each individual cell
     params.number_events_ch1 = num_base_events;
     params.number_events_ch2 = num_overcount_events;
-    params.number_background_events_ch2 = num_noise_events;
+    params.number_background_events_ch2 = round(num_noise_events);
     
     % Create a 2D pdf for finding the cells 
     [pdf_map, dot_center_coords, cell_mask] = dots_pdf_map(num_dots_cell, dot_radius, dot_correlation_value, params);
@@ -129,7 +129,7 @@ while number_dots_complete < number_dots
   
     % Correlate the dots in the cell
     [cell_stack] = dots_correlation_individual(STORM_image, dot_center_coords, dot_center_precision,...
-        max_corr_px, params.STORM_pixel_size, cell_mask, [0, 0]);
+        max_corr_length, params.STORM_pixel_size, cell_mask, [0, 0]);
     
     % Write the cell stack into the final results stack
     num_needed = number_dots - number_dots_complete;
@@ -138,12 +138,13 @@ while number_dots_complete < number_dots
         number_dots_complete = number_dots_complete + num_dots_cell;
     else
         needed_indices = randperm(num_dots_cell, num_needed);
-        correlation_stack(:, :, number_dots_complete + 1:number_dots_complete + num_dots_cell) = cell_stack(:, :, needed_indices);
+        correlation_stack(:, :, number_dots_complete + 1:number_dots_complete + num_needed) = cell_stack(:, :, needed_indices);
         number_dots_complete = number_dots_complete + num_needed;
     end
     
     % Count cell
     num_cells_screened = num_cells_screened + 1;
+    fprintf('.');
 end
 
 % Return number of cells if requested

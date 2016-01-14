@@ -67,7 +67,7 @@ elseif strcmp(params.ch1_distribution, 'mapped')
     ch1_event_map_origin = params.ch1_distribution_params{3};
     
     % Get points according to the pdf map
-    ch1_event_coords = random_mapped_events(params.number_events_ch1, ch1_event_pdf_map, ch1_event_map_resolution, ch1_event_map_origin);
+    ch1_event_coords = sample_2D_pdf(params.number_events_ch1, ch1_event_pdf_map, ch1_event_map_resolution, ch1_event_map_origin, true);
 end
 
 % Assign channel two events to channel one events
@@ -143,7 +143,7 @@ if strcmp(params.ch2_crosscor, 'random')
 elseif strcmp(params.ch2_crosscor, 'exact')
     
     % Read parameters and initialize 
-    delta_r = params.ch2_distribution_params(1); % Distance between ch1 and ch2 event
+    delta_r = params.ch2_crosscor_params(1); % Distance between ch1 and ch2 event
     
     % Loop through each assignment value and create the appropriate event coordinate
     for index = 1:size(ch2_assignments, 1)
@@ -168,8 +168,8 @@ elseif strcmp(params.ch2_crosscor, 'exact')
 elseif strcmp(params.ch2_crosscor, 'Gaussian')
          
     % Read parameters and initialize 
-    mu = params.ch2_distribution_params(1); % Average distance between ch1 and ch2 event
-    sigma = params.ch2_distribution_params(2); % Standard deviation of ch2 event distribution from the mean distance 
+    mu = params.ch2_crosscor_params(1); % Average distance between ch1 and ch2 event
+    sigma = params.ch2_crosscor_params(2); % Standard deviation of ch2 event distribution from the mean distance 
     
     % Loop through each assignment value and create the appropriate event coordinate
     for index = 1:size(ch2_assignments, 1)
@@ -274,57 +274,6 @@ while event_counter < number_events
     if sqrt(sum(event_coord.^2)) <= cell_radius
        event_counter = event_counter + 1;
        coords(event_counter, :) = event_coord + cell_center;
-    end
-end
-end
-
-function [coords] = random_mapped_events(number_events, event_map, map_resolution, map_origin_offset)
-% Creates the specified number of randomly placed events according to the
-%   given pdf map. We assume a Carteisian coordinate system
-%
-%   Based on a very simple rejection-based stocastic sampler. Might be way
-%   too ineffecient for some purposes.
-%   
-% Inupts:
-%   number_events: positive integer, the number of events to generate.
-%   event_map: array of floating-point doubles that represents a (possibly)
-%       unnormalized probability density function of finding an event.
-%   map_resolution: resolution of the pixels in the map, given in
-%       nanometers
-%   map_origin_offset: 1x2 double array. The Coordinate value of the lower 
-%       lefthand corner of the lower, lefthand pixel. Added to all outputs 
-%       values.
-% Output:
-%   coords: nx2 floating-point double array of coordinates.
-
-% Scale the map so it contains values normalized between 0 and 1
-event_map = event_map ./ max(event_map(:));
-
-% Get the size of the map
-range = [size(event_map, 2), size(event_map, 1)] * map_resolution;
-
-% Make coordinate arrays for interpolation of the map
-[xmesh, ymesh] = meshgrid([0.5:1:size(event_map, 2) - 0.5] * map_resolution, [size(event_map, 1) - 0.5:-1:0.5] * map_resolution);
-
-% Initialize variables
-coords = zeros(number_events, 2);
-event_counter = 0;
-
-% Repeat loop until enough random events are generated
-while event_counter < number_events 
-    
-    % Create a uniformly random point and a random decision making value  
-    random_values = rand(1,3);
-    event_coord = random_values(1, 1:2) .* range;
-    decision_value = random_values(1,3);
-    
-    % If the decision value is low enough, we keep the event. Otherwise, we throw it away and make a new point.
-    decision_threshold = interp2(xmesh, ymesh, event_map, event_coord(1), event_coord(2));
-    if decision_value <= decision_threshold
-       event_counter = event_counter + 1;
-       coords(event_counter, :) = event_coord + map_origin_offset;
-    else
-        continue
     end
 end
 end

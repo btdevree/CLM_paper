@@ -1,4 +1,4 @@
-function [ pdf_map, center_coords, mask] = dots_pdf_map(number_of_dots, dot_radius, dot_to_background_ratio, parameter_struct)
+function [ pdf_map, center_coords, STORM_mask] = dots_pdf_map(number_of_dots, dot_radius, dot_to_background_ratio, parameter_struct)
 %DOTS_PDF_MAP Makes a pdf map of circular regions with uniform density 
 %   inside the main cell density of a simulated movie dataset.
 %
@@ -15,8 +15,9 @@ function [ pdf_map, center_coords, mask] = dots_pdf_map(number_of_dots, dot_radi
 %   pdf_map: array of floating-point doubles, normalized sampling of the
 %       analytical pdf.
 %   center_coords: coordinates of the centers of the circular regions
-%   mask: If requested, output a mask image that covers the simulated cell 
-%       region. default = false;
+%   STORM_mask: If requested, output a mask image that covers the simulated 
+%       cell region in the STORM image. Not necessarily the same resolution 
+%       as the mask. Default = false;
 
 % Find the cell center, radius, points in the circle - copied from create_test_data_dv
 %   Not ideal, but not sure how I want to functionalize/abstract this part yet. 
@@ -73,34 +74,8 @@ while event_counter < number_of_dots
     end
 end
 
-% Get the resolution of the map
-map_resolution = params.ch1_distribution_params{2};
-
-% Calc needed number of pixels
-num_pixels_x = ceil(x_length/map_resolution);
-num_pixels_y = ceil(y_length/map_resolution);
-
-% Calc meshgrid
-x_vec = [0.5: 1: num_pixels_x - 0.5] .* map_resolution;
-y_vec = [num_pixels_y - 0.5: -1: 0.5] .* map_resolution;
-[xmesh, ymesh] = meshgrid(x_vec, y_vec);
-
-% Initialize pdf map
-pdf_map = zeros(size(xmesh));
-
-% Calc delta distances from center
-delta_x = xmesh - cell_center_x;
-delta_y = ymesh - cell_center_y;
-delta_dist = sqrt(delta_x.^2 + delta_y.^2);
-
-% Add 1 to the pdf map for the pixels that are within the cell radius
-dist_bools = delta_dist <= cell_radius;
-pdf_map = pdf_map + dist_bools; % Logical 1's are automatically upcast to doubles
-
-% Copy to the image mask if requested
-if nargout == 3
-    mask = pdf_map;
-end
+% Get the cell map
+[pdf_map, xmesh, ymesh] = create_cell_map(params.ch1_distribution_params{2}, x_length, y_length, cell_center_x, cell_center_y, cell_radius);
 
 % Multiply all pixels inside spot radius by deisred dot to background ratio
 for dot_index = 1:size(center_coords, 1)
@@ -122,5 +97,33 @@ end
 map_sum = sum(pdf_map(:));
 pdf_map = pdf_map / map_sum;
 
+% Copy to the image mask if requested - Move this to another funciton in
+% the next refactor, it doesn't really fit that well here.
+if nargout == 3
+    STORM_mask = create_cell_map(params.STORM_pixel_size, x_length, y_length, cell_center_x, cell_center_y, cell_radius);
 end
 
+end
+
+function [cell_map, xmesh, ymesh] = create_cell_map(map_resolution, x_length, y_length, cell_center_x, cell_center_y, cell_radius)
+% Local function that returns a double matrix with a circular region drawn 
+%   in the cell region and the pixel coordinate meshgrid matrices.
+
+%Calc needed number of pixels
+num_pixels_x = ceil(x_length/map_resolution);
+num_pixels_y = ceil(y_length/map_resolution);
+
+% Calc meshgrid
+x_vec = [0.5: 1: num_pixels_x - 0.5] .* map_resolution;
+y_vec = [num_pixels_y - 0.5: -1: 0.5] .* map_resolution;
+[xmesh, ymesh] = meshgrid(x_vec, y_vec);
+
+% Calc delta distances from center
+delta_x = xmesh - cell_center_x;
+delta_y = ymesh - cell_center_y;
+delta_dist = sqrt(delta_x.^2 + delta_y.^2);
+
+% Returun image with 1 as for the pixels that are within the cell radius and 0 for those outside.
+dist_bools = delta_dist <= cell_radius;
+cell_map = double(dist_bools); 
+end
