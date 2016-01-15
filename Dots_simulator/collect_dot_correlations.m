@@ -29,7 +29,7 @@ function [correlation_stack, number_cells] = collect_dot_correlations(parameter_
 %   label_density_stdev: standard deviation of the density of true events 
 %       in the main body of the cell, given in events/micrometer^2
 %   label_SN_ratio: signal to noise ratio of labels, given as # true
-%       events / # spurious events.
+%       events / # spurious events. Can also be the string 'no_noise'.
 %   event_overcounting: average number of times each event is overcounted. 
 %   dot_center_precision: estimate of the standard deviation of the dot's 
 %       true center coordinate. 
@@ -108,11 +108,15 @@ while number_dots_complete < number_dots
     num_base_events = round(cell_area * label_density_cell);   
     num_overcount_events = num_base_events * event_overcounting;
     num_true_events = num_base_events + num_overcount_events;
-    num_noise_events = num_true_events / label_SN_ratio;
+    if isnumeric(label_SN_ratio)
+        num_noise_events = num_true_events / label_SN_ratio;
+    elseif strcmp(label_SN_ratio, 'no_noise');
+        num_noise_events = 0;
+    end
     
     % Edit param values for each individual cell
     params.number_events_ch1 = num_base_events;
-    params.number_events_ch2 = num_overcount_events;
+    params.number_events_ch2 = num_true_events;
     params.number_background_events_ch2 = round(num_noise_events);
     
     % Create a 2D pdf for finding the cells 
@@ -125,7 +129,7 @@ while number_dots_complete < number_dots
     data = struct();
     data.x = event_data(:, 1);
     data.y = event_data(:, 2);
-    STORM_image = create_STORM_image(data, params.STORM_pixel_size, event_precision, [x_length, y_length], false, true, true);
+    STORM_image = create_STORM_image(data, params.STORM_pixel_size, event_precision, [x_length, y_length], false, false, true);
   
     % Correlate the dots in the cell
     [cell_stack] = dots_correlation_individual(STORM_image, dot_center_coords, dot_center_precision,...
@@ -146,6 +150,7 @@ while number_dots_complete < number_dots
     num_cells_screened = num_cells_screened + 1;
     fprintf('.');
 end
+fprintf('\n');
 
 % Return number of cells if requested
 if nargout > 1

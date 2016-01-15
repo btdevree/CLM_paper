@@ -3,13 +3,14 @@
 % Set directory information
 figure_path_parts = strsplit(pwd, 'CLM_paper');
 figure_path = [figure_path_parts{1}, 'CLM_figures_and_data/'];
-data_name = 'stdev_vs_num_dots_no_over.mat';
+data_name = 'stdev_vs_num_dots_high_over.mat';
 figure_name = 'stdev_vs_num_dots.png';
 
 % Load a parameter structure from current dirctory with deisred settings
 load('dots_params.mat') % loads as 'params'
 
 % Set parameters
+number_replicates = 30;
 number_dots_vector = [10, 20, 30, 50, 70, 100, 150, 200, 300, 400, 500];
 max_correlation_radius = 1000; %nm
 dots_per_cell_mean = 25;
@@ -18,7 +19,7 @@ dot_correlation_value = 5;
 label_density_mean = 30; %events/um^2
 label_density_stdev = 5; %events/um^2
 label_SN_ratio = 'no_noise';
-event_overcounting = 0;
+event_overcounting = 5;
 dot_center_precision = 25; %nm
 event_precision = 25; %nm
 STORM_pixel_resolution = 7; %nm
@@ -33,9 +34,8 @@ for number_dot_index = 1:length(number_dots_vector)
     correlation_width = 2*max_radius_px + 1;
 
     % Repeat dot collection and averageing 
-    number_replicates = 6;
     mean_vector_stack = zeros(max_radius_px + 1, number_replicates);
-    for replicate_index = 1:number_replicates
+    parfor replicate_index = 1:number_replicates
 
         % Get a results stack
         [correlation_stack, number_cells] = collect_dot_correlations(params, number_dots, max_correlation_radius, dots_per_cell_mean,...

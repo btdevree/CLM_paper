@@ -4,7 +4,8 @@ function [distance_vector, mean_vector, stdev_vector, sem_vector] = radial_avera
 %
 %   Calculates a radial average using linear interpolation of a cross- or
 %   auto-correlation image. Uses a Cartesian coordinate system with the
-%   origin at the lower left corner of the lower left pixel.
+%   origin at the lower left corner of the lower left pixel. Units in
+%   pixels
 %   Inputs:
 %   image: A correlation image given as a matrix of floating-point doubles.
 %       Can also be a 3D array containing several correlation images to be 
@@ -18,7 +19,7 @@ function [distance_vector, mean_vector, stdev_vector, sem_vector] = radial_avera
 %   sampling_distance: Distance along the arc inbetween sampling points. 
 %       Optional, default = 0.3 pixels. 
 %   Outputs:
-%   distance_vector: Column vector of radial distances.
+%   distance_vector: Column vector of radial distances, in pixels.
 %   mean_vector: Column vector of the radial averages at each radius.
 %   stdev_vector: Column vector of the standard deviation of each average 
 %       value.
