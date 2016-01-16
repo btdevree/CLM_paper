@@ -23,9 +23,9 @@ dot_center_precision = 25; %nm
 event_precision = 25; %nm
 STORM_pixel_resolution = 7; %nm
 
-mean_vector_stack_cells = cell(size(number_dots_vector));
+mean_vector_stack_cells = cell(size(number_dots_vector));  
 % Repeat for each number of dots
-for number_dot_index = 1:length(number_dots_vector)
+for number_dot_index = 1:length(number_dots_vector)    
     number_dots = number_dots_vector(number_dot_index);
     
     % Calculate the size of the correlation stack
