@@ -106,7 +106,7 @@ while number_dots_complete < number_dots
     
     % Calculate required values per cell
     num_base_events = round(cell_area * label_density_cell);   
-    num_overcount_events = num_base_events * event_overcounting;
+    num_overcount_events = round(num_base_events * event_overcounting);
     num_true_events = num_base_events + num_overcount_events;
     if isnumeric(label_SN_ratio)
         num_noise_events = num_true_events / label_SN_ratio;

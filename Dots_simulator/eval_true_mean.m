@@ -14,5 +14,7 @@ correlation_image = mean(correlation_stack, 3);
 
 % Get a radial average
 [distance_vector, mean_vector, ~, ~] = radial_average_2D_correlation(correlation_image);
+
+fprintf('.');
 end
 
