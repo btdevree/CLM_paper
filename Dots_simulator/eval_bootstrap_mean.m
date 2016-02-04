@@ -14,7 +14,7 @@ permuted_mean_vectors = zeros((size(correlation_stack, 1)-1)/2 + 1, number_permu
 for permutation_index = 1:number_permutations
     
     % Permute the stack
-    permuted_indices = randi(size(correlation_stack, 3));
+    permuted_indices = randi(size(correlation_stack, 3), size(correlation_stack, 3), 1);
     permuted_stack = cat(3, correlation_stack(:, :, permuted_indices));
     permuted_image = mean(permuted_stack, 3);
     
@@ -24,6 +24,5 @@ for permutation_index = 1:number_permutations
     % Add to the results stack
     permuted_mean_vectors(:, permutation_index) = mean_vector;
 end
-fprintf(':');
 end
 

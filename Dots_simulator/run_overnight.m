@@ -1,6 +1,6 @@
 % Overnight script
 
-parpool(6)
+parpool(5)
 
 run_dots_correlation_no_over
 run_dots_correlation_low_over
