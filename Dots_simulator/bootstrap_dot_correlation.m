@@ -1,4 +1,4 @@
-function [correlation, number_cells] = collect_dot_correlations(parameter_struct, number_dots, max_corr_length,...
+function [correlation] = bootstrap_dot_correlation(parameter_struct, number_permutations, number_dots, max_corr_length,...
     dots_per_cell_mean, dot_radius, dot_correlation_value, label_density_mean, label_density_stdev, label_SN_ratio, event_overcounting,...
     dot_center_precision, event_precision, STORM_pixel_resolution, STORM_method)
 %COLLECT_DOT_CORRELATIONS Returns a 2D correlations from simulated cells 
@@ -15,6 +15,7 @@ function [correlation, number_cells] = collect_dot_correlations(parameter_struct
 %       a cell with the create_test_data/create_test_STORM_image
 %       functions. Parameters in this structure may be superceded due to 
 %       requirements of the other inputs.
+%   number_permutations: number of bootstrapping permutations to perform
 %   number_dots: the number of dots to simulate
 %   max_corr_length: the maximum radius out to which the correlation is 
 %       calculated, given in nanometers. 
@@ -40,9 +41,8 @@ function [correlation, number_cells] = collect_dot_correlations(parameter_struct
 %   STORM_method: string indicating the method used to create the STORM
 %       images. Options are: 'pdf' or 'binning'
 % Outputs:
-%   correlation: average 2D correlations from all cells.
-%   number_cells: the number of cells nedded in to collect all the
-%       required dots
+%   correlation_stack: 3D stack of 2D correlation from each bootstrap.
+
 
 % Rename parameter structure for convenience
 params = parameter_struct;
@@ -90,7 +90,11 @@ num_cells_screened = 0;
 num_cells_used = 0;
 number_dots_complete = 0;
 
-% Create and correlate cells until we have collected enough correlations
+% Initialize storage variables
+STORM_image_cells = cell();
+dot_center_cells = cell();
+
+% Create and correlate cells until we have collected enough cells
 while number_dots_complete < number_dots
     
     % Choose a number of dots and label density
@@ -135,12 +139,16 @@ while number_dots_complete < number_dots
     data.y = event_data(:, 2);
     STORM_image = create_STORM_image(data, params.STORM_pixel_size, event_precision, [x_length, y_length], false, false, true);
     
+    % Randomly remove extra dot coordinates
     if num_dots_cell > num_needed
-        % Randomly remove extra dot coordinates
         needed_indices = randperm(num_dots_cell, num_needed);
         dot_center_coords = dot_center_coords(needed_indices, :);
     end
     
+    % 
+    
+end
+
     % Correlate the dots in the cell
     [cell_correlation] = dots_correlation(STORM_image, dot_center_coords, dot_center_precision,...
         max_corr_length, params.STORM_pixel_size, cell_mask, [0, 0]);
