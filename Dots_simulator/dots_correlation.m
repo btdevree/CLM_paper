@@ -46,6 +46,6 @@ data.y = dot_center_coords(:, 2) + image_origin(1, 2);
 dot_image = create_STORM_image(data, image_resolution, dot_center_sigma, dims);
 
 % Calculate the correlation
-correlation= calc_crosscorrelation(STORM_image, dot_image, max_radius, image_mask);
+correlation = calc_crosscorrelation(STORM_image, dot_image, max_radius, image_mask);
 end
 

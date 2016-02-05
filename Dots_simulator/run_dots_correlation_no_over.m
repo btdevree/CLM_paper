@@ -11,6 +11,7 @@ load('dots_params.mat') % loads as 'params'
 
 % Set parameters
 number_replicates = 30;
+number_bootstrap_replicates = 100;
 number_bootstraps = 10;
 number_dots_vector = [10, 20, 30, 50, 70, 100];
 max_correlation_radius = 500; %nm
@@ -72,9 +73,9 @@ for number_dots_index = 1:length(number_dots_vector)
     for index = 1:number_bootstraps
 
         % Evaluate the function asynchronously
-        future_results(index) = parfeval(@eval_bootstrap_mean, 2, number_replicates, params, number_dots, max_correlation_radius, dots_per_cell_mean,...
-            dot_radius, dot_correlation_value, label_density_mean, label_density_stdev, label_SN_ratio, event_overcounting,...
-            dot_center_precision, event_precision, STORM_pixel_resolution, 'pdf'); 
+        future_results(index) = parfeval(@eval_bootstrap_mean, 2, number_bootstrap_replicates, params, number_dots, max_correlation_radius,...
+            dots_per_cell_mean, dot_radius, dot_correlation_value, label_density_mean, label_density_stdev, label_SN_ratio,...
+            event_overcounting, dot_center_precision, event_precision, STORM_pixel_resolution, 'pdf'); 
     end
     
     % Collect results
@@ -90,8 +91,7 @@ for number_dots_index = 1:length(number_dots_vector)
 end
 
 % Save data
-% save([figure_path, data_name], 'distance_vector', 'mean_vector_stack_cells', 'number_dots_vector', 'max_correlation_radius', 'dots_per_cell_mean', 'dot_radius',...
-%     'dot_correlation_value', 'label_density_mean', 'label_density_stdev', 'label_SN_ratio', 'event_overcounting', 'dot_center_precision',...
-%     'event_precision', 'STORM_pixel_resolution', 'mean_bootstrap_vector_stack_cells');
-save([figure_path, data_name], 'mean_bootstrap_vector_stack_cells', '-append');
+save([figure_path, data_name], 'distance_vector', 'mean_vector_stack_cells', 'number_dots_vector', 'max_correlation_radius', 'dots_per_cell_mean', 'dot_radius',...
+    'dot_correlation_value', 'label_density_mean', 'label_density_stdev', 'label_SN_ratio', 'event_overcounting', 'dot_center_precision',...
+    'event_precision', 'STORM_pixel_resolution', 'mean_bootstrap_vector_stack_cells');
 

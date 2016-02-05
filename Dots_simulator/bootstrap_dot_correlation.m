@@ -1,7 +1,7 @@
-function [correlation] = bootstrap_dot_correlation(parameter_struct, number_permutations, number_dots, max_corr_length,...
+function [correlation_stack, number_cells_screened] = bootstrap_dot_correlation(parameter_struct, number_resamplings, number_dots, max_corr_length,...
     dots_per_cell_mean, dot_radius, dot_correlation_value, label_density_mean, label_density_stdev, label_SN_ratio, event_overcounting,...
     dot_center_precision, event_precision, STORM_pixel_resolution, STORM_method)
-%COLLECT_DOT_CORRELATIONS Returns a 2D correlations from simulated cells 
+%BOOTSTRAP_DOT_CORRELATIONS Returns 2D correlations from simulated cells 
 %   with "dot" type well-defined centers of interest
 %
 %   This function handles the logic needed to run a dot simulation with the
@@ -15,7 +15,7 @@ function [correlation] = bootstrap_dot_correlation(parameter_struct, number_perm
 %       a cell with the create_test_data/create_test_STORM_image
 %       functions. Parameters in this structure may be superceded due to 
 %       requirements of the other inputs.
-%   number_permutations: number of bootstrapping permutations to perform
+%   number_resamplings: number of bootstrapping resamplings to perform
 %   number_dots: the number of dots to simulate
 %   max_corr_length: the maximum radius out to which the correlation is 
 %       calculated, given in nanometers. 
@@ -42,7 +42,8 @@ function [correlation] = bootstrap_dot_correlation(parameter_struct, number_perm
 %       images. Options are: 'pdf' or 'binning'
 % Outputs:
 %   correlation_stack: 3D stack of 2D correlation from each bootstrap.
-
+%   number_cells_screened: the number of cells nedded in to collect all the
+%       required dots
 
 % Rename parameter structure for convenience
 params = parameter_struct;
@@ -80,19 +81,17 @@ end
 cell_area = pi * (cell_radius / 1000)^2; % in micrometers^2
 logn_mu = log((label_density_mean^2) / sqrt(label_density_stdev^2 + label_density_mean^2));
 logn_sigma = sqrt(log(label_density_stdev^2 / (label_density_mean^2) + 1));
+correlation_max_radius_px = ceil(max_corr_length / STORM_pixel_resolution); 
+correlation_width = 2 * correlation_max_radius_px + 1;
 
 % Edit param values for all cells
 params.STORM_pixel_size = STORM_pixel_resolution;
 params.ch2_crosscor_params = [0, event_precision];
 
 % Initialize counter variables
-num_cells_screened = 0;
-num_cells_used = 0;
+number_cells_screened = 0;
+number_cells_used = 0;
 number_dots_complete = 0;
-
-% Initialize storage variables
-STORM_image_cells = cell();
-dot_center_cells = cell();
 
 % Create and correlate cells until we have collected enough cells
 while number_dots_complete < number_dots
@@ -109,8 +108,8 @@ while number_dots_complete < number_dots
     num_needed = number_dots - number_dots_complete;
     
     % Count cell
-    num_cells_screened = num_cells_screened + 1;
-    num_cells_used = num_cells_used + 1;
+    number_cells_screened = number_cells_screened + 1;
+    number_cells_used = number_cells_used + 1;
     
     % Calculate required values per cell
     num_base_events = round(cell_area * label_density_cell);   
@@ -139,41 +138,49 @@ while number_dots_complete < number_dots
     data.y = event_data(:, 2);
     STORM_image = create_STORM_image(data, params.STORM_pixel_size, event_precision, [x_length, y_length], false, false, true);
     
-    % Randomly remove extra dot coordinates
+    % Randomly remove extra dot coordinates on last cell
     if num_dots_cell > num_needed
         needed_indices = randperm(num_dots_cell, num_needed);
         dot_center_coords = dot_center_coords(needed_indices, :);
     end
     
-    % 
+    % Save images and coordinates
+    STORM_image_cells{number_cells_used} = STORM_image;
+    dot_center_cells{number_cells_used} = dot_center_coords;
     
-end
-
-    % Correlate the dots in the cell
-    [cell_correlation] = dots_correlation(STORM_image, dot_center_coords, dot_center_precision,...
-        max_corr_length, params.STORM_pixel_size, cell_mask, [0, 0]);
-    
-    % Write the cell correlation into the final results stack
+     % Record the number of dots finished in the current cell
     if num_dots_cell <= num_needed
-        weighted_corr_stack(:, :, number_cells_used) = cell_correlation * num_dots_cell;
         number_dots_complete = number_dots_complete + num_dots_cell;
     else
-        weighted_corr_stack(:, :, number_cells_used) = cell_correlation * num_needed;
         number_dots_complete = number_dots_complete + num_needed;
     end
+end
+
+% Repeat the bootstrapping
+correlation_stack = zeros(correlation_width, correlation_width, number_resamplings);
+for resample_index = 1:number_resamplings
+
+    % Create a new dataset by resampling the existing one
+    resampled_center_coords_cells = resample_coordinates(dot_center_cells);
+    
+    % Correlate the dots in each cell and take a weighted average
+    weighted_corr_stack = zeros(correlation_width, correlation_width, length(resampled_center_coords_cells(:)));
+    for cell_index = 1:length(resampled_center_coords_cells(:))
+        
+        % Correlate the dots in the cell and save the correlation
+        [cell_correlation] = dots_correlation(STORM_image_cells{cell_index}, resampled_center_coords_cells{cell_index},...
+            dot_center_precision, max_corr_length, params.STORM_pixel_size, cell_mask, [0, 0]);
+        weighted_corr_stack(:, :, cell_index) = cell_correlation * size(resampled_center_coords_cells{cell_index}, 1);
+    end
+    
+    % Average the weighted cell stack and add to resampling stack
+    correlation_stack(:, :, resample_index) = sum(weighted_corr_stack, 3) / number_dots;
     
     % Report to console
     fprintf('.');
 end
 
-% Average the weighted stack
-correlation = sum(weighted_corr_stack, 3) / number_dots;
-
 % Report to console
 fprintf('\n');
-
-% Return number of cells if requested
-if nargout > 1
-    number_cells = num_cells_screened;
 end
 

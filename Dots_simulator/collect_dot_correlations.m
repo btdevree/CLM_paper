@@ -86,45 +86,45 @@ params.STORM_pixel_size = STORM_pixel_resolution;
 params.ch2_crosscor_params = [0, event_precision];
 
 % Initialize counter variables
-num_cells_screened = 0;
-num_cells_used = 0;
+number_cells_screened = 0;
+number_cells_used = 0;
 number_dots_complete = 0;
 
 % Create and correlate cells until we have collected enough correlations
 while number_dots_complete < number_dots
     
     % Choose a number of dots and label density
-    num_dots_cell = poissrnd(dots_per_cell_mean);
-    if num_dots_cell == 0
-        num_cells_screened = num_cells_screened + 1;
+    number_dots_cell = poissrnd(dots_per_cell_mean);
+    if number_dots_cell == 0
+        number_cells_screened = number_cells_screened + 1;
         continue % Try again if there are no dots in cell
     end
     label_density_cell = lognrnd(logn_mu, logn_sigma);
     
     % Determine how many dots are still needed
-    num_needed = number_dots - number_dots_complete;
+    number_needed = number_dots - number_dots_complete;
     
     % Count cell
-    num_cells_screened = num_cells_screened + 1;
-    num_cells_used = num_cells_used + 1;
+    number_cells_screened = number_cells_screened + 1;
+    number_cells_used = number_cells_used + 1;
     
     % Calculate required values per cell
-    num_base_events = round(cell_area * label_density_cell);   
-    num_overcount_events = round(num_base_events * event_overcounting);
-    num_true_events = num_base_events + num_overcount_events;
+    number_base_events = round(cell_area * label_density_cell);   
+    number_overcount_events = round(number_base_events * event_overcounting);
+    number_true_events = number_base_events + number_overcount_events;
     if isnumeric(label_SN_ratio)
-        num_noise_events = num_true_events / label_SN_ratio;
+        number_noise_events = number_true_events / label_SN_ratio;
     elseif strcmp(label_SN_ratio, 'no_noise');
-        num_noise_events = 0;
+        number_noise_events = 0;
     end
     
     % Edit param values for each individual cell
-    params.number_events_ch1 = num_base_events;
-    params.number_events_ch2 = num_true_events;
-    params.number_background_events_ch2 = round(num_noise_events);
+    params.number_events_ch1 = number_base_events;
+    params.number_events_ch2 = number_true_events;
+    params.number_background_events_ch2 = round(number_noise_events);
     
     % Create a 2D pdf for finding the cells 
-    [pdf_map, dot_center_coords, cell_mask] = dots_pdf_map(num_dots_cell, dot_radius, dot_correlation_value, params);
+    [pdf_map, dot_center_coords, cell_mask] = dots_pdf_map(number_dots_cell, dot_radius, dot_correlation_value, params);
     
     % Get event data for the image
     [~, event_data, ~, STORM_vars ] = create_test_data_dv(params);
@@ -135,9 +135,9 @@ while number_dots_complete < number_dots
     data.y = event_data(:, 2);
     STORM_image = create_STORM_image(data, params.STORM_pixel_size, event_precision, [x_length, y_length], false, false, true);
     
-    if num_dots_cell > num_needed
+    if number_dots_cell > number_needed
         % Randomly remove extra dot coordinates
-        needed_indices = randperm(num_dots_cell, num_needed);
+        needed_indices = randperm(number_dots_cell, number_needed);
         dot_center_coords = dot_center_coords(needed_indices, :);
     end
     
@@ -146,12 +146,12 @@ while number_dots_complete < number_dots
         max_corr_length, params.STORM_pixel_size, cell_mask, [0, 0]);
     
     % Write the cell correlation into the final results stack
-    if num_dots_cell <= num_needed
-        weighted_corr_stack(:, :, number_cells_used) = cell_correlation * num_dots_cell;
-        number_dots_complete = number_dots_complete + num_dots_cell;
+    if number_dots_cell <= number_needed
+        weighted_corr_stack(:, :, number_cells_used) = cell_correlation * number_dots_cell;
+        number_dots_complete = number_dots_complete + number_dots_cell;
     else
-        weighted_corr_stack(:, :, number_cells_used) = cell_correlation * num_needed;
-        number_dots_complete = number_dots_complete + num_needed;
+        weighted_corr_stack(:, :, number_cells_used) = cell_correlation * number_needed;
+        number_dots_complete = number_dots_complete + number_needed;
     end
     
     % Report to console
@@ -166,6 +166,6 @@ fprintf('\n');
 
 % Return number of cells if requested
 if nargout > 1
-    number_cells = num_cells_screened;
+    number_cells = number_cells_screened;
 end
 
