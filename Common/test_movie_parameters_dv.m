@@ -29,15 +29,13 @@ params.cell_radius = choice1;
 % ------ Cellular event distribution -----------------
 
 % Define number of events in cell per movie
-params.number_events_ch1 = 100;
-params.number_events_ch2 = 100;
+params.number_events_ch1 = 1e5;
+params.number_events_ch2 = 1e5;
 
 % Define channel 1 distribution/autocorrelation model
 choice1 = 'random'; % random distribution of events
 choice2 = 'mapped'; % distributed according to an image-sized pdf map 
-params.ch1_distribution = choice2;
-% NOTE: Would like to have better options for ch1 distribution
-% (double/triple detections, "holes", etc.)
+params.ch1_distribution = choice1;
 
 % Define channel 1 distribution model parameters
 %choice1 = null % no parameters are needed, argument is ignored
@@ -60,14 +58,14 @@ choice1 = 'random'; % no relation to channel 1, random distribution
 choice2 = 'exact'; % all channel 2 events are exactly a certain distance from a channel 1 event
 choice3 = 'Gaussian'; % Gaussian distribution of channel 2 events from the channel 1 event centers
 choice4 = 'critical'; % channel 2 events obey a 2D critical phase distribution
-params.ch2_crosscor = choice3;
+params.ch2_crosscor = choice2;
 
 % Define channel 2 crosscorrelation model parameters
 %choice1 = null % no parameters are needed, argument is ignored
-choice2 = [0]; % distance between ch1 and ch2 events, in nanometers
+choice2 = [200]; % distance between ch1 and ch2 events, in nanometers
 choice3 = [0, 25]; % mean distance from ch1 event (mu) and standard deviation (sigma) given as [mu, sigma] in nanometers
 %choice4 = ???? % TODO parameters for the critical model
-params.ch2_crosscor_params = choice3;
+params.ch2_crosscor_params = choice2;
 
 % -------- Temporal event distribution ------------------
 

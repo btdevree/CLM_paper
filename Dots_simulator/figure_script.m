@@ -1,11 +1,11 @@
 % Set directory information
 figure_path_parts = strsplit(pwd, 'CLM_paper');
 figure_path = [figure_path_parts{1}, 'CLM_figures_and_data/'];
-data_name_no = 'stdev_vs_num_dots_no_over.mat';
-data_name_low = 'stdev_vs_num_dots_low_over.mat';
-data_name_high = 'stdev_vs_num_dots_high_over.mat';
-figure_prefix = 'stdev_vs_num_dots_';
-figure_prefix_2 = 'dist_vs_corr_';
+data_name_no = 'new_stdev_vs_num_dots_no_over.mat';
+data_name_low = 'new_stdev_vs_num_dots_low_over.mat';
+data_name_high = 'new_stdev_vs_num_dots_high_over.mat';
+figure_prefix = 'new_stdev_vs_num_dots_';
+figure_prefix_2 = 'new_dist_vs_corr_';
 
 % Note - hard-coded for 7 nm pixel distance
 
