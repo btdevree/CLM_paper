@@ -1,4 +1,4 @@
-function [ch1_data, ch2_data, movie_variables_structure, STORM_variables_structure ] = create_test_data_dv(parameters_struct, seed)
+function [ch1_data, ch2_data, passed_variables_structure ] = create_test_data_dv(parameters_struct, seed)
 %CREATE_TEST_DATA_DV Creates data points for a test movie with the given 
 %   parameters. Assumes a dualview configuration.
 
@@ -12,6 +12,8 @@ function [ch1_data, ch2_data, movie_variables_structure, STORM_variables_structu
 %   Output:
 %   ch1_data/ch2_data: datapoints for use in making a test movie and/or 
 %       test STORM images
+%   passed_vars_structure: variables needed to create the simulated cell
+%       and images in other functions. 
 
 % Set defaults
 if nargin < 2; seed = []; end;
@@ -242,15 +244,13 @@ s = struct();
 s.cell_center_x = cell_center_x;
 s.cell_center_y = cell_center_y; 
 s.cell_radius = cell_radius;
-movie_variables_structure = s;
 
-% Collect required variables for movie
-s = struct();
+% Collect required variables for STORM image
 s.min_x_bound = min_x_bound;
 s.min_y_bound = min_y_bound;
 s.max_x_bound = max_x_bound;
 s.max_y_bound = max_y_bound;
-STORM_variables_structure = s;
+passed_variables_structure = s;
 end
 
 function [coords] = random_events_in_cell(number_events, cell_center, cell_radius)

@@ -1,5 +1,5 @@
 function [ ch1_STORM_image, ch2_STORM_image, STORM_RGB_image ] = create_test_STORM_images_dv( parameters_structure, ch1_data, ch2_data,...
-    STORM_variables_structure, sparse_output_flag, parallel_image_creation_flag, use_MEX_flag )
+    passed_variables_structure, sparse_output_flag, parallel_image_creation_flag, use_MEX_flag )
 %CREATE_TEST_STORM_IMAGES_DV Creates a test movie with the given parameters. Assumes
 %   a dualview configuration.
 
@@ -10,8 +10,8 @@ function [ ch1_STORM_image, ch2_STORM_image, STORM_RGB_image ] = create_test_STO
 %       that function for more documentation.
 %   ch1/ch2_data: matrix of event coordiantes calculated with 
 %       create_test_data_dv. Use empty matrix if no ch2 image is requested.
-%   STORM_variables__structure: Required variables from
-%       create_test_movie_data
+%   passed_variables_structure: Required variables from
+%       test_movie_parameters_dv
 %   sparse_output_flag: if true, output image is a sparse matrix. Default =
 %       true.
 %   parallel_image_creation_flag; if true, the image is created using all
@@ -39,8 +39,8 @@ if nargin < 7, use_MEX_flag = false; end;
 ch1_event_coords = ch1_data;
 ch2_event_coords = ch2_data;
 
-% Unpack STORM_variables_structure
-s = STORM_variables_structure;
+% Unpack required info from passed_variables_structure
+s = passed_variables_structure;
 min_x_bound = s.min_x_bound;
 min_y_bound = s.min_y_bound;
 max_x_bound = s.max_y_bound;

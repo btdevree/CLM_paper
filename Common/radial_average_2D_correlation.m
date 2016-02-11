@@ -1,4 +1,4 @@
-function [distance_vector, mean_vector, stdev_vector, sem_vector] = radial_average_2D_correlation(image, center_coords, max_distance, sampling_distance)
+function [distance_vector, mean_vector, stdev_vector, sem_vector] = radial_average_2D_correlation(image, radial_sampling_distance, arc_sampling_distance, max_distance, center_coords)
 %RADIAL_AVERAGE_2D_CORRELATION Calculates the radial average of a cross- or
 %   auto-correlation image.
 %
@@ -16,22 +16,27 @@ function [distance_vector, mean_vector, stdev_vector, sem_vector] = radial_avera
 %   max_distance: Maximum radial distance for the average calculation, 
 %       given in pixels. Optional, default = radius of largest full circle 
 %       that can be drawn.
-%   sampling_distance: Distance along the arc inbetween sampling points. 
+%   radial_sampling_distance: Distance along the radius inbetween sampling 
+%       points. Optional, default = 1 pixels. 
+%   arc_sampling_distance: Distance along the arc inbetween sampling points. 
 %       Optional, default = 0.3 pixels. 
 %   Outputs:
 %   distance_vector: Column vector of radial distances, in pixels.
 %   mean_vector: Column vector of the radial averages at each radius.
 %   stdev_vector: Column vector of the standard deviation of each average 
 %       value.
+%   sem_vector: Column vector of the standard error of the mean for each 
+%       average value.
 
 % Set defaults
-if nargin < 4; sampling_distance = 0.3; end;
-if nargin < 2 
+if nargin < 2; radial_sampling_distance = 1; end;
+if nargin < 3; arc_sampling_distance = 0.3; end;
+if nargin < 5 
     x_coord = size(image, 2)/2;
     y_coord = size(image, 1)/2; 
     center_coords = [x_coord; y_coord];
 end
-if nargin < 3,
+if nargin < 4,
     right_max = size(image, 2) - center_coords(1);
     left_max = center_coords(1);
     up_max = size(image, 1) - center_coords(2); 
@@ -45,7 +50,7 @@ y_vector = [size(image, 1)-0.5:-1:0.5];
 [image_x, image_y] = meshgrid(x_vector, y_vector);
 
 % Generate list of radial distances
-distance_vector = [1:max_distance].';
+distance_vector = [1:radial_sampling_distance:max_distance].';
 
 % Initialize result vectors
 mean_vector = zeros(size(distance_vector));
@@ -58,7 +63,7 @@ for rad_ind = 1:length(distance_vector)
 
     % Spread out sampling arc evenly along circumference from 0 to 2*pi.
     total_circ_length = 2 .* pi .* radius; % circumfrence in pixels
-    num_points = ceil(total_circ_length ./ sampling_distance);
+    num_points = ceil(total_circ_length ./ arc_sampling_distance);
     actual_radian_interval = 2 .* pi ./ num_points;
     radians = actual_radian_interval * [0:num_points-1].';
   

@@ -98,7 +98,9 @@ map_sum = sum(pdf_map(:));
 pdf_map = pdf_map / map_sum;
 
 % Copy to the image mask if requested - Move this to another funciton in
-% the next refactor, it doesn't really fit that well here.
+% the next refactor, it doesn't really fit that well here. !!!!!!! Replace
+% with
+% create_test_cell_STORM_mask!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 if nargout == 3
     STORM_mask = create_cell_map(params.STORM_pixel_size, x_length, y_length, cell_center_x, cell_center_y, cell_radius);
 end
