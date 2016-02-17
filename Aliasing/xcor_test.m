@@ -12,7 +12,7 @@ load('aliasing_params.mat') % loads as 'params'
 number_replicates = 30;
 max_correlation_radius = 500; %nm
 pixel_lengths = [60; 55; 50; 45; 40; 36; 32; 28; 25; 22; 19; 16; 14; 12; 10; 8; 7]; % nm
-analytical_calc_cutoff = 7; % sigma
+analytical_calc_cutoff = 10; % sigma
 radial_average_sampling = 5; %nm
 
 % Initialize the results variables
@@ -38,6 +38,7 @@ for pixel_ind = 1:length(pixel_lengths)
         [ch1_STORM_image, ch2_STORM_image] = create_test_STORM_images_dv(params, ch1_data, ch2_data, passed_vars, false, true, true);
         
         % Create an image mask
+        passed_vars.cell_radius = passed_vars.cell_radius + 2*params.ch2_crosscor_params; % Add 2x xcor radius to mask 
         STORM_mask = create_test_cell_STORM_mask(params, passed_vars);
         
         % Run the cross-correlation
@@ -46,12 +47,13 @@ for pixel_ind = 1:length(pixel_lengths)
         
         % Radially average the xcor image
         radial_sampling_px = radial_average_sampling/pixel_length;
-        [distance_vector, mean_vector, ~, ~] = radial_average_2D_correlation(xcor_image, radial_sampling_px);
+        [distance_vector_px, mean_vector] = radial_average_2D_correlation(xcor_image, radial_sampling_px);
         
         % Calculate the expected result and record the distance and analytical results, first cycle only
         if repeat_ind == 1
            
-            % Record the distance vector
+            % Record the distance vector in nanometers
+            distance_vector = pixel_length * distance_vector_px;
             dist_vectors{pixel_ind, 1} = distance_vector;
             
             % Add required info to the passed_vars structure

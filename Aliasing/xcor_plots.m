@@ -1,10 +1,13 @@
 % Make plots of the xcor_data files
-% Expects:
-%   xcor_data: cell array of XC_data structures
-%   av_xcor: average crosscorrelation image
-%   dist_vec: radial distance vector
-%   mean_vec: radial mean vector
-%   stdev_vec: radial standard deviation vector
+
+% Set directory information
+path_parts = strsplit(pwd, 'CLM_paper');
+filepath = [path_parts{1}, 'CLM_figures_and_data/'];
+data_name = 'aliasing_part_B.mat';
+
+% Load a parameter structure from current dirctory with deisred settings
+clear all
+load([filepath, data_name]) % loads as 'params'
 
 % Make new figure
 figure;

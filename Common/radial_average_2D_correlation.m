@@ -23,10 +23,6 @@ function [distance_vector, mean_vector, stdev_vector, sem_vector] = radial_avera
 %   Outputs:
 %   distance_vector: Column vector of radial distances, in pixels.
 %   mean_vector: Column vector of the radial averages at each radius.
-%   stdev_vector: Column vector of the standard deviation of each average 
-%       value.
-%   sem_vector: Column vector of the standard error of the mean for each 
-%       average value.
 
 % Set defaults
 if nargin < 2; radial_sampling_distance = 1; end;
@@ -50,58 +46,43 @@ y_vector = [size(image, 1)-0.5:-1:0.5];
 [image_x, image_y] = meshgrid(x_vector, y_vector);
 
 % Generate list of radial distances
-distance_vector = [1:radial_sampling_distance:max_distance].';
+distance_vector = [0:radial_sampling_distance:max_distance].';
 
 % Initialize result vectors
 mean_vector = zeros(size(distance_vector));
-stdev_vector = zeros(size(distance_vector));
-sem_vector = zeros(size(distance_vector));
 
 % Loop through each radius
 for rad_ind = 1:length(distance_vector) 
     radius = distance_vector(rad_ind);
-
-    % Spread out sampling arc evenly along circumference from 0 to 2*pi.
-    total_circ_length = 2 .* pi .* radius; % circumfrence in pixels
-    num_points = ceil(total_circ_length ./ arc_sampling_distance);
-    actual_radian_interval = 2 .* pi ./ num_points;
-    radians = actual_radian_interval * [0:num_points-1].';
-  
+    
+    % Special case for radius == 0
+    if radius == 0
+        x_circle = 0;
+        y_circle = 0;
+    else
+    
+        % Spread out sampling arc evenly along circumference from 0 to 2*pi.
+        total_circ_length = 2 .* pi .* radius; % circumfrence in pixels
+        num_points = ceil(total_circ_length ./ arc_sampling_distance);
+        actual_radian_interval = 2 .* pi ./ num_points;
+        radians = actual_radian_interval * [0:num_points-1].';
+        [x_circle, y_circle] = pol2cart(radians, radius);
+    end
+    
     % Convert to x,y coordinates
-    [x_circle, y_circle] = pol2cart(radians, radius);
     x_coords = x_circle + center_coords(1);
     y_coords = y_circle + center_coords(2);
     
-    values = zeros(size(x_coords, 1), size(image, 3));
     % Loop through each image in the image stack
+    values = zeros(size(x_coords, 1), size(image, 3));
     for image_index = 1:size(image, 3)
         
         % Calculate the value at each coordinate with linear interpolation
         values(:, image_index) = interp2(image_x, image_y, image(:, :, image_index), x_coords, y_coords);
     end
     
-    % Calculate the average and the standard deviation of the values
+    % Calculate the average of the values
     mean_vector(rad_ind) = mean(values(:));
-    stdev_vector(rad_ind) = std(values(:));
-    cell_means = mean(values, 2);
-    sem_vector(rad_ind) = std(cell_means)/sqrt(size(image, 3));
 end
-
-center_values = zeros(size(image, 3), 1);
-% Loop through each image in the image stack
-for image_index = 1:size(image, 3)
-    
-    % Calculate the value at the central point
-    center_values(image_index) = interp2(image_x, image_y, image(:, :, image_index), center_coords(1), center_coords(2));
-end
-center_mean = mean(center_values);
-center_stdev = std(center_values);
-center_sem = std(center_values)/sqrt(size(image, 3));
-
-% Add center value to result vectors
-distance_vector = [0; distance_vector];
-mean_vector = [center_mean; mean_vector];
-stdev_vector = [center_stdev; stdev_vector]; 
-sem_vector = [center_sem; sem_vector];
 end
 
