@@ -2,7 +2,6 @@ function [expected_radav_xcor] = alaising_test_analytical_solution(distance_vect
 %ALAISING_TEST_ANALYTICAL_SOLUTION Numerical calculation of the expected 
 %   radially averaged crosscorrelation computed with analytical functions.
 
-
 % Get required parameters
 ch2_seperation_length = params.ch2_crosscor_params(1);
 analytical_calc_cutoff = passed_vars.analytical_calc_cutoff; % sigma
@@ -12,9 +11,9 @@ pdf_sigma = params.STORM_precision;
 % Calculate analytical solution (work in nanaometers)
 % Calc average spot density
 ch1_total_density = params.number_events_ch1 / (pi * passed_vars.cell_radius^2); % spots/nm^2
-ch2_total_density = params.number_events_ch2 / (pi * (passed_vars.cell_radius + params.ch2_crosscor_params)^2); % spots/nm^2
+ch2_total_density = params.number_events_ch2 / (pi * (passed_vars.cell_radius + params.ch2_crosscor_params(1))^2); % spots/nm^2
 ch1_rand_density = (params.number_events_ch1 - 1) / (pi * passed_vars.cell_radius^2); % spots/nm^2 Density of all other spots in the channel besides the one modeled in the psf
-ch2_rand_density = (params.number_events_ch2 - 1) / (pi * (passed_vars.cell_radius + params.ch2_crosscor_params)^2); % spots/nm^2 Density of all other spots in the channel besides the one modeled in the psf
+ch2_rand_density = (params.number_events_ch2 - 1) / (pi * (passed_vars.cell_radius + params.ch2_crosscor_params(1))^2); % spots/nm^2 Density of all other spots in the channel besides the one modeled in the psf
 covar_matrix = [pdf_sigma.^2, 0; 0, pdf_sigma.^2];
 covar_inv = inv(covar_matrix);
 covar_det = det(covar_matrix);
@@ -32,7 +31,7 @@ ch2_pdf = (2 .* pi .* sqrt(covar_det))^-1 .* exp(-0.5 .* sum(X_shift_ch2.' * cov
 % Radially average to get the expected c(r) curve
 % Loop through the desired indices
 expected_radav_xcor = zeros(size(distance_vector));
-for rad_ind = 1:length(distance_vector) 
+parfor rad_ind = 1:length(distance_vector) 
     radius = distance_vector(rad_ind);
     
      % Special case where radius is 0
@@ -56,7 +55,12 @@ for rad_ind = 1:length(distance_vector)
         % Compute law of cosines expression a^2 + b^2 - c^2 / 2ab
         cosine_law_product = (radius.^2 + ch2_seperation_length.^2 -...
             (analytical_calc_cutoff .* pdf_sigma).^2) ./ (2 .* radius .* ch2_seperation_length);
-
+        
+        % Must re-define these outside of the if statements of in order for the parfor to run
+        half_circ_lengths = [];
+        repeat_last_circ_point = false;
+        num_uneval_points = 0;
+       
         % If the product is <-1, the two pdf centers are always within
         % the cutoff length and we need to calculate the entire half circle
         if cosine_law_product <= -1
@@ -120,7 +124,7 @@ for rad_ind = 1:length(distance_vector)
 
     % Average the values
     eval_sum = sum(xcor_circ, 1); % Gives zero if xcor_circ is empty
-    uneval_sum = num_uneval_points .* (ch1_rand_density .* ch2_rand_density) ./ (ch1_total_density .* ch2_total_density);
+    uneval_sum = num_uneval_points .* ((ch1_rand_density .* ch2_rand_density) ./ (ch1_total_density .* ch2_total_density));
     expected_radav_xcor(rad_ind) = (eval_sum + uneval_sum) ./ (length(xcor_circ) + num_uneval_points);
 end
 end
