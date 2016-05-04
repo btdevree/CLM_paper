@@ -1,4 +1,4 @@
-% Make part C figure data
+% Make data for FD curves
 
 % We assume that we're in the CLM_paper repository, and we want to save the
 % big binary figure and data files to CLM_figures_and_data folder, not on 
@@ -22,7 +22,7 @@ datasets = cell(1, num_eventnums, replicates); % Has to be the same size as the 
 param_array = cell(num_ratios, num_eventnums, replicates); 
 
 % Load in the image creation parameters as variable params
-load 'params_part_B'
+load 'parameters.mat'
 
 % Copy the parameter structure into a cell array so that we can make the images in parallel
 % Loop through all SN_ratio and event_number options
