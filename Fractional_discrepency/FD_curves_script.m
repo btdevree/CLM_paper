@@ -1,15 +1,9 @@
-% Check out SSQ-100 behavior as we remove more and more data
-%
-% Want to determine if a slope at 1, 2, 3% removal can be used to make a
-% approximated CI index
-
-% Calculates the completeness index data for the part C figure. Assumes we
+% We assume that we're in the CLM_paper repository, and we want to save the
+% big binary figure and data files to CLM_figures_and_data folder, not on 
+% the repository but on the same file level as CLM_paper. Assumes we
 % can find the images and other data at ..CLM_figures_and_data under the 
 % names 'NPIF_part_C_data.mat' and 'NPIF_part_C_images.h5'.
 
-% We assume that we're in the CLM_paper repository, and we want to save the
-% big binary figure and data files to CLM_figures_and_data folder, not on 
-% the repository but on the same file level as CLM_paper.
 %binary_path_parts = strsplit(pwd, 'CLM_paper');
 %binary_path = [binary_path_parts{1}, 'CLM_figures_and_data/'];
 binary_path = '/home/btdevree/large_file_temp/'; % Network drive is just too slow and causes process to get killed
@@ -18,11 +12,11 @@ binary_path = '/home/btdevree/large_file_temp/'; % Network drive is just too slo
 SN_ratio = 10;
 
 % Choose discrepency method
-method = 'l2_norm';
+method = 'sum_of_squares';
 
 % Initialize hdf5 array to hold images directly on disc
-image_filepath = [binary_path, 'NPIF_part_C_images_SN', num2str(SN_ratio), '.h5'];
-data_filepath = [binary_path, 'NPIF_part_C_data_SN', num2str(SN_ratio), '.mat']; 
+image_filepath = [binary_path, 'FD_images_SN', num2str(SN_ratio), '.h5'];
+data_filepath = [binary_path, 'FD_data_SN', num2str(SN_ratio), '.mat']; 
 
 % Read in the data file
 load(data_filepath);
@@ -35,7 +29,8 @@ dataset_replicate_indices = [1:3].';
 number_repeats = 3; 
 
 % Fraction of events to calculate ideal-SSQ and SSQ-100 measures at
-event_fractions_larger = [.95; .90; .85; .8; .75; .7; .65; .6; .55]; % Special calculation for 1, 0, and .5
+%event_fractions_larger = [.95; .90; .85; .8; .75; .7; .65; .6; .55]; % Special calculation for 1, 0, and .5
+event_fractions_larger = [.90; .8; .7; .6]; % Special calculation for 1, 0, and .5
 event_fractions_smaller = 1-event_fractions_larger;
 event_fractions = [1; event_fractions_larger; .5; flipud(event_fractions_smaller); 0];
 
@@ -47,10 +42,10 @@ image_width = image_dims(2);
 zero_image = zeros(image_height, image_width);
 
 % Get a copy of the STORMvars structure and channel 2 data created with the given parameter structures
-testparams = param_array{1, 1, 1};
+testparams = param_array{1, 1, 1}; % param_array from loading in 'FD_data_SNxx'
 testparams.number_events_ch1 = 10;
 testparams.number_background_events_ch1 = 10;
-[ ~, data_ch2, ~, STORMvars] = create_test_data_dv(testparams, 10);
+[ ~, data_ch2, STORMvars] = create_test_data_dv(testparams, 10);
 
 % Initialize result matrix
 ideal_SSQ_results = zeros(length(event_fractions), number_repeats, length(dataset_replicate_indices), length(event_num_indices));
@@ -124,5 +119,5 @@ for event_num_index_index = 1:length(event_num_indices)
     end
 end
 
-save(['fractional_discrepency_curves_l2norm_SN', num2str(SN_ratio), '.mat'], 'ideal_SSQ_results', 'approx_SSQ_results', 'event_fractions',...
+save(['fractional_discrepency_curves_ssq_SN', num2str(SN_ratio), '.mat'], 'ideal_SSQ_results', 'approx_SSQ_results', 'event_fractions',...
     'number_repeats', 'event_num_indices', 'dataset_replicate_indices', 'true_event_numbers')

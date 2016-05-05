@@ -48,11 +48,11 @@ end
 test_params = param_array{1};
 test_params.number_events_ch1 = 10;
 test_params.number_background_events_ch1 = 10;
-[test_image, ~, ~] = part_C_create_image_and_data(test_params, 10);
+[test_image, ~, ~] = create_FD_image_and_data(test_params, 10);
 image_height = size(test_image, 1);
 image_width = size(test_image, 2);
 
-% These files are pretty big, so we'll have to make each SNration
+% These files are pretty big, so we'll have to make each SNratio
 % seperately
 for SN_index = 1:length(SN_ratios)
     SN_ratio = SN_ratios(SN_index);
@@ -61,7 +61,7 @@ for SN_index = 1:length(SN_ratios)
     sliced_param_array = param_array(SN_index, :, :);
     
     % Initialize hdf5 array to hold images directly on disc
-    image_filepath = [binary_path, 'NPIF_part_C_images_SN', num2str(SN_ratio), '.h5'];
+    image_filepath = [binary_path, 'FD_images_SN', num2str(SN_ratio), '.h5'];
     array_dims = [image_height, image_width, 1, num_eventnums, replicates]; 
     h5create(image_filepath, '/images_array', array_dims, 'ChunkSize', [image_height, image_width, 1, 1, 1]); % Chunks optimized for writing or reading full images
 
@@ -70,7 +70,7 @@ for SN_index = 1:length(SN_ratios)
     for index = 1:number_results
 
         % Evaluate the function asynchronously
-        future_results(index) = parfeval(@part_C_create_image_and_data, 3, sliced_param_array{index}, seeds(index)); 
+        future_results(index) = parfeval(@create_FD_image_and_data, 3, sliced_param_array{index}, seeds(index)); 
     end
 
     tic;
@@ -102,7 +102,7 @@ for SN_index = 1:length(SN_ratios)
     ideal_image = calculate_ideal_image(param_array{1}); % Assume same relevent parameters for the ideal image of all images
 
     % Save the datafiles
-    data_filepath = [binary_path, 'NPIF_part_C_data_SN', num2str(SN_ratio), '.mat'];
+    data_filepath = [binary_path, 'FD_data_SN', num2str(SN_ratio), '.mat'];
     save(data_filepath, 'binary_path', 'param_array', 'sliced_param_array', 'SN_ratios', 'true_event_numbers', 'ideal_image', 'datasets','-v7.3');
     datasets = cell(1, num_eventnums, replicates); % Has to be the same size as the sliced parameters array
 end
