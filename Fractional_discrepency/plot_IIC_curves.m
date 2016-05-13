@@ -2,9 +2,9 @@
 
 
 % Load data
-load('fractional_discrepency_curves_ssq_SN10.mat')
+load('fractional_discrepency_curves_doublecheck_ssq_SN10.mat')
 SN_ratio = 10;
-method_name = 'SSQ';
+method_name = 'OLD_SSQ';
 
 % Get mean and standard deviation of the replicates
 [approx_FD_mean, approx_FD_stdev] = calc_mean_stdev_FD_matrix(approx_SSQ_results);
@@ -50,10 +50,10 @@ set(gcf, 'Position', [100, 100, 800, 600]);
 set(gcf, 'PaperPositionMode', 'auto');
 plot(repmat(event_fractions, 1, size(ideal_FD_mean, 2)), ideal_info_improvement);
 xlabel('Fraction of events included')
-ylabel('SSQ fractional information improvement')
-title('SSQ Ideal Information Improvement Charactistic curve');
+ylabel([method_name, ' fractional information improvement'])
+title([method_name, ' Ideal Information Improvement Charactistic curve']);
 hold off
-print([figure_path, 'Ideal_IIC_SN', num2str(SN_ratio), '_', method_name, '.png'], '-dpng');
+print([figure_path, 'New_Ideal_IIC_SN', num2str(SN_ratio), '_', method_name, '.png'], '-dpng');
 delete(gcf)
 
 figure
@@ -62,10 +62,10 @@ set(gcf, 'Position', [100, 100, 800, 600]);
 set(gcf, 'PaperPositionMode', 'auto');
 plot(repmat(event_fractions, 1, size(approx_FD_mean, 2)), approx_info_improvement);
 xlabel('Fraction of events included')
-ylabel('SSQ fractional information improvement')
-title('SSQ Approximated Information Improvement Charactistic curve');
+ylabel([method_name, ' fractional information improvement'])
+title([method_name, ' Approximated Information Improvement Charactistic curve']);
 hold off
-print([figure_path, 'Approx_IIC_SN', num2str(SN_ratio), '_', method_name, '.png'], '-dpng');
+print([figure_path, 'New_Approx_IIC_SN', num2str(SN_ratio), '_', method_name, '.png'], '-dpng');
 delete(gcf)
 
 figure
@@ -74,10 +74,22 @@ set(gcf, 'Position', [100, 100, 800, 600]);
 set(gcf, 'PaperPositionMode', 'auto');
 plot(repmat(true_event_numbers, 1, 3), [TCI, ICI, ECI]);
 xlabel('Number of events in image')
-ylabel('Ideal or Estimated Completeness Index')
-title('Ideal or Estimated Completeness Index vs. event number');
+ylabel([method_name, ' Ideal or Estimated Completeness Index'])
+title([method_name, ' Ideal or Estimated Completeness Index vs. event number']);
 legend('TCI', 'ICI', 'ECI', 'Location', 'southeast');
 set(gca,'XScale','log');
 hold off
-print([figure_path, 'CI_SN', num2str(SN_ratio), '_', method_name, '.png'], '-dpng');
+print([figure_path, 'New_CI_SN', num2str(SN_ratio), '_', method_name, '.png'], '-dpng');
+delete(gcf)
+
+figure
+hold on
+set(gcf, 'Position', [100, 100, 800, 600]);
+set(gcf, 'PaperPositionMode', 'auto');
+plot(TCI, ECI);
+xlabel('Theoretical Completeness Index')
+ylabel('Estimated Completeness Index')
+title([method_name, ' Theoretical vs Estimated Completeness Index']);
+hold off
+print([figure_path, 'New_TCI_vs_ECI', num2str(SN_ratio), '_', method_name, '.png'], '-dpng');
 delete(gcf)

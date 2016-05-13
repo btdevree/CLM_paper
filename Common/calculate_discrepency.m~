@@ -87,8 +87,8 @@ if optimize_scaling
     end
     
     % Run the optimization
-    options = optimoptions('fminunc', 'Algorithm', 'quasi-newton', 'Display', 'none');
-    [optimized_scale] = fminunc(f, 1, options);
+    options = optimoptions('fminunc', 'Algorithm', 'quasi-newton'
+    [optimized_scale] = fminunc(f, 1);    
 end
 
 % Get the discrepency for return
