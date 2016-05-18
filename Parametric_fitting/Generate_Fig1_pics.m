@@ -1,0 +1,206 @@
+% Script to generate the picures used in figure 1 
+% Run in Parametric_fitting folder
+
+% Make simulated "cells" with uniform label distribution.
+% Cell center = middle of image +- .5 um in both directions, cell radius =
+% 5 um +- .5 um.  
+
+% Get path for output
+figure_path_parts = strsplit(pwd, 'CLM_paper');
+figure_path = [figure_path_parts{1}, 'CLM_figures_and_data/Fig1/'];
+
+% Load in parameters structure
+load('parameters_Fig1.mat'); % loads 'params' into local namespace
+
+% Define Signal/Noise ratio for spurious localizations
+SNratio = 4;
+
+% Initialize results structure
+fit_data = struct();
+reference_data = struct();
+
+% Startup parallel pool
+parpool(6);
+
+% ---- Part 1 - Exact image fitting -----
+% Just simulate the fitting, the true exact process is not really achevable
+% using numerical, not analytical, techniques
+
+% Randomize the center and radius
+center_offset_x = 1000 * (.5-rand); % +- 500 nm offset
+center_offset_y = 1000 * (.5-rand); % +- 500 nm offset
+radius_offset = 1000 * (.5-rand); % +- 500 nm offset
+
+% Edit parameters
+params.cell_center = [6400 + center_offset_x; 6400 + center_offset_y];
+params.cell_radius = 5000 + radius_offset;
+
+% Calculate image
+[~, image] = calculate_ideal_image(params);
+
+% Pass image and parameter fit info to graphing function
+filename = [figure_path, 'Fig1A_exact_fit.png'];
+pixel_size = params.STORM_pixel_size;
+center = params.cell_center ./ pixel_size;
+radius = params.cell_radius ./ pixel_size;
+make_parameteric_circle_plot(filename, image, center, radius, pixel_size);
+
+% Record info (in nanometers)
+fit_data.exact_center = params.cell_center;
+fit_data.exact_center_error = 0;
+fit_data.exact_radius = params.cell_radius;
+fit_data.exact_radius_error = 0;
+reference_data.exact_center = params.cell_center;
+reference_data.exact_radius = params.cell_radius;
+
+% ---- Part 2 - Ideal image fitting ----
+% Randomize the center and radius
+center_offset_x = 1000 * (.5-rand); % +- 500 nm offset
+center_offset_y = 1000 * (.5-rand); % +- 500 nm offset
+radius_offset = 1000 * (.5-rand); % +- 500 nm offset
+
+% Edit parameters
+params.cell_center = [6400 + center_offset_x; 6400 + center_offset_y];
+params.cell_radius = 5000 + radius_offset;
+
+% Calculate image
+[image] = calculate_ideal_image(params);
+
+% Run parametric fitting
+[center, center_error, radius, radius_error] = parametric_image_central_circle_finder(image);
+
+% Pass image and parameter fit info to graphing function
+filename = [figure_path, 'Fig1A_ideal_fit.png'];
+pixel_size = params.STORM_pixel_size;
+make_parameteric_circle_plot(filename, image, center, radius, pixel_size);
+
+% Record info (in nanometers)
+fit_data.ideal_center = pixel_size * center;
+fit_data.ideal_center_error = pixel_size * center_error;
+fit_data.ideal_radius = pixel_size * radius;
+fit_data.ideal_radius_error = pixel_size * radius_error;
+reference_data.ideal_center = params.cell_center;
+reference_data.ideal_radius = params.cell_radius;
+
+% ---- Part 3 - Low data image fitting ----
+% Define number of events
+event_number = 1e4;
+
+% Randomize the center and radius
+center_offset_x = 1000 * (.5-rand); % +- 500 nm offset
+center_offset_y = 1000 * (.5-rand); % +- 500 nm offset
+radius_offset = 1000 * (.5-rand); % +- 500 nm offset
+
+% Edit parameters
+params.cell_center = [6400 + center_offset_x; 6400 + center_offset_y];
+params.cell_radius = 5000 + radius_offset;
+params.number_events_ch1 = event_number;
+params.number_background_events_ch1 = event_number/SNratio;
+
+% Get a RNG seed
+seed = randi(1000);
+
+% Create some data
+[data_ch1, data_ch2, passed_vars] = create_test_data_dv(params, seed);
+
+% Create image 
+[image] = create_test_STORM_images_dv(params, data_ch1, data_ch2, passed_vars, false, true, true);
+
+% Run parametric fitting
+[center, center_error, radius, radius_error] = parametric_image_central_circle_finder(image);
+
+% Pass image and parameter fit info to graphing function
+filename = [figure_path, 'Fig1B_low_fit.png'];
+pixel_size = params.STORM_pixel_size;
+make_parameteric_circle_plot(filename, image, center, radius, pixel_size);
+
+% Record info (in nanometers)
+fit_data.low_number_events = event_number;
+fit_data.low_center = pixel_size * center;
+fit_data.low_center_error = pixel_size * center_error;
+fit_data.low_radius = pixel_size * radius;
+fit_data.low_radius_error = pixel_size * radius_error;
+reference_data.low_center = params.cell_center;
+reference_data.low_radius = params.cell_radius;
+
+% ---- Part 4 - Medium data image fitting ----
+% Define number of events
+event_number = 1e5;
+
+% Randomize the center and radius
+center_offset_x = 1000 * (.5-rand); % +- 500 nm offset
+center_offset_y = 1000 * (.5-rand); % +- 500 nm offset
+radius_offset = 1000 * (.5-rand); % +- 500 nm offset
+
+% Edit parameters
+params.cell_center = [6400 + center_offset_x; 6400 + center_offset_y];
+params.cell_radius = 5000 + radius_offset;
+params.number_events_ch1 = event_number;
+params.number_background_events_ch1 = event_number/SNratio;
+
+% Get a RNG seed
+seed = randi(1000);
+
+% Create some data
+[data_ch1, data_ch2, passed_vars] = create_test_data_dv(params, seed);
+
+% Create image 
+[image] = create_test_STORM_images_dv(params, data_ch1, data_ch2, passed_vars, false, true, true);
+
+% Run parametric fitting
+[center, center_error, radius, radius_error] = parametric_image_central_circle_finder(image);
+
+% Pass image and parameter fit info to graphing function
+filename = [figure_path, 'Fig1B_med_fit.png'];
+pixel_size = params.STORM_pixel_size;
+make_parameteric_circle_plot(filename, image, center, radius, pixel_size);
+
+% Record info (in nanometers)
+fit_data.med_event_number = event_number;
+fit_data.med_center = pixel_size * center;
+fit_data.med_center_error = pixel_size * center_error;
+fit_data.med_radius = pixel_size * radius;
+fit_data.med_radius_error = pixel_size * radius_error;
+reference_data.med_center = params.cell_center;
+reference_data.med_radius = params.cell_radius;
+
+% ---- Part 5 - High data image fitting ----
+% Define number of events
+event_number = 1e6;
+
+% Randomize the center and radius
+center_offset_x = 1000 * (.5-rand); % +- 500 nm offset
+center_offset_y = 1000 * (.5-rand); % +- 500 nm offset
+radius_offset = 1000 * (.5-rand); % +- 500 nm offset
+
+% Edit parameters
+params.cell_center = [6400 + center_offset_x; 6400 + center_offset_y];
+params.cell_radius = 5000 + radius_offset;
+params.number_events_ch1 = event_number;
+params.number_background_events_ch1 = event_number/SNratio;
+
+% Get a RNG seed
+seed = randi(1000);
+
+% Create some data
+[data_ch1, data_ch2, passed_vars] = create_test_data_dv(params, seed);
+
+% Create image 
+[image] = create_test_STORM_images_dv(params, data_ch1, data_ch2, passed_vars, false, true, true);
+
+% Run parametric fitting
+[center, center_error, radius, radius_error] = parametric_image_central_circle_finder(image);
+
+% Pass image and parameter fit info to graphing function
+filename = [figure_path, 'Fig1B_high_fit.png'];
+pixel_size = params.STORM_pixel_size;
+make_parameteric_circle_plot(filename, image, center, radius, pixel_size);
+
+% Record info (in nanometers)
+fit_data.high_event_number = event_number;
+fit_data.high_center = pixel_size * center;
+fit_data.high_center_error = pixel_size * center_error;
+fit_data.high_radius = pixel_size * radius;
+fit_data.high_radius_error = pixel_size * radius_error;
+reference_data.high_center = params.cell_center;
+reference_data.high_radius = params.cell_radius;

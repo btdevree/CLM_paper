@@ -1,7 +1,7 @@
 % Script to test circle fitting
 
 % Load parameters
-load('parameters.mat'); % loads in 'params'
+load('parameters_Fig1.mat'); % loads in 'params'
 seed = randi(1000);
 
 % Randomize center and radius by a pixel

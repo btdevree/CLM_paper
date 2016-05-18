@@ -1,11 +1,7 @@
-function [ ideal_image ] = calculate_ideal_image( parameters_structure )
+function [ideal_image, exact_image] = calculate_ideal_image(parameters_structure)
 %CALCULATE_IDEAL_IMAGE Calculate the ideal STORM image for the given test
 %   movie parameters.
 % 
-%   For now, we just make a sampled ideal STORM image and then blur it, but
-%   maybe in the future we should approximate the underlying shape with the
-%   supersampling functions used for event fitting??? 
-%
 % Inputs:
 %   parameter_structure: parameter structure generated with
 %       test_movie_parameters_dv
@@ -64,7 +60,11 @@ ideal_image = zeros(total_number_pixels_y, total_number_pixels_x);
 
 % Set to 1.0 if distance is within the circle
 ideal_image(distance <= cell_radius) = 1.0;
-   
+
+if nargout > 1
+    exact_image = ideal_image;
+end
+
 % Gaussian filter with specified radius
 STORM_sigma_in_pixels = STORM_sigma / STORM_resolution;
 filter_kernel = fspecial('gaussian', ceil(5 * STORM_sigma_in_pixels), STORM_sigma_in_pixels);
