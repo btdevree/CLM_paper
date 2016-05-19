@@ -1,9 +1,9 @@
 % Script to generate the picures used in figure 1 
 % Run in Parametric_fitting folder
 
-% Make simulated "cells" with uniform label distribution.
-% Cell center = middle of image +- .5 um in both directions, cell radius =
-% 5 um +- .5 um.  
+% Make simulated circular structures with uniform label distribution.
+% Circle center = middle of image +- .1 um in both directions, circle 
+% radius = .5 um +- .1 um.  
 
 % Get path for output
 figure_path_parts = strsplit(pwd, 'CLM_paper');
@@ -19,18 +19,22 @@ SNratio = 4;
 fit_data = struct();
 reference_data = struct();
 
+% Initialize RNG
+rng('shuffle')
+reference_data.starting_RNG = rng;
+
 % ---- Part 1 - Exact image fitting -----
 % Just simulate the fitting, the true exact process is not really achevable
 % using numerical, not analytical, techniques
 
 % Randomize the center and radius
-center_offset_x = 1000 * (.5-rand); % +- 500 nm offset
-center_offset_y = 1000 * (.5-rand); % +- 500 nm offset
-radius_offset = 1000 * (.5-rand); % +- 500 nm offset
+center_offset_x = 200 * (.5-rand); % +- 200 nm offset
+center_offset_y = 200 * (.5-rand); % +- 200 nm offset
+radius_offset = 200 * (.5-rand); % +- 100 nm offset
 
 % Edit parameters
-params.cell_center = [6400 + center_offset_x; 6400 + center_offset_y];
-params.cell_radius = 5000 + radius_offset;
+params.cell_center = [750 + center_offset_x; 750 + center_offset_y];
+params.cell_radius = 500 + radius_offset;
 
 % Calculate image
 [~, image] = calculate_ideal_image(params);
@@ -52,13 +56,13 @@ reference_data.exact_radius = params.cell_radius;
 
 % ---- Part 2 - Ideal image fitting ----
 % Randomize the center and radius
-center_offset_x = 1000 * (.5-rand); % +- 500 nm offset
-center_offset_y = 1000 * (.5-rand); % +- 500 nm offset
-radius_offset = 1000 * (.5-rand); % +- 500 nm offset
+center_offset_x = 200 * (.5-rand); % +- 200 nm offset
+center_offset_y = 200 * (.5-rand); % +- 200 nm offset
+radius_offset = 200 * (.5-rand); % +- 100 nm offset
 
 % Edit parameters
-params.cell_center = [6400 + center_offset_x; 6400 + center_offset_y];
-params.cell_radius = 5000 + radius_offset;
+params.cell_center = [750 + center_offset_x; 750 + center_offset_y];
+params.cell_radius = 500 + radius_offset;
 
 % Calculate image
 [image] = calculate_ideal_image(params);
@@ -81,16 +85,16 @@ reference_data.ideal_radius = params.cell_radius;
 
 % ---- Part 3 - Low data image fitting ----
 % Define number of events
-event_number = 1e4;
+event_number = 3e2;
 
 % Randomize the center and radius
-center_offset_x = 1000 * (.5-rand); % +- 500 nm offset
-center_offset_y = 1000 * (.5-rand); % +- 500 nm offset
-radius_offset = 1000 * (.5-rand); % +- 500 nm offset
+center_offset_x = 200 * (.5-rand); % +- 200 nm offset
+center_offset_y = 200 * (.5-rand); % +- 200 nm offset
+radius_offset = 200 * (.5-rand); % +- 100 nm offset
 
 % Edit parameters
-params.cell_center = [6400 + center_offset_x; 6400 + center_offset_y];
-params.cell_radius = 5000 + radius_offset;
+params.cell_center = [750 + center_offset_x; 750 + center_offset_y];
+params.cell_radius = 500 + radius_offset;
 params.number_events_ch1 = event_number;
 params.number_background_events_ch1 = event_number/SNratio;
 
@@ -122,16 +126,16 @@ reference_data.low_radius = params.cell_radius;
 
 % ---- Part 4 - Medium data image fitting ----
 % Define number of events
-event_number = 1e5;
+event_number = 3e3;
 
 % Randomize the center and radius
-center_offset_x = 1000 * (.5-rand); % +- 500 nm offset
-center_offset_y = 1000 * (.5-rand); % +- 500 nm offset
-radius_offset = 1000 * (.5-rand); % +- 500 nm offset
+center_offset_x = 200 * (.5-rand); % +- 200 nm offset
+center_offset_y = 200 * (.5-rand); % +- 200 nm offset
+radius_offset = 200 * (.5-rand); % +- 100 nm offset
 
 % Edit parameters
-params.cell_center = [6400 + center_offset_x; 6400 + center_offset_y];
-params.cell_radius = 5000 + radius_offset;
+params.cell_center = [750 + center_offset_x; 750 + center_offset_y];
+params.cell_radius = 500 + radius_offset;
 params.number_events_ch1 = event_number;
 params.number_background_events_ch1 = event_number/SNratio;
 
@@ -163,16 +167,16 @@ reference_data.med_radius = params.cell_radius;
 
 % ---- Part 5 - High data image fitting ----
 % Define number of events
-event_number = 1e6;
+event_number = 3e4;
 
 % Randomize the center and radius
-center_offset_x = 1000 * (.5-rand); % +- 500 nm offset
-center_offset_y = 1000 * (.5-rand); % +- 500 nm offset
-radius_offset = 1000 * (.5-rand); % +- 500 nm offset
+center_offset_x = 200 * (.5-rand); % +- 200 nm offset
+center_offset_y = 200 * (.5-rand); % +- 200 nm offset
+radius_offset = 200 * (.5-rand); % +- 100 nm offset
 
 % Edit parameters
-params.cell_center = [6400 + center_offset_x; 6400 + center_offset_y];
-params.cell_radius = 5000 + radius_offset;
+params.cell_center = [750 + center_offset_x; 750 + center_offset_y];
+params.cell_radius = 500 + radius_offset;
 params.number_events_ch1 = event_number;
 params.number_background_events_ch1 = event_number/SNratio;
 
@@ -201,3 +205,7 @@ fit_data.high_radius = pixel_size * radius;
 fit_data.high_radius_error = pixel_size * radius_error;
 reference_data.high_center = params.cell_center;
 reference_data.high_radius = params.cell_radius;
+
+% ---- Finish script ----
+% Save data
+save([figure_path, 'Fig1_data.mat'], 'fit_data', 'reference_data');

@@ -24,15 +24,14 @@ if issparse(image)
 end
 
 % Get initial estimates
-initial_center = size(image)'./2;
+initial_center = image_center_of_mass(image, 1, true);
 initial_radius = find_radius(image, initial_center);
 
 % Set up and run optimization
-options = optimoptions('fminunc', 'Algorithm', 'quasi-newton', 'Display', 'iter-detailed', 'TolX', 1e-12);
+options = optimoptions('fminunc', 'Algorithm', 'quasi-newton', 'Display', 'iter-detailed', 'TolX', 1e-12, 'MaxFunEvals', 1e4);
 initial_params = [initial_center(1, 1); initial_center(2, 1); initial_radius]; 
-[optimized_params, ~, ~, ~, ~, params_hessian] = fminunc(@(params)find_nlog_nderivative(params, image), initial_params, options);
-
-params_hessian
+[optimized_params] = fminunc(@(params)find_nlog_nderivative(params, image), initial_params, options);
+[params_hessian] = hessian(@(params)find_nlog_nderivative(params, image), optimized_params);
 
 % Extract paramaters
 center = optimized_params(1:2, :);
@@ -82,11 +81,11 @@ center = params(1:2, :);
 radius = params(3, :);
 
 % Take radial average with given center and radial values
-[distance_vector, mean_vector] = radial_average_2D_correlation(image, .3, .3, [], center, [radius - 0.15; radius + 0.15;]);
+[distance_vector, mean_vector] = radial_average_2D_correlation(image, .1, .1, [], center, [radius - 0.1; radius; radius + 0.1;]);
 
 % Calculate derivative vector
-d_dist = distance_vector(end) - distance_vector(1);
+d_dist = distance_vector(2:3) - distance_vector(1:2);
 d_mean = mean_vector(2) - mean_vector(1);
-derivative_value = d_mean ./ d_dist;
+derivative_value = mean(d_mean ./ d_dist, 1);
 nlog_nderiv = -log(-derivative_value);
 end

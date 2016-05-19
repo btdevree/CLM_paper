@@ -17,7 +17,7 @@ function make_parameteric_circle_plot(filename, image, center, radius, pixel_siz
 [image_height, image_width] = size(image);
 
 % Create new figure
-figure('Units', 'pixels', 'Position', [100, 100, 700, 700], 'PaperPositionMode', 'auto');
+hfig = figure('Units', 'pixels', 'Position', [100, 100, 700, 700], 'PaperPositionMode', 'auto', 'InvertHardcopy', 'off');
 
 % Create clear axes for plotting shapes
 haxes = axes('Units', 'pixels', 'Position', [50, 50, 550, 550]);
@@ -36,12 +36,11 @@ rect_diameter = radius * 2;
 rect_x = center(1) - radius;
 rect_y = center(2) - radius;
 rectangle('Position', [rect_x, rect_y, rect_diameter, rect_diameter], 'Curvature', [1,1],...
-    'EdgeColor', [1, 0, 0], 'LineStyle', '--', 'LineWidth', 5, 'Parent', haxes);
+    'EdgeColor', [1, 0, 0], 'LineStyle', '--', 'LineWidth', 4, 'Parent', haxes);
 
-% Plot an arrow for radius
-harrow = annotation('arrow');
-set(harrow, 'Position', [center(1), center(2), radius * 0.95, 0], 'Color', [1, 0, 0],...
-    'LineStyle', '--', 'LineWidth', 5, 'HeadStyle', 'vback1', 'HeadWidth', 25, 'HeadLength', 25,'Parent', haxes);
+% Plot a line for radius
+line([center(1), center(1) + radius], [center(2), center(2)], 'Color', [1, 0, 0],...
+    'LineStyle', '--', 'LineWidth', 4, 'Parent', haxes);
 
 % Plot a filled circle for center
 center_dot_radius = radius/20;
@@ -50,5 +49,15 @@ rect_x = center(1) - center_dot_radius;
 rect_y = center(2) - center_dot_radius;
 rectangle('Position', [rect_x, rect_y, rect_diameter, rect_diameter], 'Curvature', [1,1],...
     'FaceColor', [1, 0, 0], 'EdgeColor', 'none', 'Parent', haxes);
+
+% Print a scale bar
+scalebar_position = [30, 30, 100, 20] ./ pixel_size;
+rectangle('Position', scalebar_position, 'EdgeColor', 'none', 'FaceColor', [1, 1, 1], 'Parent', haxes);
+
+% Save image
+print(hfig, filename, '-dpng');
+
+% Delete figure
+delete(hfig);
 end
 
