@@ -19,9 +19,6 @@ SNratio = 4;
 fit_data = struct();
 reference_data = struct();
 
-% Startup parallel pool
-parpool(6);
-
 % ---- Part 1 - Exact image fitting -----
 % Just simulate the fitting, the true exact process is not really achevable
 % using numerical, not analytical, techniques

@@ -2,38 +2,53 @@ function make_parameteric_circle_plot(filename, image, center, radius, pixel_siz
 %MAKE_PARAMETRIC_CIRCLE_PLOT Creates a .png image of the parametric fit to 
 %   a simulated circular cell image 
 
-function HIV_plots(HIV_filename, data, circle_radius)
-% Plot the found HIV particles
+% Assumes a Cartesian coordinate system, with the origin at the lower-left
+%   corner of the lower-left pixel.
+% Inputs:
+%   filename - string, full filename and path of image to be created
+%   image - image data matrix
+%   center - center of circle, given in pixels.
+%   radius - radius of circle, given in pixels.
+%   pixel_size - size of pixel, in nanometers.
+% Output:
+%   Image saved with given filename, no return arguments.
 
-% Default values
-if nargin < 3; circle_radius = 5; end;
+% Get image size
+[image_height, image_width] = size(image);
 
-% Load image
-image_data = flipud(imrotate(double(imread(HIV_filename)), 90));
+% Create new figure
+figure('Units', 'pixels', 'Position', [100, 100, 700, 700], 'PaperPositionMode', 'auto');
 
-% create new figure
-figure('Units', 'pixels', 'Position', [50, 50, 900, 900]);
+% Create clear axes for plotting shapes
+haxes = axes('Units', 'pixels', 'Position', [50, 50, 550, 550]);
+set(haxes, 'Xlim', [0, image_width], 'Ylim', [0, image_height], 'Color', 'none');
+set(haxes, 'XTickLabel', [], 'YTickLabel', [], 'XTick', [], 'YTick', []);
 
-% Create main axes object and handle
-haxes = axes('Units', 'pixels', 'Position', [50, 50, 800, 800]);
-set(haxes, 'DataAspectRatio', [250,250,1], 'Xlim', [0,512], 'Ylim', [0,512], 'Color', 'none');
-
-% Create the background image axes with a default all black background
+% Create put image on backround axes
 hbackaxes = axes('Units', 'pixels', 'Position', get(haxes, 'Position'));
-imagesc(flipud(image_data), 'Parent', hbackaxes); % autoflips image data, I think.
-uistack(hbackaxes,'bottom');% Move the background axes to the bottom
+imagesc((image), 'Parent', hbackaxes);
+uistack(hbackaxes, 'bottom');% Move the background axes to the bottom
 set(hbackaxes, 'XTickLabel', [], 'YTickLabel', [], 'XTick', [], 'YTick', []);
 colormap(hbackaxes, gray);
 
-% Plot a circle around each found spot
-rect_diameter = circle_radius .* 2;
-rect_x = data.x - circle_radius;
-rect_y = data.y - circle_radius;
-for rect_ind = 1:size(rect_x, 1) 
-    rectangle('Position', [rect_x(rect_ind) - .5, rect_y(rect_ind) - .5, rect_diameter, rect_diameter],...
-        'Curvature', [1,1], 'EdgeColor', [1, 1, 0], 'Parent', haxes)
-end
+% Plot a circle
+rect_diameter = radius * 2;
+rect_x = center(1) - radius;
+rect_y = center(2) - radius;
+rectangle('Position', [rect_x, rect_y, rect_diameter, rect_diameter], 'Curvature', [1,1],...
+    'EdgeColor', [1, 0, 0], 'LineStyle', '--', 'LineWidth', 5, 'Parent', haxes);
 
+% Plot an arrow for radius
+harrow = annotation('arrow');
+set(harrow, 'Position', [center(1), center(2), radius * 0.95, 0], 'Color', [1, 0, 0],...
+    'LineStyle', '--', 'LineWidth', 5, 'HeadStyle', 'vback1', 'HeadWidth', 25, 'HeadLength', 25,'Parent', haxes);
 
+% Plot a filled circle for center
+center_dot_radius = radius/20;
+rect_diameter = center_dot_radius * 2;
+rect_x = center(1) - center_dot_radius;
+rect_y = center(2) - center_dot_radius;
+rectangle('Position', [rect_x, rect_y, rect_diameter, rect_diameter], 'Curvature', [1,1],...
+    'FaceColor', [1, 0, 0], 'EdgeColor', 'none', 'Parent', haxes);
 end
 
