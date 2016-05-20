@@ -1,4 +1,5 @@
-function [distance_vector, mean_vector, stdev_vector, sem_vector] = radial_average_2D_correlation(image, radial_sampling_distance, arc_sampling_distance, max_distance, center_coords, radial_values)
+function [distance_vector, mean_vector, stdev_vector, sem_vector, number_points_vector] = radial_average_2D_correlation...
+    (image, radial_sampling_distance, arc_sampling_distance, max_distance, center_coords, radial_values, exact_number_points)
 %RADIAL_AVERAGE_2D_CORRELATION Calculates the radial average of a cross- or
 % auto-correlation image.
 %
@@ -24,9 +25,13 @@ function [distance_vector, mean_vector, stdev_vector, sem_vector] = radial_avera
 %   radial_values: Calculate the radius at only the specified radial
 %       values, given as a column vector. Optional, default = [], computes 
 %       the entire vector from 0 to max radius.
+%   exact_number_points: Number of points to use when calculating the
+%       averages. Optional, default = false.  
 % Outputs:
 %   distance_vector: Column vector of radial distances, in pixels.
 %   mean_vector: Column vector of the radial averages at each radius.
+%   number_points_vector: Column vector of the number of points used to
+%       calculate each average
 
 % Set defaults
 if nargin < 2; radial_sampling_distance = 1; end;
@@ -60,6 +65,7 @@ end
 
 % Initialize result vectors
 mean_vector = zeros(size(distance_vector));
+number_points_vector = zeros(size(distance_vector));
 
 % Loop through each radius
 for rad_ind = 1:length(distance_vector) 
@@ -91,8 +97,9 @@ for rad_ind = 1:length(distance_vector)
         values(:, image_index) = interp2(image_x, image_y, image(:, :, image_index), x_coords, y_coords);
     end
     
-    % Calculate the average of the values
+    % Calculate the average of the values and record number of points used
     mean_vector(rad_ind) = mean(values(:));
+    number_points_vector(rad_ind) = length(x_circle);
 end
 end
 
