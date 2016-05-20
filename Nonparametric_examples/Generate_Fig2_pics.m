@@ -1,4 +1,4 @@
-% Script to generate the picures used in figure 1 
+% Script to generate the picures used in figure 2 
 % Run in Parametric_fitting folder
 
 % Make simulated circular structures with uniform label distribution.
@@ -10,7 +10,7 @@ figure_path_parts = strsplit(pwd, 'CLM_paper');
 figure_path = [figure_path_parts{1}, 'CLM_figures_and_data/Fig1/'];
 
 % Load in parameters structure
-load('parameters_Fig1.mat'); % loads 'params' into local namespace
+load('parameters_Fig2.mat'); % loads 'params' into local namespace
 
 % Define Signal/Noise ratio for spurious localizations
 SNratio = 4;
@@ -35,16 +35,14 @@ radius_offset = 200 * (.5-rand); % +- 100 nm offset
 % Edit parameters
 params.cell_center = [750 + center_offset_x; 750 + center_offset_y];
 params.cell_radius = 500 + radius_offset;
+params.STORM_pixel_size = 2; % Very fine grid
 
 % Calculate image
 [~, image] = calculate_ideal_image(params);
 
 % Pass image and parameter fit info to graphing function
-filename = [figure_path, 'Fig1A_exact_fit.png'];
-pixel_size = params.STORM_pixel_size;
-center = params.cell_center ./ pixel_size;
-radius = params.cell_radius ./ pixel_size;
-make_parameteric_circle_plot(filename, image, center, radius, pixel_size);
+filename = [figure_path, 'Fig2A_exact.png'];
+make_nonparameteric_plot(filename, image, pixel_size);
 
 % Record info (in nanometers)
 fit_data.exact_center_x = params.cell_center(1);

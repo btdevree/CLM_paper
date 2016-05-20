@@ -1,4 +1,4 @@
-function [distance_vector, mean_vector, stdev_vector, sem_vector, number_points_vector] = radial_average_2D_correlation...
+function [distance_vector, mean_vector, number_points_vector] = radial_average_2D_correlation...
     (image, radial_sampling_distance, arc_sampling_distance, max_distance, center_coords, radial_values, exact_number_points)
 %RADIAL_AVERAGE_2D_CORRELATION Calculates the radial average of a cross- or
 % auto-correlation image.
@@ -26,7 +26,8 @@ function [distance_vector, mean_vector, stdev_vector, sem_vector, number_points_
 %       values, given as a column vector. Optional, default = [], computes 
 %       the entire vector from 0 to max radius.
 %   exact_number_points: Number of points to use when calculating the
-%       averages. Optional, default = false.  
+%       averages. Optional, default = false, the number will change with 
+%       the radius length.  
 % Outputs:
 %   distance_vector: Column vector of radial distances, in pixels.
 %   mean_vector: Column vector of the radial averages at each radius.
@@ -42,7 +43,8 @@ if nargin < 5
     y_coord = size(image, 1)/2; 
     center_coords = [x_coord; y_coord];
 end
-if nargin < 6; radial_values = []; end; 
+if nargin < 6; radial_values = []; end;
+if nargin < 7; exact_number_points = false; end;
 if isempty(max_distance)
     right_max = size(image, 2) - center_coords(1);
     left_max = center_coords(1);
@@ -71,15 +73,19 @@ number_points_vector = zeros(size(distance_vector));
 for rad_ind = 1:length(distance_vector) 
     radius = distance_vector(rad_ind);
     
+    % Get x,y coordinates along the circle
     % Special case for radius == 0
     if radius == 0
         x_circle = 0;
         y_circle = 0;
     else
-    
         % Spread out sampling arc evenly along circumference from 0 to 2*pi.
         total_circ_length = 2 .* pi .* radius; % circumfrence in pixels
-        num_points = ceil(total_circ_length ./ arc_sampling_distance);
+        if isnumeric(exact_number_points) % Specified number of points in the circle 
+            num_points = exact_number_points;
+        else % Adaptive number of points in the circle
+            num_points = ceil(total_circ_length ./ arc_sampling_distance);
+        end
         actual_radian_interval = 2 .* pi ./ num_points;
         radians = actual_radian_interval * [0:num_points-1].';
         [x_circle, y_circle] = pol2cart(radians, radius);

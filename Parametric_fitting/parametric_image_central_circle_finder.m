@@ -25,13 +25,13 @@ end
 
 % Get initial estimates
 initial_center = image_center_of_mass(image, 1, true);
-initial_radius = find_radius(image, initial_center);
+[initial_radius, number_average_points] = find_radius(image, initial_center);
 
 % Set up and run optimization
 options = optimoptions('fminunc', 'Algorithm', 'quasi-newton', 'Display', 'iter-detailed', 'TolX', 1e-12, 'MaxFunEvals', 1e4);
 initial_params = [initial_center(1, 1); initial_center(2, 1); initial_radius]; 
-[optimized_params] = fminunc(@(params)find_nlog_nderivative(params, image), initial_params, options);
-[params_hessian] = hessian(@(params)find_nlog_nderivative(params, image), optimized_params);
+[optimized_params] = fminunc(@(params)find_nlog_nderivative(params, image, number_average_points), initial_params, options);
+[params_hessian] = hessian(@(params)find_nlog_nderivative(params, image, number_average_points), optimized_params);
 
 % Extract paramaters
 center = optimized_params(1:2, :);
@@ -43,7 +43,7 @@ center_error = errors(1:2, :);
 radius_error = errors(3, :);
 end
 
-function [radius] = find_radius(image, center)
+function [radius, number_average_points] = find_radius(image, center)
 % Local function to get radius by finding the minimum of the first
 % derivative of the radial average
 
@@ -60,7 +60,7 @@ derivative_vector = d_mean ./ d_dist;
 radius = (distance_vector(deriv_min_index) + distance_vector(deriv_min_index + 1))/2;
 
 % Take fine radial average with given center
-[distance_vector, mean_vector] = radial_average_2D_correlation(image, .3, .3, [], center, [radius*.9:0.3:radius*1.1]);
+[distance_vector, mean_vector, number_points_vector] = radial_average_2D_correlation(image, .3, .3, [], center, [radius*.9:0.3:radius*1.1]);
 
 % Calculate derivative vector
 d_dist = distance_vector(2:end) - distance_vector(1:end-1);
@@ -70,9 +70,10 @@ derivative_vector = d_mean ./ d_dist;
 % Minimum of derivative is at the radius value
 [~, deriv_min_index] = min(derivative_vector);
 radius = (distance_vector(deriv_min_index) + distance_vector(deriv_min_index + 1))/2;
+number_average_points = number_points_vector(deriv_min_index);
 end
 
-function [nlog_nderiv] = find_nlog_nderivative(params, image)
+function [nlog_nderiv] = find_nlog_nderivative(params, image, number_average_points)
 % Local function to get the negative log of the negative of the radial 
 % average derivative value at the specified center and radial position.
 
@@ -81,11 +82,11 @@ center = params(1:2, :);
 radius = params(3, :);
 
 % Take radial average with given center and radial values
-[distance_vector, mean_vector] = radial_average_2D_correlation(image, .1, .1, [], center, [radius - 0.1; radius; radius + 0.1;]);
+[distance_vector, mean_vector] = radial_average_2D_correlation(image, .1, .1, [], center, [radius - 0.1; radius + 0.1;], number_average_points);
 
 % Calculate derivative vector
-d_dist = distance_vector(2:3) - distance_vector(1:2);
+d_dist = distance_vector(2) - distance_vector(1);
 d_mean = mean_vector(2) - mean_vector(1);
-derivative_value = mean(d_mean ./ d_dist, 1);
+derivative_value = d_mean / d_dist;
 nlog_nderiv = -log(-derivative_value);
 end

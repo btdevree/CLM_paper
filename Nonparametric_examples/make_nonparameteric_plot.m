@@ -1,14 +1,12 @@
-function make_parameteric_circle_plot(filename, image, center, radius, pixel_size)
-%MAKE_PARAMETRIC_CIRCLE_PLOT Creates a .png image of the parametric fit to 
-%   a simulated circular cell image 
+function make_nonparameteric_plot(filename, image, pixel_size)
+%MAKE_NONPARAMETRIC_PLOT Creates a .png image of a profile line on a 
+%   simulated circular cell image 
 
 % Assumes a Cartesian coordinate system, with the origin at the lower-left
 %   corner of the lower-left pixel.
 % Inputs:
 %   filename - string, full filename and path of image to be created
 %   image - image data matrix
-%   center - center of circle, given in pixels.
-%   radius - radius of circle, given in pixels.
 %   pixel_size - size of pixel, in nanometers.
 % Output:
 %   Image saved with given filename, no return arguments.
@@ -31,24 +29,9 @@ uistack(hbackaxes, 'bottom');% Move the background axes to the bottom
 set(hbackaxes, 'XTickLabel', [], 'YTickLabel', [], 'XTick', [], 'YTick', []);
 colormap(hbackaxes, gray);
 
-% Plot a circle
-rect_diameter = radius * 2;
-rect_x = center(1) - radius;
-rect_y = center(2) - radius;
-rectangle('Position', [rect_x, rect_y, rect_diameter, rect_diameter], 'Curvature', [1,1],...
-    'EdgeColor', [1, 0, 0], 'LineStyle', '--', 'LineWidth', 4, 'Parent', haxes);
-
-% Plot a line for radius
-line([center(1), center(1) + radius], [center(2), center(2)], 'Color', [1, 0, 0],...
-    'LineStyle', '--', 'LineWidth', 4, 'Parent', haxes);
-
-% Plot a filled circle for center
-center_dot_radius = radius/20;
-rect_diameter = center_dot_radius * 2;
-rect_x = center(1) - center_dot_radius;
-rect_y = center(2) - center_dot_radius;
-rectangle('Position', [rect_x, rect_y, rect_diameter, rect_diameter], 'Curvature', [1,1],...
-    'FaceColor', [1, 0, 0], 'EdgeColor', 'none', 'Parent', haxes);
+% Plot a line across the center
+line([0.1 * image_width, 0.9 * image_width], [0.5 * image_height, 0.5 * image_height], 'Color', [1, 0, 0],...
+    'LineStyle', '-', 'LineWidth', 4, 'Parent', haxes);
 
 % Print a scale bar
 scalebar_position = [30, 30, 100, 20] ./ pixel_size;
