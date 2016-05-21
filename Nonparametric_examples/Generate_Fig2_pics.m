@@ -23,7 +23,7 @@ reference_data = struct();
 rng('shuffle')
 reference_data.starting_RNG = rng;
 
-% ---- Part 1 - Exact image fitting -----
+% ---- Part 1 - Exact image -----
 % Just simulate the fitting, the true exact process is not really achevable
 % using numerical, not analytical, techniques
 
@@ -41,46 +41,27 @@ params.STORM_pixel_size = 2; % Very fine grid
 [~, image] = calculate_ideal_image(params);
 
 % Pass image and parameter fit info to graphing function
-filename = [figure_path, 'Fig2A_exact.png'];
+filename = [figure_path, 'Fig2A_exact_image.png'];
 make_nonparameteric_plot(filename, image, pixel_size);
+filename = [figure_path, 'Fig2A_exact_profile.png'];
+make_nonparameteric_profile_smooth(filename, image, pixel_size);
 
-% Record info (in nanometers)
-fit_data.exact_center_x = params.cell_center(1);
-fit_data.exact_center_x_error = 0;
-fit_data.exact_center_y = params.cell_center(2);
-fit_data.exact_center_y_error = 0;
-fit_data.exact_radius = params.cell_radius;
-fit_data.exact_radius_error = 0;
-reference_data.exact_center_x = params.cell_center(1);
-reference_data.exact_center_y = params.cell_center(2);
-reference_data.exact_radius = params.cell_radius;
-
-% ---- Part 2 - Ideal image fitting ----
+% ---- Part 2 - Ideal image ----
 % Use same image as part 1
 
 % Calculate image
 [image] = calculate_ideal_image(params);
 
-% Run parametric fitting
-[center, center_error, radius, radius_error] = parametric_image_central_circle_finder(image);
-
 % Pass image and parameter fit info to graphing function
-filename = [figure_path, 'Fig1A_ideal_fit.png'];
-pixel_size = params.STORM_pixel_size;
-make_parameteric_circle_plot(filename, image, center, radius, pixel_size);
+filename = [figure_path, 'Fig2A_ideal_image.png'];
+make_nonparameteric_plot(filename, image, pixel_size);
+filename = [figure_path, 'Fig2A_ideal_profile.png'];
+make_nonparameteric_profile_smooth(filename, image, pixel_size);
 
-% Record info (in nanometers)
-fit_data.ideal_center_x = pixel_size * center(1);
-fit_data.ideal_center_x_error = pixel_size * center_error(1);
-fit_data.ideal_center_y = pixel_size * center(2);
-fit_data.ideal_center_y_error = pixel_size * center_error(2);
-fit_data.ideal_radius = pixel_size * radius;
-fit_data.ideal_radius_error = pixel_size * radius_error;
-reference_data.ideal_center_x = params.cell_center(1);
-reference_data.ideal_center_y = params.cell_center(2);
-reference_data.ideal_radius = params.cell_radius;
+% ---- Part 3 - Pixelated ideal image ----
 
-% ---- Part 3 - Low data image fitting ----
+
+
 % Define number of events
 event_number = 3e2;
 
