@@ -1,5 +1,5 @@
-function make_nonparameteric_profile_smooth(filename, image, pixel_size)
-%MAKE_NONPARAMETRIC_PROFILE_SMOOTH Creates a .png image of the 1D image 
+function make_nonparameteric_profile_pixels(filename, image, pixel_size)
+%MAKE_NONPARAMETRIC_PROFILE_PIXELS Creates a .png image of the 1D image 
 %   profile of a nonparametric circular region image
 
 % Assumes a Cartesian coordinate system, with the origin at the lower-left
@@ -26,7 +26,7 @@ hfig = figure('Units', 'pixels', 'Position', [100, 100, 600, 500], 'PaperPositio
 
 % Create clear axes for plotting shapes
 haxes = axes('Units', 'pixels', 'Position', [70, 50, 500, 400]);
-plot(haxes, dist_vector, intensity_vector, 'LineWidth', 4, 'Color', [0, 0, 0]);
+bar(haxes, dist_vector, intensity_vector, 'FaceColor', [0, 0, 0], 'EdgeColor', 'none');
 set(haxes, 'Xlim', [min(dist_vector(:)), max(dist_vector(:))], 'Ylim', [0, 1.2], 'Color', 'none');
 title('1D Intensity Profile', 'FontSize', 16);
 xlabel('Distance (nanometers)','FontSize', 12);
