@@ -25,6 +25,9 @@ set(haxes, 'XTickLabel', [], 'YTickLabel', [], 'XTick', [], 'YTick', []);
 % Create put image on backround axes
 hbackaxes = axes('Units', 'pixels', 'Position', get(haxes, 'Position'));
 imagesc((image), 'Parent', hbackaxes);
+if max(image(:)) == 0 % For all zero images
+    set(hbackaxes, 'Clim', [0, 1]);
+end
 uistack(hbackaxes, 'bottom');% Move the background axes to the bottom
 set(hbackaxes, 'XTickLabel', [], 'YTickLabel', [], 'XTick', [], 'YTick', []);
 colormap(hbackaxes, gray);
