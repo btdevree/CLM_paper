@@ -38,7 +38,7 @@ params.STORM_pixel_size = pixel_size;
 
 % Define fraction of events, number of events, and replicates
 fraction_vector = [0; .002; .005; .01; .02; .03; .04; .06; .08; .1; .15; .2; .25; .3; .35; .4; .5; .6; .7; .8; .9; 1];
-number_events_vector = [1e3; 3e3; 1e4; 3e4; 1e5; 3e5; 1e6];
+number_events_vector = [1e2; 3e2; 1e3; 3e3; 1e4; 3e4; 1e5];
 number_replicates = 2;
 
 % Initialize IIC result matrix
@@ -50,8 +50,9 @@ for num_events_index = 1:length(number_events_vector)
     for replicate_index = 1:number_replicates
         
     % Edit parameters
-    params.number_events_ch1 = number_events;
-    params.number_background_events_ch1 = number_events/SNratio;
+    true_events = number_events / (1 + 1 / SNratio);
+    params.number_events_ch1 = true_events ;
+    params.number_background_events_ch1 = true_events/SNratio;
     
     % Generate new data
     seed = randi(1e6);
@@ -66,9 +67,9 @@ end
 IIC_mean = mean(IIC_results, 3);
 IIC_stdev = std(IIC_results, 0, 3);
 
-% Create figure
-
-
+% Make figure
+filename = [figure_path, 'Fig3B_SSQ_IIC_graph.png'];
+make_IIC_plot(filename, fraction_vector, number_events_vector, IIC_mean, IIC_stdev);
     
 
 

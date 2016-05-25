@@ -135,6 +135,11 @@ if ~use_MEX_flag
     full_image = Gauss_STORM_image(xy_data, resolution, covar_inv, covar_det, calc_cutoff_pixels_x, calc_cutoff_pixels_y, x_vector, y_vector);
 else
     % Type checking to make sure we don't end up giving the MEX file bad inputs and cause a seg-fault
+    
+    size(xy_data)
+    isa(xy_data, 'double')
+    ismatrix(xy_data)
+    
     assert(ismatrix(xy_data) && size(xy_data, 2) == 2 && isa(xy_data,'double'));
     assert(isnumeric(resolution) && isscalar(resolution));
     assert(all(size(covar_inv) == [2, 2]) && isa(covar_inv, 'double'));
