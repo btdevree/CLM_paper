@@ -47,8 +47,13 @@ hold off
 % Finish graph
 set(haxes, 'Xlim', [0, 1], 'Ylim', [0, 1]);
 hlegend = legend(plot_handles, legend_labels, 'Location', 'southeast'); % Errorbar legend markers don't show up, use Plot curves for legend 
-hlt = text('Parent', hlegend.DecorationContainer, 'String', 'Total Number of Events', 'HorizontalAlignment', 'center', ...
-    'VerticalAlignment', 'bottom', 'Position', [0.5, 1.05, 0], 'Units', 'normalized', 'FontSize', 10);
+if verLessThan('matlab','8.4') % Stupid MATLAB changed lots of stuff about graphics
+    hlt = get(hlegend, 'title');
+    set(hlt, 'String', 'Total Number of Events');
+else
+    hlt = text('Parent', hlegend.DecorationContainer, 'String', 'Total Number of Events', 'HorizontalAlignment', 'center', ...
+        'VerticalAlignment', 'bottom', 'Position', [0.5, 1.05, 0], 'Units', 'normalized', 'FontSize', 10);
+end
 title('Information Improvement Characteristic Curves', 'FontSize', 16);
 xlabel('Fraction of Localization Events Included','FontSize', 12);
 ylabel('Normalized Information Improvement','FontSize', 12);

@@ -43,7 +43,7 @@ for fraction_index = 1:length(fraction_vector)
     
     % Loop through each pseudoreplicate
     for pseudorep_index = 1:number_pseudoreplicates
-        
+            
         % Generate a logical index array for splitting the data
         number_datapoints = size(dataset, 1);
         number_datapoints_taken = round(number_datapoints * fraction);

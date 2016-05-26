@@ -59,48 +59,30 @@ if ~parallel_flag
         total_number_pixels_y, total_number_pixels_x, use_MEX_flag);
 
 % Evaluate in parallel
-% NOTE - TO DO: Should change this to use spmd command. Adding loop is slow
-% at end, maybe distribute the matrix, collect it, and then sum along 3rd
-% dim?
 elseif parallel_flag
+    
+    % Create a subimage on each workers
+    spmd
 
-    % Determine indices needed to split data list into equal parts for each cluster
-    cluster_info = parcluster('local');
-    num_workers = cluster_info.NumWorkers;
-    total_datapoints = length(data.x);        
-    current_value = 0;
-    start_index = zeros(num_workers, 1);
-    end_index = zeros(num_workers, 1);
-    for worker_index = 1:num_workers
-        start_index(worker_index) = current_value + 1;
-        worker_datapoints = floor(total_datapoints/num_workers);
-        if worker_index <= mod(total_datapoints, num_workers)
-            worker_datapoints = worker_datapoints + 1;
-        end
-        end_index(worker_index) = current_value + worker_datapoints;
-        current_value = end_index(worker_index);
-    end
-
-    % Split the data vector
-    data_chunks = cell(num_workers, 1);
-    for chunk_index = 1:num_workers
+        % Distribute the data among the workers, use codist to control direction of splitting
+        codist = codistributor1d(1);
+        x_distributed = codistributed(data.x, codist);
+        y_distributed = codistributed(data.y, codist);
+        
+        % Calculate a subimage on each worker
         newdata = struct();
-        newdata.x = data.x(start_index(chunk_index):end_index(chunk_index));
-        newdata.y = data.y(start_index(chunk_index):end_index(chunk_index));
-        data_chunks{chunk_index} = newdata;
-    end
-
-    % Evaluate the chunks in parallel
-    image_chunks = cell(num_workers, 1);
-    parfor chunk_index = 1:num_workers
-        image_chunks{chunk_index} = make_image(data_chunks{chunk_index}, covar_inv, covar_det,...
+        newdata.x = getLocalPart(x_distributed);
+        newdata.y = getLocalPart(y_distributed);
+        image_parts = make_image(newdata, covar_inv, covar_det,...
             calc_cutoff_pixels, resolution, total_number_pixels_y, total_number_pixels_x, use_MEX_flag);
     end
-
-    % Add results together
+    
+    % Add each subimage together
+    cluster_info = gcp;
+    num_workers = cluster_info.NumWorkers;
     full_image = zeros(total_number_pixels_y, total_number_pixels_x);
-    for chunk_index = 1:num_workers
-        full_image = full_image + image_chunks{chunk_index};
+    for part_index = 1:num_workers
+        full_image = full_image + image_parts{part_index};
     end
 end
 
@@ -135,12 +117,7 @@ if ~use_MEX_flag
     full_image = Gauss_STORM_image(xy_data, resolution, covar_inv, covar_det, calc_cutoff_pixels_x, calc_cutoff_pixels_y, x_vector, y_vector);
 else
     % Type checking to make sure we don't end up giving the MEX file bad inputs and cause a seg-fault
-    
-    size(xy_data)
-    isa(xy_data, 'double')
-    ismatrix(xy_data)
-    
-    assert(ismatrix(xy_data) && size(xy_data, 2) == 2 && isa(xy_data,'double'));
+    assert(ismatrix(xy_data) && size(xy_data, 2) == 2 && (isa(xy_data,'double') || isaUnderlying(xy_data,'double')));
     assert(isnumeric(resolution) && isscalar(resolution));
     assert(all(size(covar_inv) == [2, 2]) && isa(covar_inv, 'double'));
     assert(isnumeric(covar_det) && isscalar(covar_det));

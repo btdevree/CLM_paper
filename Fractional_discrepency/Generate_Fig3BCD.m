@@ -37,9 +37,10 @@ params.STORM_pixel_size = pixel_size;
 % ---- IIC curves ----
 
 % Define fraction of events, number of events, and replicates
-fraction_vector = [0; .002; .005; .01; .02; .03; .04; .06; .08; .1; .15; .2; .25; .3; .35; .4; .5; .6; .7; .8; .9; 1];
-number_events_vector = [1e2; 3e2; 1e3; 3e3; 1e4; 3e4; 1e5];
-number_replicates = 2;
+fraction_vector = [0; .005; .01; .02; .04; .06; .08; .1; .15; .2; .25; .3; .35; .4; .5; .6; .7; .8; .9; 1];
+number_events_vector = [1e2; 3e2; 1e3; 3e3; 1e4; 3e4];
+number_replicates = 30; % Number of new datsets
+number_pseudoreplicates = 3; % Number of times to split up each dataset
 
 % Initialize IIC result matrix
 IIC_results = zeros(length(fraction_vector), length(number_events_vector), number_replicates);
@@ -47,7 +48,14 @@ IIC_results = zeros(length(fraction_vector), length(number_events_vector), numbe
 % Loop through each set of parameters to make an IIC curve
 for num_events_index = 1:length(number_events_vector)
     number_events = number_events_vector(num_events_index);
-    for replicate_index = 1:number_replicates
+    for replicate_index = 1:number_replicates  
+     
+    % Report
+    if replicate_index == 1
+        fprintf('\nWorking on event number %1.1E replicate  1', number_events);
+    else
+        fprintf('\b\b\b %2d', replicate_index);
+    end
         
     % Edit parameters
     true_events = number_events / (1 + 1 / SNratio);
@@ -59,9 +67,11 @@ for num_events_index = 1:length(number_events_vector)
     [dataset] = create_test_data_dv(params, seed);
     
     % Get IIC curve
-    IIC_results(:, num_events_index, replicate_index) = calculate_IIC(params, dataset, fraction_vector);
+    IIC_pesudoreps = calculate_IIC(params, dataset, fraction_vector, number_pseudoreplicates);
+    IIC_results(:, num_events_index, replicate_index) = mean(IIC_pesudoreps, 2);
     end
 end
+fprintf('\n');
 
 % Calculate mean and standard deviation
 IIC_mean = mean(IIC_results, 3);
