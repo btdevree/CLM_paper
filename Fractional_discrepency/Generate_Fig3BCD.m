@@ -34,7 +34,7 @@ params.cell_radius = 500 + radius_offset;
 pixel_size = 20; % Normal grid
 params.STORM_pixel_size = pixel_size; 
 
-% ---- IIC curves ----
+% ---- Fig3B IIC curves ----
 
 % Define fraction of events, number of events, and replicates
 fraction_vector = [0; .005; .01; .02; .04; .06; .08; .1; .15; .2; .25; .3; .35; .4; .5; .6; .7; .8; .9; 1];
@@ -42,45 +42,43 @@ number_events_vector = [1e2; 3e2; 1e3; 3e3; 1e4; 3e4];
 number_replicates = 30; % Number of new datsets
 number_pseudoreplicates = 3; % Number of times to split up each dataset
 
-% Initialize IIC result matrix
-IIC_results = zeros(length(fraction_vector), length(number_events_vector), number_replicates);
-
-% Loop through each set of parameters to make an IIC curve
-for num_events_index = 1:length(number_events_vector)
-    number_events = number_events_vector(num_events_index);
-    for replicate_index = 1:number_replicates  
-     
-    % Report
-    if replicate_index == 1
-        fprintf('\nWorking on event number %1.1E replicate  1', number_events);
-    else
-        fprintf('\b\b\b %2d', replicate_index);
-    end
-        
-    % Edit parameters
-    true_events = number_events / (1 + 1 / SNratio);
-    params.number_events_ch1 = true_events ;
-    params.number_background_events_ch1 = true_events/SNratio;
-    
-    % Generate new data
-    seed = randi(1e6);
-    [dataset] = create_test_data_dv(params, seed);
-    
-    % Get IIC curve
-    IIC_pesudoreps = calculate_IIC(params, dataset, fraction_vector, number_pseudoreplicates);
-    IIC_results(:, num_events_index, replicate_index) = mean(IIC_pesudoreps, 2);
-    end
-end
-fprintf('\n');
+% Get the IIC results
+[IIC_results] = generate_IIC_curve(params, number_events_vector, SNratio, number_replicates, number_pseudoreplicates, 'sum_of_squares', true, true);
 
 % Calculate mean and standard deviation
 IIC_mean = mean(IIC_results, 3);
 IIC_stdev = std(IIC_results, 0, 3);
 
+% Save data
+filename = [figure_path, 'Fig3B_SSQ_IIC_data.mat'];
+save(filename, 'fraction_vector', 'number_events_vector', 'number_replicates', 'number_pseudoreplicates', 'IIC_mean', 'IIC_stdev');
+
 % Make figure
 filename = [figure_path, 'Fig3B_SSQ_IIC_graph.png'];
 make_IIC_plot(filename, fraction_vector, number_events_vector, IIC_mean, IIC_stdev);
     
+% ---- Figure 3C TCI vs ECI curves ----
 
+% Define fraction of events, number of events, and replicates
+fraction_vector = [0; .005; .01; .02; .04; .06; .08; .1; .15; .2; .25; .3; .35; .4; .5; .6; .7; .8; .9; 1];
+number_events_vector = logspace(2, 5, 12);
+number_replicates = 30; % Number of new datsets
+number_pseudoreplicates = 3; % Number of times to split up each dataset
+
+% Get the IIC and ideal discrepency results
+[IIC_results, ~, ideal_discrepency_results] = generate_IIC_curve(params, number_events_vector, SNratio, number_replicates, number_pseudoreplicates, 'sum_of_squares', ideal_image, true, true);
+
+% Calculate the AOC and ECI of the IIC curves
+dFrac = fraction_vector(2:end) - event_fractions(1:end-1);
+midpoint_II = (IIC_results(2:end, :, :) + IIC_results(1:end-1, :, :))/2;
+AOC = sum(repmat(dFrac, 1, size(midpoint_II, 2), size(midpoint_II, 3)) .* midpoint_II, 1);
+ECI_data = (2 * AOC - 1);
+ECI_mean = squeeze(mean(ECI_data, 3))';
+ECI_stdev = squeeze(std(ECI_data, 0, 3))';
+
+% Calculate the corrosponding TCI 
+TCI_data = 1 - (ideal_discrepency_results(end, :, :) ./ ideal_discrepency_results(1, :, :));
+TCI_mean = squeeze(mean(TCI_data, 3))';
+TCI_stdev = squeeze(std(TCI_data, 0, 3))';
 
 

@@ -1,4 +1,5 @@
-function [info_improvement_data] = calculate_IIC(params, dataset, fraction_vector, number_pseudoreplicates, discrepency_method, optimize_flag)
+function [info_improvement_data] = calculate_IIC(params, dataset, fraction_vector, number_pseudoreplicates,...
+    discrepency_method, ideal_image, optimize_flag)
 %CALCULATE_IIC Calculate the information improvement curve for a STORM
 % image generated with the given parameters
 
@@ -13,6 +14,9 @@ function [info_improvement_data] = calculate_IIC(params, dataset, fraction_vecto
 %   discrepency_method: string, method to use for the discrepency 
 %       measurement. See function calculate_discrepency for options.
 %       Default = 'sum_of_squares'.
+%   ideal_image: ideal image to measure the ideal, theoretical discrepency.
+%       Requried to output the ideal discrepency matrix. Default = [] (no 
+%       ideal calculations).
 %   optimize_flag: boolean, when set to true the scaling of the partial 
 %       image is optimized to minimize the discrepency. Default = true.
 % Output:
@@ -22,7 +26,8 @@ function [info_improvement_data] = calculate_IIC(params, dataset, fraction_vecto
 % Set defaults
 if nargin < 4; number_pseudoreplicates = 1; end;
 if nargin < 5; discrepency_method = 'sum_of_squares'; end;
-if nargin < 6; optimize_flag = true; end;
+if nargin < 6; ideal_image = []; end;
+if nargin < 7; optimize_flag = true; end;
 
 % Get a copy of the STORMvars structure and channel 2 data created with the given parameter structures
 testparams = params; % param_array from loading in 'FD_data_SNxx'
@@ -34,8 +39,11 @@ testparams.number_background_events_ch1 = 10;
 full_image = create_test_STORM_images_dv(params, dataset, data_ch2, STORMvars, false, true, true);
 max_discrepency = calculate_discrepency(zeros(size(full_image)), full_image, discrepency_method, optimize_flag);
 
-% Initialize results vector
-info_improvement_data = zeros(length(fraction_vector), number_pseudoreplicates); 
+% Initialize results matricies
+exp_discrepency_data = zeros(length(fraction_vector), number_pseudoreplicates);
+if ~isempty(ideal_image)
+    ideal_discrepency_data = zeros(length(fraction_vector), number_pseudoreplicates);
+end
 
 % Loop through each fraction and calculate the info improvement
 for fraction_index = 1:length(fraction_vector)
@@ -58,10 +66,16 @@ for fraction_index = 1:length(fraction_vector)
         % Create images for the larger and smaller datasets
         [partial_image] = create_test_STORM_images_dv(params, partial_dataset, data_ch2, STORMvars, false, true, true);
 
-        % Get the discrepency and information improvement 
-        discrepency = calculate_discrepency(partial_image, full_image, discrepency_method, optimize_flag);
-        info_improvement_data(fraction_index, pseudorep_index) = 1 - (discrepency / max_discrepency);
-    end     
-end    
+        % Recored the discrepency 
+        exp_discrepency_data(fraction_index, pseudorep_index) = calculate_discrepency(partial_image, full_image, discrepency_method, optimize_flag);
+        if ~isempty(ideal_image)
+            ideal_discrepency_data(fraction_index, pseudorep_index) = calculate_discrepency(partial_image, ideal_image, discrepency_method, optimize_flag);
+        end
+    end
+end
+
+% transform to information improvement
+info_improvement_data = 1 - (exp_discrepency_data / max_discrepency);
+
 end
 
