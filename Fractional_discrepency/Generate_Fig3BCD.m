@@ -36,40 +36,44 @@ params.STORM_pixel_size = pixel_size;
 
 % ---- Fig3B IIC curves ----
 
-% Define fraction of events, number of events, and replicates
-fraction_vector = [0; .005; .01; .02; .04; .06; .08; .1; .15; .2; .25; .3; .35; .4; .5; .6; .7; .8; .9; 1];
-number_events_vector = [1e2; 3e2; 1e3; 3e3; 1e4; 3e4];
-number_replicates = 30; % Number of new datsets
-number_pseudoreplicates = 3; % Number of times to split up each dataset
-
-% Get the IIC results
-[IIC_results] = generate_IIC_curve(params, number_events_vector, SNratio, number_replicates, number_pseudoreplicates, 'sum_of_squares', true, true);
-
-% Calculate mean and standard deviation
-IIC_mean = mean(IIC_results, 3);
-IIC_stdev = std(IIC_results, 0, 3);
-
-% Save data
-filename = [figure_path, 'Fig3B_SSQ_IIC_data.mat'];
-save(filename, 'fraction_vector', 'number_events_vector', 'number_replicates', 'number_pseudoreplicates', 'IIC_mean', 'IIC_stdev');
-
-% Make figure
-filename = [figure_path, 'Fig3B_SSQ_IIC_graph.png'];
-make_IIC_plot(filename, fraction_vector, number_events_vector, IIC_mean, IIC_stdev);
+% % Define fraction of events, number of events, and replicates
+% fraction_vector = [0; .005; .01; .02; .04; .06; .08; .1; .15; .2; .25; .3; .35; .4; .5; .6; .7; .8; .9; 1];
+% number_events_vector = [1e2; 3e2; 1e3; 3e3; 1e4; 3e4];
+% number_replicates = 30; % Number of new datsets
+% number_pseudoreplicates = 3; % Number of times to split up each dataset
+% 
+% % Get the IIC results
+% [IIC_results] = generate_IIC_curve(params, number_events_vector, SNratio, number_replicates, number_pseudoreplicates, 'sum_of_squares', true, true);
+% 
+% % Calculate mean and standard deviation
+% IIC_mean = mean(IIC_results, 3);
+% IIC_stdev = std(IIC_results, 0, 3);
+% 
+% % Save data
+% filename = [figure_path, 'Fig3B_SSQ_IIC_data.mat'];
+% save(filename, 'fraction_vector', 'number_events_vector', 'number_replicates', 'number_pseudoreplicates', 'IIC_mean', 'IIC_stdev');
+% 
+% % Make figure
+% filename = [figure_path, 'Fig3B_SSQ_IIC_graph.png'];
+% make_IIC_plot(filename, fraction_vector, number_events_vector, IIC_mean, IIC_stdev);
     
-% ---- Figure 3C TCI vs ECI curves ----
+% ---- Figure 3C TCI and ECI curves ----
 
 % Define fraction of events, number of events, and replicates
 fraction_vector = [0; .005; .01; .02; .04; .06; .08; .1; .15; .2; .25; .3; .35; .4; .5; .6; .7; .8; .9; 1];
-number_events_vector = logspace(2, 5, 12);
+number_events_vector = round(logspace(1, 5, 15));
 number_replicates = 30; % Number of new datsets
 number_pseudoreplicates = 3; % Number of times to split up each dataset
+
+% Get the ideal image
+ideal_image = calculate_ideal_image(params);
 
 % Get the IIC and ideal discrepency results
-[IIC_results, ~, ideal_discrepency_results] = generate_IIC_curve(params, number_events_vector, SNratio, number_replicates, number_pseudoreplicates, 'sum_of_squares', ideal_image, true, true);
+[IIC_results, ~, ideal_discrepency_results] = generate_IIC_curve(params, fraction_vector, number_events_vector,...
+    SNratio, number_replicates, number_pseudoreplicates, 'sum_of_squares', ideal_image, true, true);
 
 % Calculate the AOC and ECI of the IIC curves
-dFrac = fraction_vector(2:end) - event_fractions(1:end-1);
+dFrac = fraction_vector(2:end) - fraction_vector(1:end-1);
 midpoint_II = (IIC_results(2:end, :, :) + IIC_results(1:end-1, :, :))/2;
 AOC = sum(repmat(dFrac, 1, size(midpoint_II, 2), size(midpoint_II, 3)) .* midpoint_II, 1);
 ECI_data = (2 * AOC - 1);
@@ -81,4 +85,12 @@ TCI_data = 1 - (ideal_discrepency_results(end, :, :) ./ ideal_discrepency_result
 TCI_mean = squeeze(mean(TCI_data, 3))';
 TCI_stdev = squeeze(std(TCI_data, 0, 3))';
 
+% Save data
+filename = [figure_path, 'Fig3C_SSQ_ECI_TCI_data.mat'];
+save(filename, 'fraction_vector', 'number_events_vector', 'number_replicates', 'number_pseudoreplicates', 'TCI_mean',...
+    'TCI_stdev', 'ECI_mean', 'ECI_stdev');
+
+% Make figure
+filename = [figure_path, 'Fig3B_SSQ_TCI_ECI_graph.png'];
+make_ECI_TCI_plot(filename, number_events_vector, ECI_mean, TCI_mean, ECI_stdev, TCI_stdev);
 

@@ -1,5 +1,5 @@
-function [info_improvement_data] = calculate_IIC(params, dataset, fraction_vector, number_pseudoreplicates,...
-    discrepency_method, ideal_image, optimize_flag)
+function [info_improvement_data, exp_discrepency_data, ideal_discrepency_data] = calculate_IIC(params, dataset, fraction_vector,...
+    number_pseudoreplicates, discrepency_method, ideal_image, optimize_flag)
 %CALCULATE_IIC Calculate the information improvement curve for a STORM
 % image generated with the given parameters
 

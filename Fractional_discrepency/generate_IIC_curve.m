@@ -1,5 +1,5 @@
-function [IIC_results, experimental_discrepency, ideal_discrepency] = generate_IIC_curve(params, number_events_vector, SNratio, number_replicates, number_pseudoreplicates,...
-    discrepency_method, ideal_image, optimize_flag, verbose_flag)
+function [IIC_results, experimental_discrepency, ideal_discrepency] = generate_IIC_curve(params, fraction_vector, number_events_vector, SNratio,...
+    number_replicates, number_pseudoreplicates, discrepency_method, ideal_image, optimize_flag, verbose_flag)
 %GENERATE_IIC_CURVE Generate information improvement characteristic curves 
 % for test images created with the create_test_data_dv data generator.
 
@@ -38,12 +38,12 @@ function [IIC_results, experimental_discrepency, ideal_discrepency] = generate_I
 %       calculate.
 
 % Set defaults
-if nargin < 4; number_replicates = 1; end;
-if nargin < 5; number_pseudoreplicates = 1; end;
-if nargin < 6; discrepency_method = 'sum_of_squares'; end;
-if nargin < 7; ideal_image = []; end;
-if nargin < 8; optimize_flag = true; end;
-if nargin < 9; verbose_flag = false; end;
+if nargin < 5; number_replicates = 1; end;
+if nargin < 6; number_pseudoreplicates = 1; end;
+if nargin < 7; discrepency_method = 'sum_of_squares'; end;
+if nargin < 8; ideal_image = []; end;
+if nargin < 9; optimize_flag = true; end;
+if nargin < 10; verbose_flag = false; end;
 
 % Initialize results matricies
 IIC_results = zeros(length(fraction_vector), length(number_events_vector), number_replicates);
@@ -69,9 +69,9 @@ for num_events_index = 1:length(number_events_vector)
         end
 
         % Edit parameters
-        true_events = number_events / (1 + 1 / SNratio);
-        params.number_events_ch1 = true_events ;
-        params.number_background_events_ch1 = true_events/SNratio;
+        true_events = round(number_events / (1 + 1 / SNratio));
+        params.number_events_ch1 = true_events;
+        params.number_background_events_ch1 = number_events - true_events;
 
         % Generate new data
         seed = randi(1e6);

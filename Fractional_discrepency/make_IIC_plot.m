@@ -1,14 +1,16 @@
-function make_IIC_plot(filename, fraction_vector, event_numbers, IIC_mean, IIC_stdev)
+function make_ECI_TCI_plot(filename, event_numbers, ECI_mean, TCI_mean, ECI_stdev, TCI_stdev)
 %MAKE_NONPARAMETRIC_PLOT Creates a .png image of a information improvement
 % characteristic curve. 
 %
 % Inputs:
 %   filename: string, full filename and path of image to be created
-%   fraction_vector: column vector of event fractions
 %   event_numbers: column vector of the total number of events in the
 %       dataset used to generate each curve.
-%   IIC_mean: information improvement curve matrix with each curve arranged
-%       as a column.
+%   ECI/TCI_mean: column vectors of experimental and theoretical
+%       completeness index mean values, a seperate cuve for each 
+%   ECI/TCI_stdev: column vector of experimental and theoretical
+%       completeness index standard deviation values. Optional, default =
+%       [] (no error bars).
 %   IIC_stdev: standard deviation matrix of the IIC_mean values, with each
 %       curve arranged as a column. Optional, default = [], no error bars.
 % Output:
