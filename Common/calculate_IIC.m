@@ -29,20 +29,34 @@ if nargin < 5; discrepency_method = 'sum_of_squares'; end;
 if nargin < 6; ideal_image = []; end;
 if nargin < 7; optimize_flag = true; end;
 
+% If the discrepency_method is a simple string, put it into a cell array
+if ischar(discrepency_method)
+    discrepency_method = {discrepency_method};
+end
+
 % Get a copy of the STORMvars structure and channel 2 data created with the given parameter structures
 testparams = params; % param_array from loading in 'FD_data_SNxx'
 testparams.number_events_ch1 = 10;
 testparams.number_background_events_ch1 = 10;
 [ ~, data_ch2, STORMvars] = create_test_data_dv(testparams, 10);
 
-% Get the full image and maximum discrepency value
+% Get the full image
 full_image = create_test_STORM_images_dv(params, dataset, data_ch2, STORMvars, false, true, true);
-max_discrepency = calculate_discrepency(zeros(size(full_image)), full_image, discrepency_method, optimize_flag);
 
-% Initialize results matricies
-exp_discrepency_data = zeros(length(fraction_vector), number_pseudoreplicates);
-if ~isempty(ideal_image)
-    ideal_discrepency_data = zeros(length(fraction_vector), number_pseudoreplicates);
+% Loop through each discrepency method
+exp_discrepency_data = cell(0);
+ideal_discrepency_data = cell(0);
+max_discrepency = cell(0);
+for result_cell_index = 1:length(discrepency_method)
+
+    % Initialize results matricies
+    exp_discrepency_data{result_cell_index} = zeros(length(fraction_vector), number_pseudoreplicates);
+    if ~isempty(ideal_image)
+        ideal_discrepency_data{result_cell_index} = zeros(length(fraction_vector), number_pseudoreplicates);
+    end
+    
+    % Get the maximum discrepency for each method
+    max_discrepency{result_cell_index} = calculate_discrepency(zeros(size(full_image)), full_image, discrepency_method{result_cell_index}, optimize_flag);
 end
 
 % Loop through each fraction and calculate the info improvement
@@ -60,22 +74,39 @@ for fraction_index = 1:length(fraction_vector)
         bool_selection(index_integers) = true;
         bool_selection(index_integers + number_datapoints) = true; % select all the y points for corrosponding x in linear representation
 
-        % Split the dataset into larger and smaller datasets
+        % Reduce the dataset into a partial dataset
         partial_dataset = reshape(dataset(bool_selection), [number_datapoints_taken, 2]);
 
         % Create images for the larger and smaller datasets
         [partial_image] = create_test_STORM_images_dv(params, partial_dataset, data_ch2, STORMvars, false, true, true);
-
-        % Recored the discrepency 
-        exp_discrepency_data(fraction_index, pseudorep_index) = calculate_discrepency(partial_image, full_image, discrepency_method, optimize_flag);
-        if ~isempty(ideal_image)
-            ideal_discrepency_data(fraction_index, pseudorep_index) = calculate_discrepency(partial_image, ideal_image, discrepency_method, optimize_flag);
+         
+        % Loop through each discrepency method
+        for result_cell_index = 1:length(discrepency_method)
+            
+            % Record the discrepency 
+            exp_discrepency_data{result_cell_index}(fraction_index, pseudorep_index) = calculate_discrepency(partial_image, full_image,...
+                discrepency_method{result_cell_index}, optimize_flag);
+            if ~isempty(ideal_image)
+                ideal_discrepency_data{result_cell_index}(fraction_index, pseudorep_index) = calculate_discrepency(partial_image,...
+                    ideal_image, discrepency_method{result_cell_index}, optimize_flag);
+            end
         end
     end
 end
 
-% transform to information improvement
-info_improvement_data = 1 - (exp_discrepency_data / max_discrepency);
+% Loop through each discrepency method
+info_improvement_data = cell(0);
+for result_cell_index = 1:length(discrepency_method)
 
+    % Transform to information improvement
+    info_improvement_data{result_cell_index} = 1 - (exp_discrepency_data{result_cell_index} / max_discrepency{result_cell_index});
+end
+
+% If only one discrepency method is requested, return just the results and not the cell array
+if length(discrepency_method) == 1
+    info_improvement_data = info_improvement_data{1};
+    exp_discrepency_data = exp_discrepency_data{1};
+    ideal_discrepency_data = ideal_discrepency_data{1};
+end
 end
 

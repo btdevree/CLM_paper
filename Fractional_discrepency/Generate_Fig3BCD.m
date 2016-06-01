@@ -65,23 +65,30 @@ number_events_vector = round(logspace(1, 5, 15));
 number_replicates = 30; % Number of new datsets
 number_pseudoreplicates = 3; % Number of times to split up each dataset
 
+% Test Define fraction of events, number of events, replicates, and method list
+fraction_vector = [0; .1; .2; .4; .7; 1];
+number_events_vector = round(logspace(1, 5, 5));
+number_replicates = 3; % Number of new datsets
+number_pseudoreplicates = 3; % Number of times to split up each dataset
+method_list = {'sum_of_squares', 'l2_norm', 'normalized_variation_of_information'};
+
 % Get the ideal image
 ideal_image = calculate_ideal_image(params);
 
 % Get the IIC and ideal discrepency results
 [IIC_results, ~, ideal_discrepency_results] = generate_IIC_curve(params, fraction_vector, number_events_vector,...
-    SNratio, number_replicates, number_pseudoreplicates, 'sum_of_squares', ideal_image, true, true);
+    SNratio, number_replicates, number_pseudoreplicates, method_list, ideal_image, true, true);
 
-% Calculate the AOC and ECI of the IIC curves
+% Calculate the AOC and ECI of the sum of squares IIC curves
 dFrac = fraction_vector(2:end) - fraction_vector(1:end-1);
-midpoint_II = (IIC_results(2:end, :, :) + IIC_results(1:end-1, :, :))/2;
+midpoint_II = (IIC_results{1}(2:end, :, :) + IIC_results{1}(1:end-1, :, :))/2;
 AOC = sum(repmat(dFrac, 1, size(midpoint_II, 2), size(midpoint_II, 3)) .* midpoint_II, 1);
 ECI_data = (2 * AOC - 1);
 ECI_mean = squeeze(mean(ECI_data, 3))';
 ECI_stdev = squeeze(std(ECI_data, 0, 3))';
 
 % Calculate the corrosponding TCI 
-TCI_data = 1 - (ideal_discrepency_results(end, :, :) ./ ideal_discrepency_results(1, :, :));
+TCI_data = 1 - (ideal_discrepency_results{1}(end, :, :) ./ ideal_discrepency_results{1}(1, :, :));
 TCI_mean = squeeze(mean(TCI_data, 3))';
 TCI_stdev = squeeze(std(TCI_data, 0, 3))';
 

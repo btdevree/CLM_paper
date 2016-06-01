@@ -16,9 +16,9 @@ function [IIC_results, experimental_discrepency, ideal_discrepency] = generate_I
 %   number_pseudoreplicates: number of times to regenerate each fractional
 %       data split and recalculate the information improvement. Optional, 
 %       default = 1.
-%   discrepency_method: string, method to use for the discrepency 
-%       measurement. See function calculate_discrepency for options.
-%       Default = 'sum_of_squares'.
+%   discrepency_method: string or cell array of strings, method to use for 
+%       the discrepency measurement. See function calculate_discrepency for 
+%       options. Default = 'sum_of_squares'.
 %   ideal_image: ideal image to measure the ideal, theoretical discrepency.
 %       Requried to output the ideal discrepency matrix. Default = [] (no 
 %       ideal calculations).
@@ -45,13 +45,23 @@ if nargin < 8; ideal_image = []; end;
 if nargin < 9; optimize_flag = true; end;
 if nargin < 10; verbose_flag = false; end;
 
+% If the discrepency_method is a simple string, put it into a cell array
+if ischar(discrepency_method)
+    discrepency_method = {discrepency_method};
+end
+
 % Initialize results matricies
-IIC_results = zeros(length(fraction_vector), length(number_events_vector), number_replicates);
-experimental_discrepency = zeros(length(fraction_vector), length(number_events_vector), number_replicates);
-if ~isempty(ideal_image)
-    ideal_discrepency = zeros(length(fraction_vector), length(number_events_vector), number_replicates);
-else
-    ideal_discrepency = [];
+IIC_results = cell(0);
+experimental_discrepency = cell(0);
+ideal_discrepency = cell(0);
+for result_cell_index = 1:length(discrepency_method)
+    IIC_results{result_cell_index} = zeros(length(fraction_vector), length(number_events_vector), number_replicates);
+    experimental_discrepency{result_cell_index} = zeros(length(fraction_vector), length(number_events_vector), number_replicates);
+    if ~isempty(ideal_image)
+        ideal_discrepency{result_cell_index} = zeros(length(fraction_vector), length(number_events_vector), number_replicates);
+    else
+        ideal_discrepency{result_cell_index} = [];
+    end
 end
 
 % Loop through each set of parameters to make an IIC curve
@@ -80,12 +90,19 @@ for num_events_index = 1:length(number_events_vector)
         % Get IIC curve
         [IIC_pesudoreps, exp_pesudoreps, ideal_pesudoreps] = calculate_IIC(params, dataset, fraction_vector,...
             number_pseudoreplicates, discrepency_method, ideal_image, optimize_flag);
-        IIC_results(:, num_events_index, replicate_index) = mean(IIC_pesudoreps, 2);
-        experimental_discrepency(:, num_events_index, replicate_index) = mean(exp_pesudoreps, 2);
+        IIC_results{result_cell_index}(:, num_events_index, replicate_index) = mean(IIC_pesudoreps, 2);
+        experimental_discrepency{result_cell_index}(:, num_events_index, replicate_index) = mean(exp_pesudoreps, 2);
         if ~isempty(ideal_image)
-            ideal_discrepency(:, num_events_index, replicate_index) = mean(ideal_pesudoreps, 2);
+            ideal_discrepency{result_cell_index}(:, num_events_index, replicate_index) = mean(ideal_pesudoreps, 2);
         end
     end
+end
+
+% If only one discrepency method, return just the results and not the cell array
+if length(discrepency_method) == 1
+    IIC_results = IIC_results{1};
+    experimental_discrepency = experimental_discrepency{1};
+    ideal_discrepency = ideal_discrepency{1};
 end
 
 % Report

@@ -22,7 +22,7 @@ function [ discrepency_value, optimized_scale ] = calculate_discrepency( experim
 %       order to minimize the returned discrepency value. Default = true.
 %   NVI_entropy_bins: number of bins to use in for the normalized variation
 %       of information method. Integer, ignored for other methods. 
-%       Default = 100
+%       Default = 20
 % Outputs:
 %   discrepency_value: floating-point double, value of discrpency between 
 %       the experimental and ideal image.
@@ -30,7 +30,7 @@ function [ discrepency_value, optimized_scale ] = calculate_discrepency( experim
 
 % Set defaults
 if nargin < 4; optimize_scaling = true; end;
-if nargin < 5; NVI_entropy_bins = 100; end;
+if nargin < 5; NVI_entropy_bins = 20; end;
 
 % Convert to full matrices, if needed
 if issparse(experimental_image)
@@ -60,6 +60,7 @@ end
 optimized_scale = 1;
 
 % Optimize scale_factor, if requested
+initial_scale = 1;
 if optimize_scaling
     
     % Calculate the discrepency as the sum of squared distance
@@ -70,7 +71,7 @@ if optimize_scaling
 
     % Calculate the discrepency as the sum of l2 distance
     if strcmp(method, 'l2_norm')
-        % Optimize with ssq
+        % Optimize with ssq then l2
         f = @(scale_factor)calc_l2_norm(scale_factor, ideal_image, experimental_image);
     end
 
@@ -88,7 +89,12 @@ if optimize_scaling
     
     % Run the optimization
     options = optimoptions('fminunc', 'Algorithm', 'quasi-newton', 'Display', 'none');
-    [optimized_scale] = fminunc(f, 1, options);
+    if ~strcmp(method, 'sum_of_squares')
+        % First optimize on ssq; more stable
+        [initial_scale] = fminunc(@(scale_factor)calc_ssq(scale_factor, ideal_image, experimental_image), 1, options);
+    end
+    % Now optimize on the objective function
+    [optimized_scale] = fminunc(f, initial_scale, options);
 end
 
 % Get the discrepency for return
