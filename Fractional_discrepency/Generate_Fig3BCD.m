@@ -79,25 +79,36 @@ ideal_image = calculate_ideal_image(params);
 [IIC_results, ~, ideal_discrepency_results] = generate_IIC_curve(params, fraction_vector, number_events_vector,...
     SNratio, number_replicates, number_pseudoreplicates, method_list, ideal_image, true, true);
 
-% Calculate the AOC and ECI of the sum of squares IIC curves
-dFrac = fraction_vector(2:end) - fraction_vector(1:end-1);
-midpoint_II = (IIC_results{1}(2:end, :, :) + IIC_results{1}(1:end-1, :, :))/2;
-AOC = sum(repmat(dFrac, 1, size(midpoint_II, 2), size(midpoint_II, 3)) .* midpoint_II, 1);
-ECI_data = (2 * AOC - 1);
-ECI_mean = squeeze(mean(ECI_data, 3))';
-ECI_stdev = squeeze(std(ECI_data, 0, 3))';
+% Loop through each discrepency method
+ECI_mean = cell(0);
+ECI_stdev = cell(0);
+TCI_mean = cell(0);
+TCI_stdev = cell(0);
+ for method_cell_index = 1:length(method_list)
 
-% Calculate the corrosponding TCI 
-TCI_data = 1 - (ideal_discrepency_results{1}(end, :, :) ./ ideal_discrepency_results{1}(1, :, :));
-TCI_mean = squeeze(mean(TCI_data, 3))';
-TCI_stdev = squeeze(std(TCI_data, 0, 3))';
+    % Calculate the AOC and ECI of the sum of squares IIC curves
+    dFrac = fraction_vector(2:end) - fraction_vector(1:end-1);
+    midpoint_II = (IIC_results{method_cell_index}(2:end, :, :) + IIC_results{method_cell_index}(1:end-1, :, :))/2;
+    AOC = sum(repmat(dFrac, 1, size(midpoint_II, 2), size(midpoint_II, 3)) .* midpoint_II, 1);
+    ECI_data = (2 * AOC - 1);
+    ECI_mean{method_cell_index} = squeeze(mean(ECI_data, 3))';
+    ECI_stdev{method_cell_index} = squeeze(std(ECI_data, 0, 3))';
+
+    % Calculate the corrosponding TCI 
+    TCI_data = 1 - (ideal_discrepency_results{method_cell_index}(end, :, :) ./ ideal_discrepency_results{method_cell_index}(1, :, :));
+    TCI_mean{method_cell_index} = squeeze(mean(TCI_data, 3))';
+    TCI_stdev{method_cell_index} = squeeze(std(TCI_data, 0, 3))';
+ end
 
 % Save data
-filename = [figure_path, 'Fig3C_SSQ_ECI_TCI_data.mat'];
+filename = [figure_path, 'Fig3CD_ECI_TCI_data.mat'];
 save(filename, 'fraction_vector', 'number_events_vector', 'number_replicates', 'number_pseudoreplicates', 'TCI_mean',...
     'TCI_stdev', 'ECI_mean', 'ECI_stdev');
 
 % Make figure
-filename = [figure_path, 'Fig3B_SSQ_TCI_ECI_graph.png'];
-make_ECI_TCI_plot(filename, number_events_vector, ECI_mean, TCI_mean, ECI_stdev, TCI_stdev);
+filename = [figure_path, 'Fig3C_SSQ_TCI_ECI_graph.png'];
+make_ECI_TCI_plot(filename, number_events_vector, ECI_mean{1}, TCI_mean{1}, ECI_stdev{1}, TCI_stdev{1});
 
+% Make figure
+filename = [figure_path, 'Fig3D_TCI_vs_ECI_graph.png'];
+make_ECI_vs_TCI_plot(filename, ECI_mean, TCI_mean, method_list, ECI_stdev, TCI_stdev);

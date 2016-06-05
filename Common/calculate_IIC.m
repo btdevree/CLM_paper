@@ -11,17 +11,25 @@ function [info_improvement_data, exp_discrepency_data, ideal_discrepency_data] =
 %   number_pseudoreplicates: number of times to regenerate each fractional
 %       data split and recalculate the information improvement. Optional, 
 %       default = 1.
-%   discrepency_method: string, method to use for the discrepency 
-%       measurement. See function calculate_discrepency for options.
-%       Default = 'sum_of_squares'.
+%   discrepency_method: string or cell array of strings, method to use for 
+%       the discrepency measurement. See function calculate_discrepency for 
+%       options. Default = 'sum_of_squares'.
 %   ideal_image: ideal image to measure the ideal, theoretical discrepency.
 %       Requried to output the ideal discrepency matrix. Default = [] (no 
 %       ideal calculations).
 %   optimize_flag: boolean, when set to true the scaling of the partial 
 %       image is optimized to minimize the discrepency. Default = true.
 % Output:
-%   info_improvement_data: matrix of information improvement fractions,
-%       arranged as seperate columns for each pseudoreplicate.
+%   info_improvement_data: matrix or cell array of matricies of information
+%       improvement fractions, arranged as seperate columns for each 
+%       pseudoreplicate.
+%   experimental_discrepency: raw experimental image discrepency values,
+%       arranged in the same order as the info_improvement_data.
+%   ideal_discrepency: raw ideal image discrepency values, arranged in the 
+%       same order as the IIC_results. Must supply ideal image in order to
+%       calculate.
+
+
 
 % Set defaults
 if nargin < 4; number_pseudoreplicates = 1; end;

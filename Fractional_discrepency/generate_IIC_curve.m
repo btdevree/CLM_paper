@@ -33,7 +33,7 @@ function [IIC_results, experimental_discrepency, ideal_discrepency] = generate_I
 %       dimension.
 %   experimental_discrepency: raw experimental image discrepency values,
 %       arranged in the same order as the IIC_results.
-%  ideal_discrepency: raw ideal image discrepency values, arranged in the 
+%   ideal_discrepency: raw ideal image discrepency values, arranged in the 
 %       same order as the IIC_results. Must supply ideal image in order to
 %       calculate.
 
@@ -90,10 +90,14 @@ for num_events_index = 1:length(number_events_vector)
         % Get IIC curve
         [IIC_pesudoreps, exp_pesudoreps, ideal_pesudoreps] = calculate_IIC(params, dataset, fraction_vector,...
             number_pseudoreplicates, discrepency_method, ideal_image, optimize_flag);
-        IIC_results{result_cell_index}(:, num_events_index, replicate_index) = mean(IIC_pesudoreps, 2);
-        experimental_discrepency{result_cell_index}(:, num_events_index, replicate_index) = mean(exp_pesudoreps, 2);
-        if ~isempty(ideal_image)
-            ideal_discrepency{result_cell_index}(:, num_events_index, replicate_index) = mean(ideal_pesudoreps, 2);
+        
+        % Take the mean values of the pseudoreplicates and put into result matrices
+        for result_cell_index = 1:length(discrepency_method)
+            IIC_results{result_cell_index}(:, num_events_index, replicate_index) = mean(IIC_pesudoreps{result_cell_index}, 2);
+            experimental_discrepency{result_cell_index}(:, num_events_index, replicate_index) = mean(exp_pesudoreps{result_cell_index}, 2);
+            if ~isempty(ideal_image)
+                ideal_discrepency{result_cell_index}(:, num_events_index, replicate_index) = mean(ideal_pesudoreps{result_cell_index}, 2);
+            end
         end
     end
 end
