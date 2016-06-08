@@ -89,8 +89,8 @@ for num_events_index = 1:length(number_events_vector)
 
         % Get IIC curve
         [IIC_pesudoreps, exp_pesudoreps, ideal_pesudoreps] = calculate_IIC(params, dataset, fraction_vector,...
-            number_pseudoreplicates, discrepency_method, ideal_image, optimize_flag);
-        
+            number_pseudoreplicates, discrepency_method, ideal_image, optimize_flag, true);
+         
         % Take the mean values of the pseudoreplicates and put into result matrices
         for result_cell_index = 1:length(discrepency_method)
             IIC_results{result_cell_index}(:, num_events_index, replicate_index) = mean(IIC_pesudoreps{result_cell_index}, 2);

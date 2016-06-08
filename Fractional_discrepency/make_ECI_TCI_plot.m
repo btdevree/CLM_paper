@@ -49,7 +49,7 @@ end
 legend_labels{2} = num2str('Theoretical Completeness Index');
 
 % Finish graph
-set(haxes, 'Xscale', 'log', 'Ylim', [0, 1]);
+set(haxes, 'Xscale', 'log','Xlim', [1e1, 1e5], 'Ylim', [0, 1]);
 legend(plot_handles, legend_labels, 'Location', 'southeast'); % Errorbar legend markers don't show up, use Plot curves for legend 
 title('Completeness Index vs. Localization Event Number', 'FontSize', 16);
 xlabel('Number of Localization Events', 'FontSize', 12);

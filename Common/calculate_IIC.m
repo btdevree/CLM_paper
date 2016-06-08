@@ -1,5 +1,5 @@
 function [info_improvement_data, exp_discrepency_data, ideal_discrepency_data] = calculate_IIC(params, dataset, fraction_vector,...
-    number_pseudoreplicates, discrepency_method, ideal_image, optimize_flag)
+    number_pseudoreplicates, discrepency_method, ideal_image, optimize_flag, force_return_cells)
 %CALCULATE_IIC Calculate the information improvement curve for a STORM
 % image generated with the given parameters
 
@@ -19,6 +19,9 @@ function [info_improvement_data, exp_discrepency_data, ideal_discrepency_data] =
 %       ideal calculations).
 %   optimize_flag: boolean, when set to true the scaling of the partial 
 %       image is optimized to minimize the discrepency. Default = true.
+%   force_return_cells: boolean, when true the method returns cell arrays
+%       of matricies, even if there is only one discrepency method given.
+%       Default = false.
 % Output:
 %   info_improvement_data: matrix or cell array of matricies of information
 %       improvement fractions, arranged as seperate columns for each 
@@ -36,6 +39,7 @@ if nargin < 4; number_pseudoreplicates = 1; end;
 if nargin < 5; discrepency_method = 'sum_of_squares'; end;
 if nargin < 6; ideal_image = []; end;
 if nargin < 7; optimize_flag = true; end;
+if nargin < 8; force_return_cells = true; end;
 
 % If the discrepency_method is a simple string, put it into a cell array
 if ischar(discrepency_method)
@@ -111,7 +115,7 @@ for result_cell_index = 1:length(discrepency_method)
 end
 
 % If only one discrepency method is requested, return just the results and not the cell array
-if length(discrepency_method) == 1
+if length(discrepency_method) == 1 && ~force_return_cells
     info_improvement_data = info_improvement_data{1};
     exp_discrepency_data = exp_discrepency_data{1};
     ideal_discrepency_data = ideal_discrepency_data{1};

@@ -35,7 +35,7 @@ pixel_size = 20; % Normal grid
 params.STORM_pixel_size = pixel_size; 
 
 % ---- Fig3B IIC curves ----
-
+% 
 % % Define fraction of events, number of events, and replicates
 % fraction_vector = [0; .005; .01; .02; .04; .06; .08; .1; .15; .2; .25; .3; .35; .4; .5; .6; .7; .8; .9; 1];
 % number_events_vector = [1e2; 3e2; 1e3; 3e3; 1e4; 3e4];
@@ -43,7 +43,7 @@ params.STORM_pixel_size = pixel_size;
 % number_pseudoreplicates = 3; % Number of times to split up each dataset
 % 
 % % Get the IIC results
-% [IIC_results] = generate_IIC_curve(params, number_events_vector, SNratio, number_replicates, number_pseudoreplicates, 'sum_of_squares', true, true);
+% [IIC_results] = generate_IIC_curve(params, fraction_vector, number_events_vector, SNratio, number_replicates, number_pseudoreplicates, 'sum_of_squares', true, true);
 % 
 % % Calculate mean and standard deviation
 % IIC_mean = mean(IIC_results, 3);
@@ -57,20 +57,15 @@ params.STORM_pixel_size = pixel_size;
 % filename = [figure_path, 'Fig3B_SSQ_IIC_graph.png'];
 % make_IIC_plot(filename, fraction_vector, number_events_vector, IIC_mean, IIC_stdev);
     
-% ---- Figure 3C TCI and ECI curves ----
+% ---- Figure 3C & D TCI and ECI curves ----
 
 % Define fraction of events, number of events, and replicates
 fraction_vector = [0; .005; .01; .02; .04; .06; .08; .1; .15; .2; .25; .3; .35; .4; .5; .6; .7; .8; .9; 1];
 number_events_vector = round(logspace(1, 5, 15));
 number_replicates = 30; % Number of new datsets
 number_pseudoreplicates = 3; % Number of times to split up each dataset
-
-% Test Define fraction of events, number of events, replicates, and method list
-fraction_vector = [0; .1; .2; .4; .7; 1];
-number_events_vector = round(logspace(1, 5, 5));
-number_replicates = 3; % Number of new datsets
-number_pseudoreplicates = 3; % Number of times to split up each dataset
 method_list = {'sum_of_squares', 'l2_norm', 'normalized_variation_of_information'};
+legend_method_list = {'Sum of Squares', 'Absolute Distance', 'Normalized Variation of Information'};
 
 % Get the ideal image
 ideal_image = calculate_ideal_image(params);
@@ -111,4 +106,4 @@ make_ECI_TCI_plot(filename, number_events_vector, ECI_mean{1}, TCI_mean{1}, ECI_
 
 % Make figure
 filename = [figure_path, 'Fig3D_TCI_vs_ECI_graph.png'];
-make_ECI_vs_TCI_plot(filename, ECI_mean, TCI_mean, method_list, ECI_stdev, TCI_stdev);
+make_ECI_vs_TCI_plot(filename, ECI_mean, TCI_mean, method_list, legend_method_list, ECI_stdev, TCI_stdev);
