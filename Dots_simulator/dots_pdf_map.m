@@ -75,7 +75,8 @@ while event_counter < number_of_dots
 end
 
 % Get the cell map
-[pdf_map, xmesh, ymesh] = create_cell_map(params.ch1_distribution_params{2}, x_length, y_length, cell_center_x, cell_center_y, cell_radius);
+map_resolution = params.ch1_distribution_params{2};
+[pdf_map, xmesh, ymesh] = create_cell_map(map_resolution, x_length, y_length, cell_center_x, cell_center_y, cell_radius);
 
 % Multiply all pixels inside spot radius by deisred dot to background ratio
 for dot_index = 1:size(center_coords, 1)
