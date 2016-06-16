@@ -47,7 +47,7 @@ y_length = max_y_bound - min_y_bound;
 
 % Determine line minimum length
 if ~isnumeric(line_min_length)
-    tokens = regexp(params.cell_radius, '(\d+)([%])', 'tokens'); % Look for a percentage value
+    tokens = regexp(line_min_length, '(\d+)([%])', 'tokens'); % Look for a percentage value
     if ~isempty(tokens)
         base_length = min([x_length, y_length]);
         line_min_length = (str2num(tokens{1}{1})/100) * base_length;
@@ -56,7 +56,7 @@ end
 
 % Determine line max lengths
 if ~isnumeric(line_max_length)
-    tokens = regexp(params.cell_radius, '(\d+)([%])', 'tokens'); % Look for a percentage value
+    tokens = regexp(line_max_length, '(\d+)([%])', 'tokens'); % Look for a percentage value
     if ~isempty(tokens)
         base_length = min([x_length, y_length]);
         line_max_length = (str2num(tokens{1}{1})/100) * base_length;
@@ -78,7 +78,7 @@ line_counter = 0;
 while line_counter < number_of_lines 
     line_start = rand(1,2) .* [x_length, y_length];
     line_end = rand(1,2) .* [x_length, y_length];
-    line_length = sqrt(sum((line_end - line_start).^2);
+    line_length = sqrt(sum((line_end - line_start).^2, 2));
     if line_length >= line_min_length && line_length <= line_max_length
        line_counter = line_counter + 1;
        line_start_coords(line_counter, :) = line_start;
@@ -120,7 +120,7 @@ for line_index = 1:size(line_start_coords, 1)
     
     % Add 1 to the pdf map for the pixels that are within the specified width
     pdf_map(window_top_index:window_bottom_index, window_left_index:window_right_index) =...
-        pdf_map((window_top_index:window_bottom_index, window_left_index:window_right_index) +...
+        pdf_map(window_top_index:window_bottom_index, window_left_index:window_right_index) +...
         double(window_distance <= line_width);
 end
 
