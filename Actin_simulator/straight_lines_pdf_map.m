@@ -63,7 +63,7 @@ if ~isnumeric(line_max_length)
     end
 end
 
-% Double check the min and max are not mixed up
+% Double check that min and max are not mixed up
 if line_min_length > line_max_length
     error('Minimum line length must be smaller or equal to the maximum length');
 end
@@ -112,9 +112,9 @@ for line_index = 1:size(line_start_coords, 1)
     
     % Select a rectangular region of the meshgrid that must contain the entire line
     window_left_index = floor((min([start_x, end_x]) - line_width) / map_resolution) + 1;
-    window_right_index = floor((max([start_x, end_x]) - line_width) / map_resolution);
+    window_right_index = floor((max([start_x, end_x]) + line_width) / map_resolution);
     window_top_index = floor((min([start_y, end_y]) - line_width) / map_resolution) + 1;
-    window_bottom_index = floor((max([start_y, end_y]) - line_width) / map_resolution);
+    window_bottom_index = floor((max([start_y, end_y]) + line_width) / map_resolution);
     window_xmesh = xmesh(window_top_index:window_bottom_index, window_left_index:window_right_index);
     window_ymesh = ymesh(window_top_index:window_bottom_index, window_left_index:window_right_index);
     
