@@ -113,8 +113,8 @@ for line_index = 1:size(line_start_coords, 1)
     % Select a rectangular region of the meshgrid that must contain the entire line
     window_left_index = floor((min([start_x, end_x]) - line_width) / map_resolution) + 1;
     window_right_index = floor((max([start_x, end_x]) + line_width) / map_resolution);
-    window_top_index = floor((min([start_y, end_y]) - line_width) / map_resolution) + 1;
-    window_bottom_index = floor((max([start_y, end_y]) + line_width) / map_resolution);
+    window_top_index = num_pixels_y - floor((max([start_y, end_y]) + line_width) / map_resolution) + 1;
+    window_bottom_index = num_pixels_y - floor((min([start_y, end_y]) - line_width) / map_resolution);
     window_xmesh = xmesh(window_top_index:window_bottom_index, window_left_index:window_right_index);
     window_ymesh = ymesh(window_top_index:window_bottom_index, window_left_index:window_right_index);
     
