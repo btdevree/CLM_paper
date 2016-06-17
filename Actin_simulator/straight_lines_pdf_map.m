@@ -101,6 +101,10 @@ pdf_map = zeros(num_pixels_y, num_pixels_x);
 
 % Calculate each line seperately and add to total map
 for line_index = 1:size(line_start_coords, 1)
+    % Report
+    disp(['Working on line number ', num2str(line_index)]);
+    
+    % Extract coordinates   
     start_x = line_start_coords(line_index, 1);
     start_y = line_start_coords(line_index, 2);
     end_x = line_end_coords(line_index, 1);
@@ -115,8 +119,10 @@ for line_index = 1:size(line_start_coords, 1)
     window_ymesh = ymesh(window_top_index:window_bottom_index, window_left_index:window_right_index);
     
     % Calc distances from line
-    window_distance = abs((end_y - start_y) * window_xmesh - (end_x - start_x) * window_ymesh + end_x * start_y - end_y * start_x)...
-        / sqrt((end_y - start_y).^2 + (end_x - start_x).^2);
+    endpoints = [start_x, start_y; end_x, end_y];
+    line_length = sqrt((end_x - start_x).^2 + (end_y - start_y).^2);
+    number_curve_points = 5 * (line_length / map_resolution); % 1/10th pixel maximum error
+    window_distance = distance_to_bezier(endpoints, window_xmesh, window_ymesh, number_curve_points, false);
     
     % Add 1 to the pdf map for the pixels that are within the specified width
     pdf_map(window_top_index:window_bottom_index, window_left_index:window_right_index) =...
@@ -125,13 +131,12 @@ for line_index = 1:size(line_start_coords, 1)
 end
 
 % Normalize the pdf map
-if ~isinf(line_to_background_ratio)
+if ~isinf(line_to_background_ratio) % Any non-perfect image
     pdf_map = pdf_map * line_to_background_ratio; % Multiply by ratio
     pdf_map = pdf_map + ones(size(pdf_map)); % Add one for background
 end
 map_sum = sum(pdf_map(:));
 pdf_map = pdf_map / map_sum;
-
 end
 
 

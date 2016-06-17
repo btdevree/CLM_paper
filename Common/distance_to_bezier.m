@@ -33,14 +33,14 @@ testpoints = calc_bezier_line(bezier_control_points, number_line_testpoints);
 if ~use_MEX_flag % Don't use C++ MEX routine
     
     % Run measurement function
-    distances = min_dist_to_curve(x_coords, y_coords, testpoints(:, 1), testpoints(:, 2));
+    distances = reshape(min_dist_to_curve([x_coords(:), y_coords(:)], testpoints), size(x_coords));
     
 else % Use the C++ MEX routine
     
     % Check inputs to avoid segfaults
     
     % Run measurement MEX function
-    distances = min_dist_to_curve_MEX(x_coords, y_coords, testpoints(:, 1), testpoints(:, 2));
+    distances = reshape(min_dist_to_curve_MEX([x_coords(:), y_coords(:)], testpoints), size(x_coords));
     
 end
 
