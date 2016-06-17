@@ -1,4 +1,4 @@
-function [pdf_map, line_start_coords, line_end_coords] = straight_lines_pdf_map(parameter_struct, number_of_lines, line_width, line_to_background_ratio, line_min_length, line_max_length)
+function [pdf_map, control_points_x, control_points_y] = straight_lines_pdf_map(parameter_struct, number_of_lines, line_width, line_to_background_ratio, line_type, line_min_length, line_max_length)
 %STRAIGHT_LINES_PDF_MAP Makes a pdf map of line structures in the field of
 % view.
 %
@@ -15,6 +15,10 @@ function [pdf_map, line_start_coords, line_end_coords] = straight_lines_pdf_map(
 %   line_to_background_ratio: ratio of the density of events inside the
 %       line region to the general background. Use Inf for a image with no 
 %       background.
+%   line_type: string, type of lines to draw. Options are:
+%       'line_segment' - straight line segments
+%       'quadratic' - quadratic bezier (3 control points)
+%       'cubic' - cubic bezier (4 control points)
 %   line_min_length: minimum length of the lines in the image, given in
 %       nanometers or as a string in the format 'xxx%' representing the 
 %       percentage of the smallest image dimenstion. Optional, default =
@@ -97,37 +101,27 @@ y_vec = [num_pixels_y - 0.5: -1: 0.5] .* map_resolution;
 [xmesh, ymesh] = meshgrid(x_vec, y_vec);
 
 % Initalize pdf map image
-pdf_map = zeros(num_pixels_y, num_pixels_x);
+pdf_map = zeros(size(xmesh));
 
 % Calculate each line seperately and add to total map
 for line_index = 1:size(line_start_coords, 1)
     % Report
     disp(['Working on line number ', num2str(line_index)]);
     
-    % Extract coordinates   
-    start_x = line_start_coords(line_index, 1);
-    start_y = line_start_coords(line_index, 2);
-    end_x = line_end_coords(line_index, 1);
-    end_y = line_end_coords(line_index, 2);
-    
-    % Select a rectangular region of the meshgrid that must contain the entire line
-    window_left_index = floor((min([start_x, end_x]) - line_width) / map_resolution) + 1;
-    window_right_index = floor((max([start_x, end_x]) + line_width) / map_resolution);
-    window_top_index = num_pixels_y - floor((max([start_y, end_y]) + line_width) / map_resolution) + 1;
-    window_bottom_index = num_pixels_y - floor((min([start_y, end_y]) - line_width) / map_resolution);
-    window_xmesh = xmesh(window_top_index:window_bottom_index, window_left_index:window_right_index);
-    window_ymesh = ymesh(window_top_index:window_bottom_index, window_left_index:window_right_index);
-    
     % Calc distances from line
-    endpoints = [start_x, start_y; end_x, end_y];
-    line_length = sqrt((end_x - start_x).^2 + (end_y - start_y).^2);
+    endpoints = [line_start_coords(line_index, :); line_end_coords(line_index, :)];
+    line_length = sqrt(sum((endpoints(2, :) - endpoints(1, :)).^2 , 2));
     number_curve_points = 5 * (line_length / map_resolution); % 1/10th pixel maximum error
-    window_distance = distance_to_bezier(endpoints, window_xmesh, window_ymesh, number_curve_points, false);
+    curve_points = calc_bezier_line(endpoints, number_curve_points);
+    
+    % Select pixels next to the line, too inaccurate to use as distance measurements but avoids calculating many unused distances
+    [coord_linear_indices, x_coords, y_coords] = select_bezier_region(curve_points, xmesh, ymesh, line_width/2);
+    
+    % Find the minimum distance for each coordinate to any point on the curve
+    distances = distance_to_bezier(curve_points, x_coords, y_coords, false);
     
     % Add 1 to the pdf map for the pixels that are within the specified width
-    pdf_map(window_top_index:window_bottom_index, window_left_index:window_right_index) =...
-        pdf_map(window_top_index:window_bottom_index, window_left_index:window_right_index) +...
-        double(window_distance <= line_width);
+    pdf_map(coord_linear_indices) = pdf_map(coord_linear_indices) + double(distances <= line_width/2);
 end
 
 % Normalize the pdf map
