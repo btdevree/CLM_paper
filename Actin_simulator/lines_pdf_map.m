@@ -19,6 +19,7 @@ function [pdf_map, control_points_x, control_points_y] = lines_pdf_map(parameter
 %       'line_segment' - straight line segments
 %       'quadratic' - quadratic bezier (3 control points)
 %       'cubic' - cubic bezier (4 control points)
+%       Optional, default = 'line_segment'
 %   chord_min_length: minimum length of the line chord in the image, given 
 %       in nanometers or as a string in the format 'xxx%' representing the 
 %       percentage of the smallest image dimenstion. Optional, default =
@@ -35,8 +36,9 @@ function [pdf_map, control_points_x, control_points_y] = lines_pdf_map(parameter
 %       to 4 entrys longe, depending on the line_type.
 
 % Set defaults
-if nargin < 5; chord_min_length = '5%'; end;
-if nargin < 6; chord_max_length = '95%'; end;
+if nargin < 5; line_type = 'line_segment'; end;
+if nargin < 6; chord_min_length = '5%'; end;
+if nargin < 7; chord_max_length = '95%'; end;
 
 % Rename parameter structure for convenience
 params = parameter_struct;
@@ -112,8 +114,18 @@ x_vec = [0.5: 1: num_pixels_x - 0.5] .* map_resolution;
 y_vec = [num_pixels_y - 0.5: -1: 0.5] .* map_resolution;
 [xmesh, ymesh] = meshgrid(x_vec, y_vec);
 
-% Initalize pdf map image
+% Initalize pdf_map and control point matricies
 pdf_map = zeros(size(xmesh));
+if strcmp(line_type, 'line_segment')
+    control_points_x = zeros(number_of_lines, 2);
+    control_points_y = zeros(number_of_lines, 2);
+elseif strcmp(line_type, 'quadratic')
+    control_points_x = zeros(number_of_lines, 3);
+    control_points_y = zeros(number_of_lines, 3);
+elseif strcmp(line_type, 'cubic')
+    control_points_x = zeros(number_of_lines, 4);
+    control_points_y = zeros(number_of_lines, 4);
+end
 
 % Calculate each line seperately and add to total map
 for line_index = 1:size(start_coords, 1)
@@ -122,20 +134,24 @@ for line_index = 1:size(start_coords, 1)
     
     % Prepare the control points for each type of line
     if strcmp(line_type, 'line_segment')
-        control_points = [start_coords(line_index, :); end_coords(line_index, :)];
+        cp = [start_coords(line_index, :); end_coords(line_index, :)];
     elseif strcmp(line_type, 'quadratic')
-        control_points = [start_coords(line_index, :); cp1_coords(line_index, :); end_coords(line_index, :)];
+        cp = [start_coords(line_index, :); cp1_coords(line_index, :); end_coords(line_index, :)];
     elseif strcmp(line_type, 'cubic')
-        control_points = [start_coords(line_index, :); cp1_coords(line_index, :); cp2_coords(line_index, :); end_coords(line_index, :)];
+        cp = [start_coords(line_index, :); cp1_coords(line_index, :); cp2_coords(line_index, :); end_coords(line_index, :)];
     end
     
+    % Record control points
+    control_points_x(line_index, :) = cp(:, 1)';
+    control_points_y(line_index, :) = cp(:, 2)';
+    
     % Approximate the arc length
-    testpoints = calc_bezier_line(control_points, 25); % 25 points should most always us a length within 1% of the true value for cubic beziers
+    testpoints = calc_bezier_line(cp, 25); % 25 points should most always us a length within 1% of the true value for cubic beziers
     approx_length = sum(sqrt(sum((testpoints(2:end, :) - testpoints(1:end-1, :)).^2 , 2)), 1);
     
     % Get approreate number of points along the bezier curve 
     number_curve_points = 5 * (approx_length / map_resolution); % about 1/10th pixel maximum errors on distance measurements
-    curve_points = calc_bezier_line(control_points, number_curve_points);
+    curve_points = calc_bezier_line(cp, number_curve_points);
     
     % Select pixels next to the line, too inaccurate to use as distance measurements but avoids calculating many unused distances
     [coord_linear_indices, x_coords, y_coords] = select_bezier_region(curve_points, xmesh, ymesh, line_width/2);
