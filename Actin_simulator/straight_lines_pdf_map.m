@@ -74,8 +74,14 @@ end
 
 % Generate line coordinates, work in coordinates relative to lower left corner
 % Initialize variables
-line_start_coords = zeros(number_of_lines, 2);
-line_end_coords = zeros(number_of_lines, 2);
+start_coords = zeros(number_of_lines, 2);
+end_coords = zeros(number_of_lines, 2);
+if strcmp(line_type, 'quadratic') || strcmp(line_type, 'cubic')
+    cp1_coords = zeros(number_of_lines, 2);
+end
+if strcmp(line_type, 'cubic')
+    cp2_coords = zeros(number_of_lines, 2);
+end
 line_counter = 0;
 
 % Repeat loop until enough valid lines are generated
@@ -84,9 +90,15 @@ while line_counter < number_of_lines
     line_end = rand(1,2) .* [x_length, y_length];
     line_length = sqrt(sum((line_end - line_start).^2, 2));
     if line_length >= line_min_length && line_length <= line_max_length
-       line_counter = line_counter + 1;
-       line_start_coords(line_counter, :) = line_start;
-       line_end_coords(line_counter, :) = line_end;
+        line_counter = line_counter + 1;
+        start_coords(line_counter, :) = line_start;
+        end_coords(line_counter, :) = line_end;
+        if strcmp(line_type, 'quadratic') || strcmp(line_type, 'cubic')
+            cp1_coords(line_counter, :) = rand(1,2) .* [x_length, y_length];
+        end
+        if strcmp(line_type, 'cubic')
+            cp2_coords(line_counter, :) = rand(1,2) .* [x_length, y_length];
+        end
     end
 end
 
@@ -104,15 +116,27 @@ y_vec = [num_pixels_y - 0.5: -1: 0.5] .* map_resolution;
 pdf_map = zeros(size(xmesh));
 
 % Calculate each line seperately and add to total map
-for line_index = 1:size(line_start_coords, 1)
+for line_index = 1:size(start_coords, 1)
     % Report
     disp(['Working on line number ', num2str(line_index)]);
     
-    % Calc distances from line
-    endpoints = [line_start_coords(line_index, :); line_end_coords(line_index, :)];
-    line_length = sqrt(sum((endpoints(2, :) - endpoints(1, :)).^2 , 2));
-    number_curve_points = 5 * (line_length / map_resolution); % 1/10th pixel maximum error
-    curve_points = calc_bezier_line(endpoints, number_curve_points);
+    % Prepare the control points for each type of line
+    if strcmp(line_type, 'line_segment')
+        control_points = [start_coords(line_index, :); end_coords(line_index, :)];
+    elseif strcmp(line_type, 'quadratic')
+        control_points = [start_coords(line_index, :); cp1_coords(line_index, :); end_coords(line_index, :)];
+    elseif strcmp(line_type, 'cubic')
+        control_points = [start_coords(line_index, :); cp1_coords(line_index, :); cp2_coords(line_index, :); end_coords(line_index, :)];
+    end
+    
+    % Approximate the arc length
+    chord_length = sqrt(sum((control_points(end, :) - control_points(1, :)).^2 , 2));
+    control_net_length = sum(sqrt(sum((control_points(2:end, :) - control_points(1:end-1, :)).^2 , 2)), 1);
+    approx_length = (chord_length + control_net_length) / 2; 
+    
+    % Get approreate number of points along the bezier curve 
+    number_curve_points = 5 * (line_length / map_resolution); % approx 1/10th pixel maximum errors on distance measurements
+    curve_points = calc_bezier_line(control_points, number_curve_points);
     
     % Select pixels next to the line, too inaccurate to use as distance measurements but avoids calculating many unused distances
     [coord_linear_indices, x_coords, y_coords] = select_bezier_region(curve_points, xmesh, ymesh, line_width/2);

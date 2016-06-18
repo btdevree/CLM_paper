@@ -1,0 +1,24 @@
+% Checking accurcy of cubic bezier approximation algorithm
+
+% Generate random beziers on a unit 1 square grid
+number_beziers = 10;
+cp_x = rand(number_beziers, 4);
+cp_y = rand(number_beziers, 4);
+
+% Get the approximated and actual lengths for each curve
+approx_arc_length = zeros(number_beziers, 1);
+true_arc_length = zeros(number_beziers, 1);
+for curve_index = 1:number_beziers
+    
+    % Construct the control_points matrix
+    control_points = [cp_x(curve_index, :)', cp_y(curve_index, :)'];
+    
+    % Approximate the arc length
+    chord_length = sqrt(sum((control_points(end, :) - control_points(1, :)).^2 , 2));
+    control_net_length = sum(sqrt(sum((control_points(2:end, :) - control_points(1:end-1, :)).^2 , 2)), 1);
+    approx_arc_length(curve_index) = (chord_length + control_net_length) / 2; 
+
+    % Get points along the bezier curve 
+    curve_points = calc_bezier_line(control_points, 100);
+    true_arc_length(curve_index) = sum(sqrt(sum((control_points(2:end, :) - control_points(1:end-1, :)).^2 , 2)), 1);
+end
