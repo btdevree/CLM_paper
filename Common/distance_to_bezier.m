@@ -31,10 +31,14 @@ if ~use_MEX_flag % Don't use C++ MEX routine
     
 else % Use the C++ MEX routine
     
-    % Check inputs to avoid segfaults
+    % Prep coords for measurement function
+    coords_matrix = [x_coords(:), y_coords(:)];
+    
+    % Type checking to make sure we don't end up giving the MEX file bad inputs and cause a seg-fault
+    assert(ismatrix(coords_matrix) && size(coords_matrix, 2) == 2 && (isa(coords_matrix, 'double')));
+    assert(ismatrix(bezier_curve_points) && size(bezier_curve_points, 2) == 2 && (isa(bezier_curve_points, 'double')));
     
     % Run measurement MEX function
-    distances = reshape(min_dist_to_curve_MEX([x_coords(:), y_coords(:)], bezier_curve_points), size(x_coords));
-    
+    distances = reshape(min_dist_to_curve_MEX(coords_matrix, bezier_curve_points), size(x_coords));   
 end
 
