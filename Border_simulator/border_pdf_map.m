@@ -1,4 +1,4 @@
-function [pdf_map, polygon_coords] = region_pdf_map(parameter_struct, number_of_vertices, region_to_background_ratio)
+function [pdf_map, border_coords] = border_pdf_map(parameter_struct, number_of_vertices, region_to_background_ratio)
 %REGION_PDF_MAP Makes a pdf map of a randomized polygon in then center of
 % the image.
 %
