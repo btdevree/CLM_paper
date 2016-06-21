@@ -1,4 +1,4 @@
-function [pdf_map, polygon_points] = region_pdf_map(parameter_struct, number_of_vertices, region_to_background_ratio)
+function [pdf_map, polygon_coords] = region_pdf_map(parameter_struct, number_of_vertices, region_to_background_ratio)
 %REGION_PDF_MAP Makes a pdf map of a randomized polygon in then center of
 % the image.
 %
@@ -18,7 +18,7 @@ function [pdf_map, polygon_points] = region_pdf_map(parameter_struct, number_of_
 % Outputs:
 %   pdf_map: array of floating-point doubles, normalized sampling of the
 %       analytical pdf.
-%   polygon_points: n by 2 matrix of (x, y) coordinates of the vertex 
+%   polygon_coords: n by 2 matrix of (x, y) coordinates of the vertex 
 %       points of the polygon region.
 
 % Rename parameter structure for convenience
@@ -32,10 +32,24 @@ max_y_bound = params.bounds(4);
 x_length = max_x_bound - min_x_bound;
 y_length = max_y_bound - min_y_bound;
 
-% Determine the angle for each vertex and size of polygon
+% Determine the angle for each vertex and size of polygon and randomization radius
 base_angle = 2 * pi / number_of_vertices;
-max_dist_from_center = min(0.9 * x_length, 0.9 * y_length);
-max_base_radius = max_dist_from_center / 1.5; % 
+max_dist_from_center = min(0.9 * x_length, 0.9 * y_length) / 2;
+polygon_radius = max_dist_from_center / (1 + (sqrt(2 * (1 - cos(base_angle))) / 2)); % Max radius = polygon radius + 1/2 side length
+randomization_radius = polygon_radius * (sqrt(2 * (1 - cos(base_angle))) / 2); % Randomization radius = 1/2 side length
+
+% Calculate basic coordinates
+center_coords = [x_length / 2, y_length / 2];
+angles = base_angle * [0:number_of_vertices];
+relative_x_coords = cos(angles) * polygon_radius;
+relative_y_coords = sin(angles) * polygon_radius;
+base_polygon_coords = [relative_x_coords, relative_y_coords] + repmat(center_coords, number_of_vertices, 1);
+
+% Randomize polygon - random polar coords, so small displacements are preferred
+rand_angles = 2 * pi * rand(number_of_vertices, 1);
+rand_radii = randomization_radius * rand(number_of_vertices, 1);
+rand_offsets = [cos(rand_angles), sin(rand_angles)] .* repmat(rand_radii, 1, 2);
+polygon_coords = base_polygon_coords + rand_offsets;
 
 % Generate line coordinates, work in coordinates relative to lower left corner
 % Initialize variables
