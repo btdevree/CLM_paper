@@ -1,25 +1,26 @@
-function [pdf_map, border_coords] = border_pdf_map(parameter_struct, number_of_vertices, region_to_background_ratio)
-%REGION_PDF_MAP Makes a pdf map of a randomized polygon in then center of
-% the image.
+function [pdf_map, border_coords] = border_pdf_map(parameter_struct, displacement_factor, roughness_parameter, number_of_cycles, light_to_dark_ratio)
+%BORDER_PDF_MAP Makes a pdf map of a complex light/dark border down the
+% center of the image.
 %
-% A polygon with randomized verterx positions. Assumes a Carteisain
-% coordinate system. The origin is assumed to be in the lower left corner
-% of the lower left pixel unless the bounds indicate otherwise in the 
-% parameter structure.
+% Draws a light/dark border with a midpoint displacement algorithm using a
+% Gaussian distribution of displacement lengths.
 %
 % Inputs:
 %   parameter_struct: parameter structure made with
 %       test_movie_parameters_dv.
-%   number_of_vertices: integer, number of vertices to create the polygon
-%       with.
-%   region_to_background_ratio: ratio of the density of events inside the
-%       polygon region to the general background. Use Inf for a image with 
-%       no background.
+%   displacement_factor: standard deviation of the midpoint displacement 
+%       randomization values, given as a fraction of the full border
+%       length.
+%   roughness_parameter: exponent for the scaling factor (1/2)^x
+%   number_of_cycles: number of midpoint division cycles to run
+%   light_to_dark_ratio: ratio of the density of events on the light side 
+%       of the border to the dark side. Use Inf for a image with no dark
+%       background.
 % Outputs:
 %   pdf_map: array of floating-point doubles, normalized sampling of the
 %       analytical pdf.
-%   polygon_coords: n by 2 matrix of (x, y) coordinates of the vertex 
-%       points of the polygon region.
+%   border_coords: n by 2 matrix of (x, y) coordinates of the points that 
+%       define the border.
 
 % Rename parameter structure for convenience
 params = parameter_struct;
@@ -32,38 +33,45 @@ max_y_bound = params.bounds(4);
 x_length = max_x_bound - min_x_bound;
 y_length = max_y_bound - min_y_bound;
 
-% Determine the angle for each vertex and size of polygon and randomization radius
-base_angle = 2 * pi / number_of_vertices;
-max_dist_from_center = min(0.9 * x_length, 0.9 * y_length) / 2;
-polygon_radius = max_dist_from_center / (1 + (sqrt(2 * (1 - cos(base_angle))) / 2)); % Max radius = polygon radius + 1/2 side length
-randomization_radius = polygon_radius * (sqrt(2 * (1 - cos(base_angle))) / 2); % Randomization radius = 1/2 side length
+% Get a value for the standard deviation of the border displacements
+displacement_stdev = y_length * displacement_factor;
 
-% Calculate basic coordinates
-center_coords = [x_length / 2, y_length / 2];
-angles = base_angle * [0:number_of_vertices-1];
-relative_x_coords = cos(angles)' * polygon_radius;
-relative_y_coords = sin(angles)' * polygon_radius;
-base_polygon_coords = [relative_x_coords, relative_y_coords] + repmat(center_coords, number_of_vertices, 1);
+% Initalize list of border coordinates
+border_coords = [x_length / 2, y_length; x_length / 2, 0];
 
-% Randomize polygon - random polar coords, so small displacements are preferred
-rand_angles = 2 * pi * rand(number_of_vertices, 1);
-rand_radii = randomization_radius * rand(number_of_vertices, 1);
-rand_offsets = [cos(rand_angles), sin(rand_angles)] .* repmat(rand_radii, 1, 2);
-polygon_coords = base_polygon_coords + rand_offsets;
+% Split and randomize border for specified number of cycles
+for cycle_index = 1:number_of_cycles
+    
+    % Get midpoints of the curve
+    midpoint_coords = (border_coords(1:end - 1, :) + border_coords(2:end, :)) / 2;
+    
+    % Displace midpoints
+    displacements = 2.^(-roughness_paramater * cycle_index - 1) * normrnd(0, displacement_stdev);
+    midpoint_coords(:, 2) = midpoint_coords(:, 2) + displacements;
+    
+    % Interweave original and midpoint values
+    new_coords = zeros(4, size(border_coords, 1));
+    new_coords(1:2, :) = border_coords.';
+    new_coords(3:4, 1:end-1) = midpoint_coords.';
+    border_coords = reshape(new_coords(1:end-2), size(border_coords, 1) + size(midpoint_coords, 1), 2);
+end
 
-%Calc needed number of pixels
+% Calc needed number of pixels
 map_resolution = params.ch1_distribution_params{2};
 num_pixels_x = ceil(x_length/map_resolution);
 num_pixels_y = ceil(y_length/map_resolution);
 
-% Calc meshgrid
+% Calc grid vectors and meshgrids
 x_vec = [0.5: 1: num_pixels_x - 0.5] .* map_resolution;
 y_vec = [num_pixels_y - 0.5: -1: 0.5] .* map_resolution;
-[xmesh, ymesh] = meshgrid(x_vec, y_vec);
+[xmesh, ~] = meshgrid(x_vec, y_vec);
+
+% Interpolate border onto the y_vec values
+border_crossing_x = interp1(border_coords(:, 2), border_coords(:, 1), y_vec);
 
 % Create pdf_map
-pdf_map = zeros(size(xmesh));
-pdf_map = pdf_map + double(inpolygon(xmesh, ymesh, polygon_coords(:, 1), polygon_coords(:, 2)));
+pdf_map = zeros(length(y_vec), length(x_vec));
+pdf_map = pdf_map + double(xmesh - repmat(border_crossing_x', 1, size(xmesh, 2)) >= 0);
 
 % Normalize the pdf map
 if ~isinf(region_to_background_ratio) % Any non-perfect image
