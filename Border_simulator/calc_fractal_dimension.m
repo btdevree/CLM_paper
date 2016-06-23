@@ -82,13 +82,11 @@ current_divider_index = start_index;
 current_coords = start_coords;
 current_divider_coords = start_coords;
 first_divider_coords = [];
+first_divider_index = [];
 
 % Loop through divider lengths until the line points are used up
-while ~reached_beginning_flag
-    
-    % Reset current step distance
-    current_distance = 0; 
-    
+while true
+        
     % Go through line points until the step length is larger than the divider
     while current_distance < divider_length
         
@@ -99,8 +97,7 @@ while ~reached_beginning_flag
         catch ME % If the point doesn't exist, we've reached the beginning of the line
             if strcmp(ME.identifier, 'MATLAB:badsubscript');
                 reached_beginning_flag = true;
-                first_divider_coords = current_divider_coords;
-                first_divider_index = current_divider_index;
+                continue
             else
                 throw(ME); % Rethrow any other error
             end
@@ -111,8 +108,61 @@ while ~reached_beginning_flag
     
     end % End distance loop, the divider coordinate lies between the points at the current index and the previous index
     
-    % 
+    % Cleanup and quite looping when we hit the end of the line points
+    if reached_beginning_flag
+        first_divider_coords = current_divider_coords;
+        first_divider_index = current_divider_index;
+        continue
+    end
+    
+    % Get the dividing point
+    new_divider_coords = divide_line_segment(line_points(current_index + 1, :), line_points(current_index, :), current_divider_coords, divider_length);
+    
+    % Add the new point to the list, if requested
+    if log_points_flag
+        divider_points = [new_divider_coords; divider_points];
+    end
+    
+    % Set the new divider coords and increment counter 
+    current_divider_coords = new_divider_coords;
+    back_count = back_count + 1;
+    
+    % Recalculate current step distance
+    current_distance = sqrt(sum((current_coords - current_divider_coords).^2, 2)); 
+    
+    % Check if the next divider falls on the current line segment; if so,
+    %   add divider points until less than one divider length remains.
+    if current_distance > divider_length
+        
+        % Get an offest vector for the additional lengths
+        segment_vector = current_coords - current_divider_coords;        
+        offset_vector = segment_vector * (divider_length / current_distance);
+        
+        % Figure out how many divider lengths will fit on the remander of the line segment 
+        number_additional_lengths = floor(current_distance / divider_length);
+        
+        % Add any additional divider lengths on the current line segment
+        for addlen_index = 1:number_additional_lengths
+            new_divider_coords = current_divider_coords + offset_vector;
+            
+             % Add the new point to the list, if requested
+            if log_points_flag
+                divider_points = [new_divider_coords; divider_points];
+            end
 
+            % Set the new divider coords and increment counter 
+            current_divider_coords = new_divider_coords;
+            back_count = back_count + 1;
+        end
+        
+        % Recalculate current step distance
+        current_distance = sqrt(sum((current_coords - current_divider_coords).^2, 2));
+        
+    end % end colinear segment adding
+    
+    %
+    
+end
 end
 end
         
@@ -124,9 +174,10 @@ function [divider_point] = divide_line_segment(segment_point_1, segment_point_2,
 % Inputs:
 %   segment_point_1/2: the two points that define the line segment along
 %       the line_points curve which are known to contain the exact divider
-%       endpoint.
+%       endpoint. Point 1 should be the one closer to the third point. 
+%       Given as a 1 by 2 (x, y) matrix.
 %   third_point: the known endpoint of divider line, i.e. the
-%       current_divider_coords.
+%       current_divider_coords. Given as a 1 by 2 (x, y) matrix.
 %   divider_line_length: the length of the divider line.
 % Outputs:
 %   divider_point: the point along the line segment between points 1 and 2
@@ -135,15 +186,39 @@ function [divider_point] = divide_line_segment(segment_point_1, segment_point_2,
 % Find the angle across from the divider line
 vec_12 = segment_point_2 - segment_point_1;
 vec_13 = third_point - segment_point_1;
+vec_23 = third_point - segment_point_2;
 length_12 = sqrt(sum(vec_12.^2, 2));
 length_13 = sqrt(sum(vec_13.^2, 2));
-divider_angle = acos(dot(vec_12, vec_13) / (length_12 * length_13));
+length_23 = sqrt(sum(vec_23.^2, 2));
+angle_213 = acos(dot(vec_12, vec_13) / (length_12 * length_13));
+angle_123 = acos(dot(-vec_12, vec_23) / (length_12 * length_23));
+angle_132 = acos(dot(-vec_13, -vec_23) / (length_13 * length_23));
 
-% Find the angle between the divider line and the line segment
-law_of_sines_ratio = sin(divider_angle) / divider_line_length;
-angle_13 = asin(length_13 * law_of_sines_ratio);
+% Find the two solutions to the angle between the divider line and the line segment
+law_of_sines_ratio = sin(angle_213) / divider_line_length;
+angle_1d3_small = asin(length_13 * law_of_sines_ratio); % asin always returns angles less than pi/2
+angle_1d3_large = pi - angle_1d3_small;
 
-% 
-    
+% It is possible that both angles are valid solutions, in which case  we
+% use the one with the larger angle as it is closer to point 1 and thus the
+% first point that the divider line crosses as we trace along line_points.
+if angle_1d3_large > angle_123 && angle_1d3_large + angle_213 > pi - angle_132
+    angle_1d3 = angle_1d3_large;
+else
+    angle_1d3 = angle_1d3_small;
+end
+
+% Get the equations of the two intersecting lines
+slope_12 = vec_12(2) / vec_12(1);
+intercept_12 = segment_point_1(2) - slope_12 * segment_point_1(1);
+slope_divider = tan(angle_1d3 + atan(slope_12) - pi);
+intercept_divider = third_point(2) - slope_divider * third_point(1);
+
+% Solve the two equations
+divider_x = (intercept_divider - intercept_12) / (slope_12 - slope_divider);
+divider_y = slope_12 * divider_x + intercept_12;
+
+% Return divider_point
+divider_point = [divider_x, divider_y];    
 end
 
