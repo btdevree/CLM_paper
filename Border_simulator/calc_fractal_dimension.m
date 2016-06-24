@@ -1,21 +1,11 @@
-function [fractal_dim, fractal_dim_stdev] = calc_fractal_dimension(line_points, end_behavior, number_repeats)
+function [fractal_dim, fractal_dim_stdev] = calc_fractal_dimension(line_points, number_repeats)
 %CALC_FRACTAL_DIMENSION Estimates the fractal dimension of a linear series
 % of (x, y) points.
 %
-% Estimates the fractal dimension with a divider type algorithm.
+% Estimates the fractal dimension with a hand and divider algorithm.
 %
 % Input:
 %   line_points: n by 2 matrix of (x, y) points.
-%   end_behavior: string representing the method used to deal with the
-%       incomplete measurement segments at the ends of the line. Choices
-%       are: 
-%       'finite': Assume the sequence simply ends and we draw segments 
-%           directly to the first and last points. 
-%       'circular': Sequence is circular and can be repeated to get 
-%           more points at the beginning and end as necessary. Assumes the
-%           first and last points overlap as the same point, and returned
-%           measurements are over one period of points only.
-%       Optional, default = 'finite'
 %   number_repeats: number of times to repeat the calculation on different
 %       starting points. Optional, default = 30.
 % Output:
@@ -54,7 +44,7 @@ for repeat_index = 1:number_repeats
 end
 end
 
-function [distance, divider_points] = calc_distance(line_points, divider_length, start_index, end_behavior)
+function [distance, divider_points] = calc_distance(line_points, divider_length, start_index)
 % Local function to calculate the distance of a curve for a particular
 % divider length. Optional output gives all the divider points.
 
@@ -71,108 +61,126 @@ if log_points_flag
     divider_points = start_coords;
 end
 
-% ---- Count number of divider lengths backwards ----
+% Walk the divider lengths forwards and backwards from the start point
+for step_direction = [-1, 1]
 
-% Initalize flags, counters, and coordinates
-back_count = 0;
-reached_beginning_flag = false;
-current_index = start_index;
-current_divider_index = start_index;
-current_coords = start_coords;
-current_divider_coords = start_coords;
-first_divider_coords = [];
-first_divider_index = [];
+    %Initalize flags, counters, and coordinates
+    step_count = 0;
+    reached_end_flag = false;
+    current_index = start_index;
+    current_coords = start_coords;
+    current_divider_coords = start_coords;
+    current_distance = 0;
+       
+    % Loop through divider lengths until the line points are used up
+    while true
 
-% Loop through divider lengths until the line points are used up
-while true
-        
-    % Go through line points until the step length is larger than the divider
-    while current_distance < divider_length
-        
-        % Try to get values at the previous index
-        try % Usually, get the coordinates of the previous point on the line
-            current_coords = line_points(current_index - 1, :);
-            current_index = current_index - 1; % Will not evaluate if error is thrown
-        catch ME % If the point doesn't exist, we've reached the beginning of the line
-            if strcmp(ME.identifier, 'MATLAB:badsubscript');
-                reached_beginning_flag = true;
-                continue % exit line point walking loop
-            else
-                throw(ME); % Rethrow any other error
+        % Go through line points until the step length is larger than the divider
+        while current_distance < divider_length
+
+            % Try to get values at the previous index
+            try % Usually, get the coordinates of the previous point on the line
+                current_coords = line_points(current_index + step_direction, :);
+                current_index = current_index + step_direction; % Will not evaluate if error is thrown
+            catch ME % If the point doesn't exist, we've reached the beginning or end of the line
+                if strcmp(ME.identifier, 'MATLAB:badsubscript');
+                    reached_end_flag = true;
+                    continue % exit line point walking loop
+                else
+                    throw(ME); % Rethrow any other error
+                end
+            end % End try 
+
+            % Calculate the distance between the divider point and the new coordinates
+            current_distance = sqrt(sum((current_coords - current_divider_coords).^2, 2)); 
+
+        end % End distance loop, the divider coordinate lies between the points at the current index and the previous index
+
+        % Quit looping when we hit the end of the line points
+        if reached_beginning_flag
+            continue % Exit divider finding loop
+        end
+
+        % Get the dividing point
+        new_divider_coords = divide_line_segment(line_points(current_index - step_direction, :), line_points(current_index, :), current_divider_coords, divider_length);
+
+        % Add the new point to the list, if requested
+        if log_points_flag
+            if step_direction == -1 % stepping backwards
+                divider_points = [new_divider_coords; divider_points];
+            elseif step_direction == 1 % stepping forwards
+                divider_points = [divider_points; new_divider_coords];
             end
-        end % End try 
-                        
-        % Calculate the distance between the divider point and the new coordinates
+        end
+
+        % Set the new divider coords and increment counter 
+        current_divider_coords = new_divider_coords;
+        step_count = step_count + 1;
+
+        % Recalculate current step distance
         current_distance = sqrt(sum((current_coords - current_divider_coords).^2, 2)); 
-    
-    end % End distance loop, the divider coordinate lies between the points at the current index and the previous index
-    
-    % Cleanup and quit looping when we hit the end of the line points
-    if reached_beginning_flag
-        first_divider_coords = current_divider_coords;
-        first_divider_index = current_divider_index;
-        continue % Exit divider finding loop
-    end
-    
-    % Get the dividing point
-    new_divider_coords = divide_line_segment(line_points(current_index + 1, :), line_points(current_index, :), current_divider_coords, divider_length);
+
+        % Check if the next divider falls on the current line segment; if so,
+        %   add divider points until less than one divider length remains.
+        if current_distance > divider_length
+
+            % Get an offest vector for the additional lengths
+            segment_vector = current_coords - current_divider_coords;        
+            offset_vector = segment_vector * (divider_length / current_distance);
+
+            % Figure out how many divider lengths will fit on the remander of the line segment 
+            number_additional_lengths = floor(current_distance / divider_length);
+
+            % Add any additional divider lengths on the current line segment
+            for addlen_index = 1:number_additional_lengths
+                new_divider_coords = current_divider_coords + offset_vector;
+
+                % Add the new point to the list, if requested
+                if log_points_flag
+                    if step_direction == -1 % stepping backwards
+                        divider_points = [new_divider_coords; divider_points];
+                    elseif step_direction == 1 % stepping forwards
+                        divider_points = [divider_points; new_divider_coords];
+                    end
+                end
+
+                % Set the new divider coords and increment counter 
+                current_divider_coords = new_divider_coords;
+                step_count = step_count + 1;
+            end
+
+            % Recalculate current step distance
+            current_distance = sqrt(sum((current_coords - current_divider_coords).^2, 2));
+            
+        end % end colinear segment adding  
+    end % end divider function finding
+
+    % Get the distance between the last divider coordinate and the last point of the line
+    extra_distance = sqrt(sum((line_points(current_index) - current_divider_coords).^2, 2));
     
     % Add the new point to the list, if requested
     if log_points_flag
-        divider_points = [new_divider_coords; divider_points];
+        if step_direction == -1 % stepping backwards
+            divider_points = [line_points(current_index); divider_points];
+        elseif step_direction == 1 % stepping forwards
+            divider_points = [divider_points; line_points(current_index)];
+        end
     end
     
-    % Set the new divider coords and increment counter 
-    current_divider_coords = new_divider_coords;
-    back_count = back_count + 1;
+    % Add up distance
+    direction_distance = step_count * divider_length + extra_distance;
     
-    % Recalculate current step distance
-    current_distance = sqrt(sum((current_coords - current_divider_coords).^2, 2)); 
+    % Record the distances
+    if step_direction == -1 % stepping backwards
+        backwards_distance = direction_distance;
+    elseif step_direction == 1 % stepping forwards
+        forwards_distance = direction_distance;
+    end
     
-    % Check if the next divider falls on the current line segment; if so,
-    %   add divider points until less than one divider length remains.
-    if current_distance > divider_length
-        
-        % Get an offest vector for the additional lengths
-        segment_vector = current_coords - current_divider_coords;        
-        offset_vector = segment_vector * (divider_length / current_distance);
-        
-        % Figure out how many divider lengths will fit on the remander of the line segment 
-        number_additional_lengths = floor(current_distance / divider_length);
-        
-        % Add any additional divider lengths on the current line segment
-        for addlen_index = 1:number_additional_lengths
-            new_divider_coords = current_divider_coords + offset_vector;
-            
-             % Add the new point to the list, if requested
-            if log_points_flag
-                divider_points = [new_divider_coords; divider_points];
-            end
+end % End forward or backward for loop
 
-            % Set the new divider coords and increment counter 
-            current_divider_coords = new_divider_coords;
-            back_count = back_count + 1;
-        end
-        
-        % Recalculate current step distance
-        current_distance = sqrt(sum((current_coords - current_divider_coords).^2, 2));
-        
-    end % end colinear segment adding  
-end % end divider function finding
-
-% Estimate the ending segment
-if strcmp(end_behavior, 'finite')
-    
-    % Get the distance between the last divider coordinate and the last point of the line
-    extra_distance = sqrt(sum((line_points(1) - first_divider_coords).^2, 2));
-    
-elseif strcmp(end_behavior, 'circular')
-    
-    % 
-
-distance = back_count;
-
-
+% Add backwards and forwards distances together
+distance = backwards_distance + forwards_distance;
 end
         
 function [divider_point] = divide_line_segment(segment_point_1, segment_point_2, third_point, divider_line_length)
