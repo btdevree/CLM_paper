@@ -1,4 +1,4 @@
-function [fractal_dim, fractal_dim_stdev] = calc_fractal_dimension(line_points, number_repeats)
+function [fractal_dim] = calc_fractal_dimension(line_points, number_repeats)
 %CALC_FRACTAL_DIMENSION Estimates the fractal dimension of a linear series
 % of (x, y) points.
 %
@@ -10,13 +10,9 @@ function [fractal_dim, fractal_dim_stdev] = calc_fractal_dimension(line_points, 
 %       starting points. Optional, default = 30.
 % Output:
 %   fractal_dim: estimate of the fractal dimension.
-%   fractal_dim_stdev: estimate of the standard deviation of the estimated 
-%       fractal dimension, uses Fisher information from fitting
-%       Richardson's plot.
 
 % Set defaults
-if nargin < 2; end_behavior = 'finite'; end;
-if nargin < 3; number_repeats = 30; end;
+if nargin < 2; number_repeats = 30; end;
 
 % Set parameters
 number_divider_lengths = 10;
@@ -26,7 +22,7 @@ total_number_points = size(line_points, 1);
 maximum_length = sum(sqrt(sum((line_points(2:end, :) - line_points(1:end-1, :)).^2, 2)), 1);
 min_divider = 0.5 * maximum_length / total_number_points; % Half the mean step distance
 max_divider = 0.1 * maximum_length; % 1/10th of max length
-divider_lengths = logspace(log10(min_divider), log10(max_divider), number_divider_lengths);
+divider_lengths = logspace(log10(min_divider), log10(max_divider), number_divider_lengths)';
 
 % Initalize distance results matrix
 curve_distance = zeros(number_divider_lengthes, number_repeats);
@@ -39,20 +35,38 @@ for repeat_index = 1:number_repeats
         
     % Repeat measurement for all divider lengths
     for divider_index = 1:number_divider_lengths
-       curve_distance(divider_index, repeat_index) = calc_distance(line_points, divider_length, starting_point_index, end_behavior);
+        divider_length = divider_lengths(divider_index);
+        curve_distance(divider_index, repeat_index) = calc_distance(line_points, divider_length, starting_point_index);
     end
 end
-end
 
+%  Transform to Richardson's plot
+log_divider_matrix = [ones(size(curve_distance(:))), repmat(log(divider_lengths), number_repeats)];
+log_distance_matrix = curve_distance(:);
+
+% Fit a line to the points
+fit_parameters = log_divider_matrix \ log_distance_matrix;
+fractal_dim = 1 - fit_parameters(2);
+end
+        
 function [distance, divider_points] = calc_distance(line_points, divider_length, start_index)
 % Local function to calculate the distance of a curve for a particular
 % divider length. Optional output gives all the divider points.
+
+% Enable/disable graphical feedback, false = off
+draw_plots = false;
 
 % See if we'll need to log points
 if nargout > 1
     log_points_flag = true;
 else
     log_points_flag = false;
+end
+
+% Create new figure and turn on point logging if feedback is on
+if draw_plots
+    figure('Units', 'pixels', 'Position', [50, 50, 1000, 1000], 'PaperPositionMode', 'auto', 'InvertHardcopy', 'off');
+    log_points_flag = true;
 end
 
 % Get starting coordinates
@@ -85,20 +99,23 @@ for step_direction = [-1, 1]
             catch ME % If the point doesn't exist, we've reached the beginning or end of the line
                 if strcmp(ME.identifier, 'MATLAB:badsubscript');
                     reached_end_flag = true;
-                    continue % exit line point walking loop
+                    break % exit line point walking loop
                 else
                     throw(ME); % Rethrow any other error
                 end
             end % End try 
-
+            
             % Calculate the distance between the divider point and the new coordinates
             current_distance = sqrt(sum((current_coords - current_divider_coords).^2, 2)); 
-
+            if draw_plots
+                draw_plot(line_points, divider_points, current_coords, current_divider_coords);
+            end
+            
         end % End distance loop, the divider coordinate lies between the points at the current index and the previous index
 
         % Quit looping when we hit the end of the line points
-        if reached_beginning_flag
-            continue % Exit divider finding loop
+        if reached_end_flag
+            break % Exit divider finding loop
         end
 
         % Get the dividing point
@@ -118,7 +135,10 @@ for step_direction = [-1, 1]
         step_count = step_count + 1;
 
         % Recalculate current step distance
-        current_distance = sqrt(sum((current_coords - current_divider_coords).^2, 2)); 
+        current_distance = sqrt(sum((current_coords - current_divider_coords).^2, 2));
+        if draw_plots
+            draw_plot(line_points, divider_points, current_coords, current_divider_coords);
+        end
 
         % Check if the next divider falls on the current line segment; if so,
         %   add divider points until less than one divider length remains.
@@ -151,19 +171,22 @@ for step_direction = [-1, 1]
 
             % Recalculate current step distance
             current_distance = sqrt(sum((current_coords - current_divider_coords).^2, 2));
+            if draw_plots
+                draw_plot(line_points, divider_points, current_coords, current_divider_coords);
+            end
             
         end % end colinear segment adding  
     end % end divider function finding
 
     % Get the distance between the last divider coordinate and the last point of the line
-    extra_distance = sqrt(sum((line_points(current_index) - current_divider_coords).^2, 2));
+    extra_distance = current_distance;
     
     % Add the new point to the list, if requested
     if log_points_flag
         if step_direction == -1 % stepping backwards
-            divider_points = [line_points(current_index); divider_points];
+            divider_points = [line_points(current_index, :); divider_points];
         elseif step_direction == 1 % stepping forwards
-            divider_points = [divider_points; line_points(current_index)];
+            divider_points = [divider_points; line_points(current_index, :)];
         end
     end
     
@@ -182,7 +205,7 @@ end % End forward or backward for loop
 % Add backwards and forwards distances together
 distance = backwards_distance + forwards_distance;
 end
-        
+
 function [divider_point] = divide_line_segment(segment_point_1, segment_point_2, third_point, divider_line_length)
 % Local function to solve the law of sines problem in order to divide a
 % line segment so that the divider length is equal to the exact value
@@ -211,31 +234,66 @@ angle_213 = acos(dot(vec_12, vec_13) / (length_12 * length_13));
 angle_123 = acos(dot(-vec_12, vec_23) / (length_12 * length_23));
 angle_132 = acos(dot(-vec_13, -vec_23) / (length_13 * length_23));
 
-% Find the two solutions to the angle between the divider line and the line segment
+% Find the two solutions to the angle between the divider line and the line segment.
 law_of_sines_ratio = sin(angle_213) / divider_line_length;
-angle_1d3_small = asin(length_13 * law_of_sines_ratio); % asin always returns angles less than pi/2
-angle_1d3_large = pi - angle_1d3_small;
-
-% It is possible that both angles are valid solutions, in which case  we
-% use the one with the larger angle as it is closer to point 1 and thus the
-% first point that the divider line crosses as we trace along line_points.
-if angle_1d3_large > angle_123 && angle_1d3_large + angle_213 > pi - angle_132
-    angle_1d3 = angle_1d3_large;
-else
-    angle_1d3 = angle_1d3_small;
-end
+angle_1d3_s1 = asin(length_13 * law_of_sines_ratio); % asin always returns angles between -pi/2 and pi/2
+angle_1d3_s2 = pi - angle_1d3_s1;
 
 % Get the equations of the two intersecting lines
 slope_12 = vec_12(2) / vec_12(1);
 intercept_12 = segment_point_1(2) - slope_12 * segment_point_1(1);
-slope_divider = tan(angle_1d3 + atan(slope_12) - pi);
-intercept_divider = third_point(2) - slope_divider * third_point(1);
+slope_divider_s1 = tan(angle_1d3_s1 + atan(slope_12) - pi);
+slope_divider_s2 = tan(angle_1d3_s2 + atan(slope_12) - pi);
+intercept_divider_s1 = third_point(2) - slope_divider_s1 * third_point(1);
+intercept_divider_s2 = third_point(2) - slope_divider_s2 * third_point(1);
 
-% Solve the two equations
-divider_x = (intercept_divider - intercept_12) / (slope_12 - slope_divider);
-divider_y = slope_12 * divider_x + intercept_12;
+% Solve the equations
+divider_x_s1 = (intercept_divider_s1 - intercept_12) / (slope_12 - slope_divider_s1);
+divider_x_s2 = (intercept_divider_s2 - intercept_12) / (slope_12 - slope_divider_s2);
+divider_y_s1 = slope_12 * divider_x_s1 + intercept_12;
+divider_y_s2 = slope_12 * divider_x_s2 + intercept_12;
 
-% Return divider_point
-divider_point = [divider_x, divider_y];    
+% Test if the solution is for a point that lies between points 1 and 2 
+min_x = min(segment_point_1(1), segment_point_2(1));
+max_x = max(segment_point_1(1), segment_point_2(1));
+min_y = min(segment_point_1(2), segment_point_2(2));
+max_y = max(segment_point_1(2), segment_point_2(2));
+if min_x <= divider_x_s1 <= max_x && min_y <= divider_y_s1 <= max_y
+    s1_OK_flag = true;
+else
+    s1_OK_flag = false;
+end
+if min_x <= divider_x_s2 <= max_x && min_y <= divider_y_s2 <= max_y
+    s2_OK_flag = true;
+else
+    s2_OK_flag = false;
+end
+
+% Usually on one solution will be valid. It is possible that both are OK if the 1d3 angle
+% is close to 90 degrees, in which case we use solution that is closer to the closer to 
+% point 1 and thus the first point that the divider line crosses as we trace along line_points.
+if s1_OK_flag && ~s2_OK_flag
+    divider_point = [divider_x_s1, divider_y_s1];
+elseif ~s1_OK_flag && s2_OK_flag
+    divider_point = [divider_x_s2, divider_y_s2];
+elseif s1_OK_flag && s2_OK_flag;
+    dist_s1 = sqrt(sum((segment_point_1 - [divider_x_s1, divider_y_s1]).^2, 2));
+    dist_s2 = sqrt(sum((segment_point_1 - [divider_x_s2, divider_y_s2]).^2, 2));
+    if dist_s1 <= dist_s2
+        divider_point = [divider_x_s1, divider_y_s1];
+    else
+        divider_point = [divider_x_s2, divider_y_s2];
+    end
+end
+end
+
+function draw_plot(line_points, divider_points, current_point, current_divider_point)
+plot(gca, line_points(1:100, 1), line_points(1:100, 2), '-or');
+hold on
+plot(divider_points(:, 1), divider_points(:, 2), '-xb');
+scatter(current_point(1), current_point(2), 5, 'g');
+scatter(current_divider_point(1), current_divider_point(2), 5, 'k')
+hold off
+waitforbuttonpress
 end
 
