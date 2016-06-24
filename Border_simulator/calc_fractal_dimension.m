@@ -52,7 +52,6 @@ for repeat_index = 1:number_repeats
        curve_distance(divider_index, repeat_index) = calc_distance(line_points, divider_length, starting_point_index, end_behavior);
     end
 end
-
 end
 
 function [distance, divider_points] = calc_distance(line_points, divider_length, start_index, end_behavior)
@@ -97,7 +96,7 @@ while true
         catch ME % If the point doesn't exist, we've reached the beginning of the line
             if strcmp(ME.identifier, 'MATLAB:badsubscript');
                 reached_beginning_flag = true;
-                continue
+                continue % exit line point walking loop
             else
                 throw(ME); % Rethrow any other error
             end
@@ -108,11 +107,11 @@ while true
     
     end % End distance loop, the divider coordinate lies between the points at the current index and the previous index
     
-    % Cleanup and quite looping when we hit the end of the line points
+    % Cleanup and quit looping when we hit the end of the line points
     if reached_beginning_flag
         first_divider_coords = current_divider_coords;
         first_divider_index = current_divider_index;
-        continue
+        continue % Exit divider finding loop
     end
     
     % Get the dividing point
@@ -158,12 +157,22 @@ while true
         % Recalculate current step distance
         current_distance = sqrt(sum((current_coords - current_divider_coords).^2, 2));
         
-    end % end colinear segment adding
+    end % end colinear segment adding  
+end % end divider function finding
+
+% Estimate the ending segment
+if strcmp(end_behavior, 'finite')
     
-    %
+    % Get the distance between the last divider coordinate and the last point of the line
+    extra_distance = sqrt(sum((line_points(1) - first_divider_coords).^2, 2));
     
-end
-end
+elseif strcmp(end_behavior, 'circular')
+    
+    % 
+
+distance = back_count;
+
+
 end
         
 function [divider_point] = divide_line_segment(segment_point_1, segment_point_2, third_point, divider_line_length)
