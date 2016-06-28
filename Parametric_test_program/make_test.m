@@ -44,7 +44,7 @@ actin_number_images = 18;
 actin_contrast_ratios = [1, 4, 10];
 actin_event_number_range = [3e2, 1e7];
 actin_line_types = {'line_segment', 'cubic', 'quadratic'};
-actin_line_width = [9, 26]; % actin and microtubules, respectivly
+actin_line_widths = [9, 26]; % actin and microtubules, respectivly
 
 % Border
 border_number_images = 15;
@@ -69,13 +69,16 @@ test_info = struct();
 test_info.test_number = test_number;
 test_info.test_version = test_version;
 test_info.RNG_state = rng();
+test_info.params = params;
 test_info.image_info = cell(total_number_images, 1);
 
 % Prep region info
 image_contrast_ratios = choose_evenly(region_number_images, region_contrast_ratios);
-image_event_numbers = chose_from_log_range(region_number_image, region_event_number_range);
+image_event_numbers = choose_from_log_range(region_number_image, region_event_number_range);
 image_number_points = choose_evenly(region_number_images, region_number_points);
 info_cells = cell(region_number_images, 1);
+
+% Write region info into image info cells
 for image_index = 1:region_number_images
     info_struct = struct();
     info_struct.image_type = 'region';
@@ -88,26 +91,72 @@ test_info.image_info(1:region_number_images) = info_cells;
 current_image_number = region_number_images;
 
 % Prep dots info
-image_contrast_ratios = choose_evenly(region_number_images, region_contrast_ratios);
-image_event_numbers = chose_from_log_range(region_number_image, region_event_number_range);
-image_number_points = choose_evenly(region_number_images, region_number_points);
-info_cells = cell(region_number_images, 1);
-for image_index = 1:region_number_images
+image_contrast_ratios = choose_evenly(dots_number_images, dots_contrast_ratios);
+image_event_numbers = chose_from_log_range(dots_number_image, dots_event_number_range);
+image_dot_sizes = choose_evenly(dots_number_images, dots_sizes);
+image_number_dots = choose_evenly(dots_number_images, dots_number_dots);
+info_cells = cell(dots_number_images, 1);
+
+% Write dots info into image info cells
+for image_index = 1:dots_number_images
     info_struct = struct();
-    info_struct.image_type = 'region';
+    info_struct.image_type = 'dots';
     info_struct.contrast_ratio = image_contrast_ratios(image_index);
     info_struct.event_number = image_event_numbers(image_index);
-    info_struct.region_points = image_number_points(image_index);
+    info_struct.dot_sizes = image_dot_sizes(image_index);
+    info_struct.number_dots = image_number_dots(image_index);
     info_cells{image_index} = info_struct;
 end
-test_info.image_info(1:region_number_images) = info_cells;
-current_image_number = region_number_images;
+test_info.image_info(current_image_number:current_image_number + dots_number_images) = info_cells;
+current_image_number = current_image_number + actin_number_images;
 
+% Prep actin info
+image_contrast_ratios = choose_evenly(actin_number_images, actin_contrast_ratios);
+image_event_numbers = choose_from_log_range(actin_number_image, actin_event_number_range);
+image_line_widths = choose_evenly(actin_number_images, actin_line_widths);
+image_line_types = choose_evenly(actin_number_images, actin_line_types);
+info_cells = cell(region_number_images, 1);
 
+% Write actin info into image info cells
+for image_index = 1:actin_number_images
+    info_struct = struct();
+    info_struct.image_type = 'actin';
+    info_struct.contrast_ratio = image_contrast_ratios(image_index);
+    info_struct.event_number = image_event_numbers(image_index);
+    info_struct.line_width = image_line_widths(image_index);
+    info_struct.line_type = image_line_types(image_index);
+    info_cells{image_index} = info_struct;
+end
+test_info.image_info(current_image_number:current_image_number + actin_number_images) = info_cells;
+current_image_number = current_image_number + actin_number_images;
+
+% Prep border info
+image_contrast_ratios = choose_evenly(border_number_images, border_contrast_ratios);
+image_event_numbers = choose_from_log_range(border_number_image, border_event_number_range);
+[image_roughness, image_displacements] = choose_evenly(border_number_images, border_roughness, border_displacement_factor);
+info_cells = cell(region_number_images, 1);
+
+% Write border info into image info cells
+for image_index = 1:border_number_images
+    info_struct = struct();
+    info_struct.image_type = 'border';
+    info_struct.contrast_ratio = image_contrast_ratios(image_index);
+    info_struct.event_number = image_event_numbers(image_index);
+    info_struct.roughness = image_roughness(image_index);
+    info_struct.displacement = image_displacements(image_index);
+    info_cells{image_index} = info_struct;
+end
+test_info.image_info(current_image_number:current_image_number + border_number_images) = info_cells;
+
+% ---- Create the images for testing and analysis ----
+
+test_info.ideal_images = cell(total_number_images, 1);
+test_info.STORM_images = cell(total_number_images, 1);
+test_info.event_data = cell(total_number_images, 1);
 
 end
 
-function choices = choose_evenly(number_choices, choice_vector)
+function [choices, extra_choices] = choose_evenly(number_choices, choice_vector, extra_vector)
 % Local function for choosing from a list of choices as evenly as possible,
 % with any remainder from a non-evenly divisible number of choices randomly
 % assigned. Returned list is randomly permuted.
@@ -117,7 +166,13 @@ number_random_choices = mod(number_choices, length(choice_vector));
 random_indices = randperm(length(choice_vector), number_random_choices);
 choices = repmat(choice_vector(:), number_full_sets, 1);
 choices = [choices; choice_vector(random_indices)'];
-choices = choices(randperm(number_choices));
+perm_indices = randperm(number_choices);
+choices = choices(perm_indices);
+if nargout > 1
+    extra_choices = repmat(extra_vector(:), number_full_sets, 1);
+    extra_choices = [extra_choices; extra_vector(random_indices)'];
+    extra_choices = extra_choices(perm_indices);
+end
 end
 
 function choices = choose_from_log_range(number_choices, choice_range)
