@@ -14,7 +14,7 @@ function make_test( parameter_structure, output_directory, test_number)
 % Output:
 %   Test is created and saved to the output directory in a folder called
 %   "Test_<test_number>". Inside the folder, there is an archived .mat file
-%   called "test_archive.tar.bz" containing all the information about the
+%   called "test_archive.tar.gz" containing all the information about the
 %   test and a file "test_files.mat" with the information needed by the
 %   parametric STORM image testing GUI. 
 
@@ -66,9 +66,6 @@ total_number_images = region_number_images + dots_number_images + actin_number_i
 
 % Shuffle the RNG
 rng('shuffle');
-
-% Create folder
-mkdir(output_directory, ['Test_', num2str(test_number)]);
 
 % Create test structure and fill with basic information
 test_info = struct();
@@ -168,39 +165,65 @@ test_info.ground_truth_coords = cell(total_number_images, 1);
 for image_index = 1:total_number_images
     
     % Get and set parameters common to all images
-    info = info_struct.image_info{image_index};
+    info = test_info.image_info{image_index};
     params.number_events_ch1 = info.event_number;
     
     % Create the pdf image for sampling and reference coordinates
     if strcmp(info.image_type, 'region')
         [pdf_map, polygon_coords] = region_pdf_map(params, info.number_vertices, info.contrast_ratio);
-        info.ground_truth_coords{image_index} = polygon_coords;
+        test_info.ground_truth_coords{image_index} = polygon_coords;
     elseif strcmp(info.image_type, 'dots')
         [pdf_map, dot_coords] = region_pdf_map(params, info.number_dots, info.dot_sizes, info.contrast_ratio);
-        info.ground_truth_coords{image_index} = dot_coords;
+        test_info.ground_truth_coords{image_index} = dot_coords;
     elseif strcmp(info.image_type, 'actin')
         [pdf_map, control_points_x, control_points_y] = lines_pdf_map(params, info.number_lines, info.line_width, info.contrast_ratio, info.line_type);
-        info.ground_truth_coords{image_index} = cat(3, control_points_x, control_points_y);
+        test_info.ground_truth_coords{image_index} = cat(3, control_points_x, control_points_y);
     elseif strcmp(info.image_type, 'border')
         [pdf_map, border_coords] = border_pdf_map(params, info.displacement, info.roughness, info.contrast_ratio);
-        info.ground_truth_coords{image_index} = border_coords;
+        test_info.ground_truth_coords{image_index} = border_coords;
     end
     
     % Generate event datapoint using pdf map
     [dataset_coords, ~, STORM_vars] = create_test_data_dv(params); % Uses pdf_map based on params setttings
-    info.event_data{image_index} = dataset_coords;
+    test_info.event_data{image_index} = dataset_coords;
     
     % Create STORM image
     STORM_image = create_test_STORM_images_dv(params, dataset_coords, [], STORM_vars, false, true, true);
-    info.STORM_images{image_index} = STORM_image;
+    test_info.STORM_images{image_index} = STORM_image;
     
     % Calculate ideal image
     sigma = params.STORM_precision / params.STORM_pixel_size;
     filter = fspecial('gaussian', ceil(sigma*5), sigma);
     pdf_map = imfilter(pdf_map, filter, 0);
     ideal_image = pdf_map(4:7:end, 4:7:end); % Sample middle pixel of 7x7 field, maintains origin position.
-    info.ideal_images{image_index} = ideal_image;
+    test_info.ideal_images{image_index} = ideal_image;
 end
+
+% ---- Save files ----
+
+% Create folder
+mkdir(output_directory, ['Test_', num2str(test_number)]);
+
+% Copy files for GUI
+GUI_info = struct();
+GUI_info.test_number = test_info.test_number;
+GUI_info.image_info = test_info.image_info;
+GUI_info.params = test_info.params;
+GUI_info.test_version = test_info.test_version;
+GUI_info.STORM_images = test_info.STORM_images;
+
+% Save GUI info
+pathname = [output_directory, '/Test_', num2str(test_number),'/test_files.mat'];
+save(pathname, 'GUI_info');
+
+% Save archive info
+pathname = [output_directory, '/Test_', num2str(test_number),'/test_archive.mat'];
+save(pathname, 'test_info');
+tarfolder = [output_directory, '/Test_', num2str(test_number)];
+tar('test_archive.tar.gz', 'test_archive.mat', tarfolder);
+
+% Delete archive matfile to save space
+delete(pathname);
 end
 
 function [choices, extra_choices] = choose_evenly(number_choices, choice_vector, extra_vector)
