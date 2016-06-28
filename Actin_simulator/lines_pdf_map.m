@@ -1,4 +1,5 @@
-function [pdf_map, control_points_x, control_points_y] = lines_pdf_map(parameter_struct, number_of_lines, line_width, line_to_background_ratio, line_type, chord_min_length, chord_max_length)
+function [pdf_map, control_points_x, control_points_y] = lines_pdf_map(parameter_struct, number_of_lines, line_width,...
+    line_to_background_ratio, line_type, chord_min_length, chord_max_length)
 %LINES_PDF_MAP Makes a pdf map of line structures in the field of
 % view.
 %
@@ -23,7 +24,7 @@ function [pdf_map, control_points_x, control_points_y] = lines_pdf_map(parameter
 %   chord_min_length: minimum length of the line chord in the image, given 
 %       in nanometers or as a string in the format 'xxx%' representing the 
 %       percentage of the smallest image dimenstion. Optional, default =
-%       '5%'.
+%       '20%'.
 %   chord_max_length: maximum length of the line chord in the image, given 
 %       in nanometers or as a string in the format 'xxx%' representing the 
 %       percentage of the smallest image dimenstion. Optional, default =
@@ -37,7 +38,7 @@ function [pdf_map, control_points_x, control_points_y] = lines_pdf_map(parameter
 
 % Set defaults
 if nargin < 5; line_type = 'line_segment'; end;
-if nargin < 6; chord_min_length = '5%'; end;
+if nargin < 6; chord_min_length = '20%'; end;
 if nargin < 7; chord_max_length = '95%'; end;
 
 % Rename parameter structure for convenience

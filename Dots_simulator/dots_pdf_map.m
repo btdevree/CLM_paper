@@ -1,4 +1,4 @@
-function [ pdf_map, center_coords, STORM_mask] = dots_pdf_map(parameter_struct, number_of_dots, dot_radius, dot_to_background_ratio)
+function [ pdf_map, center_coords] = dots_pdf_map(parameter_struct, number_of_dots, dot_radius, dot_to_background_ratio)
 %DOTS_PDF_MAP Makes a pdf map of circular regions with uniform density 
 %   randomly distributed in an image.
 %
@@ -14,12 +14,6 @@ function [ pdf_map, center_coords, STORM_mask] = dots_pdf_map(parameter_struct, 
 %   pdf_map: array of floating-point doubles, normalized sampling of the
 %       analytical pdf.
 %   center_coords: coordinates of the centers of the circular regions
-%   STORM_mask: If requested, output a mask image that covers the simulated 
-%       cell region in the STORM image. Not necessarily the same resolution 
-%       as the mask. Default = false;
-
-% Find the cell center, radius, points in the circle - copied from create_test_data_dv
-%   Not ideal, but not sure how I want to functionalize/abstract this part yet. 
 
 % Rename parameter structure for convenience
 params = parameter_struct;

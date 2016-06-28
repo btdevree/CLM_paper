@@ -1,4 +1,5 @@
-function [pdf_map, border_coords] = border_pdf_map(parameter_struct, displacement_factor, roughness_parameter, light_to_dark_ratio, number_of_cycles)
+function [pdf_map, border_coords] = border_pdf_map(parameter_struct, displacement_factor, roughness_parameter,...
+    light_to_background_ratio, number_of_cycles)
 %BORDER_PDF_MAP Makes a pdf map of a complex light/dark border down the
 % center of the image.
 %
@@ -14,9 +15,9 @@ function [pdf_map, border_coords] = border_pdf_map(parameter_struct, displacemen
 %   roughness_parameter: exponent for the scaling factor H^n for n cycles, 
 %       typical range from .3 to .7. Choose higher values for a rougher 
 %       curve and lower values for a smoother curve. 
-%   light_to_dark_ratio: ratio of the density of events on the light side 
-%       of the border to the dark side. Use Inf for a image with no dark
-%       background.
+%   light_to_background_ratio: ratio of the density of events on the light 
+%       side of the border to the general background density. Use Inf for 
+%       an image with no dark background.
 %   number_of_cycles: number of midpoint division cycles to run. Optional,
 %       default = [], which is enough cycles to randomize down to a 
 %       single-pixel level.
@@ -47,7 +48,7 @@ num_pixels_y = ceil(y_length/map_resolution);
 
 % Calc number of cycles to run, if needed
 if isempty(number_of_cycles)
-    number_of_cycles = ceil(log(num_pixels_y - 1) / log(2)) + 1; % # points = 2^n + 1 for n cycles 
+    number_of_cycles = ceil(log(num_pixels_y - 1) / log(2)) + 2; % # points = 2^n + 1 for n cycles 
 end
     
 % Get a value for the standard deviation of the border displacements
@@ -88,7 +89,7 @@ pdf_map = pdf_map + double(xmesh - repmat(border_crossing_x', 1, size(xmesh, 2))
 
 % Normalize the pdf map
 if ~isinf(light_to_dark_ratio) % Any non-perfect image
-    pdf_map = pdf_map * light_to_dark_ratio; % Multiply by ratio
+    pdf_map = pdf_map * light_to_background_ratio; % Multiply by ratio
     pdf_map = pdf_map + ones(size(pdf_map)); % Add one for background
 end
 map_sum = sum(pdf_map(:));
