@@ -198,8 +198,7 @@ for image_index = 1:total_number_images
     % Calculate ideal image
     sigma = params.STORM_precision / params.ch1_distribution_params{2};
     filter = fspecial('gaussian', ceil(sigma*5), sigma);
-    min_value = min(pdf_map(:));
-    pdf_map = imfilter(pdf_map, filter, min_value);
+    pdf_map = imfilter(pdf_map, filter, 'replicate'); 
     ideal_image = pdf_map(4:7:end, 4:7:end); % Sample middle pixel of 7x7 field, maintains origin position.
     test_info.ideal_images{image_index} = ideal_image;
 end
@@ -225,7 +224,7 @@ save(pathname, 'GUI_info');
 pathname = [output_directory, '/Test_', num2str(test_number),'/test_archive.mat'];
 save(pathname, 'test_info');
 tarfolder = [output_directory, '/Test_', num2str(test_number)];
-tar('test_archive.tar.gz', 'test_archive.mat', tarfolder);
+tar([tarfolder, '/test_archive.tar.gz'], 'test_archive.mat', tarfolder);
 
 % Delete archive matfile to save space
 delete(pathname);
