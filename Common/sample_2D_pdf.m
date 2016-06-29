@@ -1,4 +1,4 @@
-function [ xy_samples ] = sample_2D_pdf( number_samples, pdf_image, resolution, pdf_origin_offset, use_MEX_flag )
+function [ xy_samples ] = sample_2D_pdf(number_samples, pdf_image, resolution, pdf_origin_offset, use_MEX_flag)
 %SAMPLE_2D_PDF Samples 2D random variables from an arbitrary 2D pdf image.
 %
 % Uses linear interpolation to determine sampling rates between the pixel

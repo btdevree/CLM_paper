@@ -27,9 +27,12 @@ x_length = max_x_bound - min_x_bound;
 y_length = max_y_bound - min_y_bound;
 
 %Calc needed number of pixels
+STORM_resolution = params.STORM_pixel_size;
 map_resolution = params.ch1_distribution_params{2};
-num_pixels_x = ceil(x_length/map_resolution);
-num_pixels_y = ceil(y_length/map_resolution);
+num_STORM_pixels_x = ceil(x_length/STORM_resolution);
+num_STORM_pixels_y = ceil(y_length/STORM_resolution);
+num_pixels_x = ceil(num_STORM_pixels_x * STORM_resolution / map_resolution);
+num_pixels_y = ceil(num_STORM_pixels_y * STORM_resolution / map_resolution);
 
 % Calc meshgrid
 x_vec = [0.5: 1: num_pixels_x - 0.5] .* map_resolution;

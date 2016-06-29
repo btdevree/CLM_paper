@@ -41,10 +41,13 @@ max_y_bound = params.bounds(4);
 x_length = max_x_bound - min_x_bound;
 y_length = max_y_bound - min_y_bound;
 
-% Calc needed number of pixels
+%Calc needed number of pixels
+STORM_resolution = params.STORM_pixel_size;
 map_resolution = params.ch1_distribution_params{2};
-num_pixels_x = ceil(x_length/map_resolution);
-num_pixels_y = ceil(y_length/map_resolution);
+num_STORM_pixels_x = ceil(x_length/STORM_resolution);
+num_STORM_pixels_y = ceil(y_length/STORM_resolution);
+num_pixels_x = ceil(num_STORM_pixels_x * STORM_resolution / map_resolution);
+num_pixels_y = ceil(num_STORM_pixels_y * STORM_resolution / map_resolution);
 
 % Calc number of cycles to run, if needed
 if isempty(number_of_cycles)
@@ -88,7 +91,7 @@ pdf_map = zeros(length(y_vec), length(x_vec));
 pdf_map = pdf_map + double(xmesh - repmat(border_crossing_x', 1, size(xmesh, 2)) >= 0);
 
 % Normalize the pdf map
-if ~isinf(light_to_dark_ratio) % Any non-perfect image
+if ~isinf(light_to_background_ratio) % Any non-perfect image
     pdf_map = pdf_map * light_to_background_ratio; % Multiply by ratio
     pdf_map = pdf_map + ones(size(pdf_map)); % Add one for background
 end
