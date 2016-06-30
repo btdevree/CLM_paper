@@ -6,17 +6,18 @@ function [ xy_samples ] = sample_2D_pdf(number_samples, pdf_image, resolution, p
 %   bottom left corner of the bottom left pixel by default. Algorithm 
 %   employs inverse sampling of a greyscale dilated image to sample points
 %   at a slightly higher rate than needed and then corrects the rate with 
-%   rejection sampling. 
+%   rejection sampling. For large images (~10 megapixels) there is little
+%   to no benefit to supplying the pdf as doubles instead of singles. 
 %
 % Inputs:
 %   number_samples: number of samples to return.
-%   pdf_image: array of floating-point doubles, a discrete pdf to be 
-%       sampled from. Does not have to be normalized.
+%   pdf_image: array of floating-point singles (or doubles), a discrete pdf
+%       to be sampled from. Does not have to be normalized.
 %   resolution: optional, the number of measurment units per pixel. 
 %       Default = 1.
-%   map_origin_offset: 1x2 double array. The coordinate value of the lower 
-%       lefthand corner of the lower, lefthand pixel. Added to all outputs 
-%       values. Optional, default = [0, 0].
+%   map_origin_offset: 1x2 single or double array. The coordinate value of 
+%       the lower lefthand corner of the lower, lefthand pixel. Added to 
+%       all outputs values. Optional, default = [0, 0].
 %   use_MEX_flag: boolean flag, when true the core sample_inverse_cdf
 %       funciton is replaced by the C++ version sample_inverse_cdf_MEX. 
 %       Optional, default = false.
@@ -48,11 +49,11 @@ enclosing_pdf = imdilate(pdf_image, se);
 enclosing_pdf = (3 * enclosing_pdf + pdf_image) / 4;
 
 % Calculate the expected rejection rate in rejected points per created point
-acceptance_rate = sum(pdf_image(:)) / sum(enclosing_pdf(:));
+acceptance_rate = sum(pdf_image(:)) / sum(enclosing_pdf(:)); 
 rejection_rate = 1 - acceptance_rate;
 
 % Calculate the cumulative sum of the enclosing pdf image unraveled as a 1D array
-enclosing_cdf = [0; cumsum(enclosing_pdf(:))];
+enclosing_cdf = [0; cumsum(double(enclosing_pdf(:)))]; % We want to make sure we add as a double so that large images do not lose precision
 enclosing_cdf = enclosing_cdf / enclosing_cdf(end); % normalize to range [0,1]
 
 % Initialize variables

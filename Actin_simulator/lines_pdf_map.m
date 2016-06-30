@@ -103,7 +103,7 @@ while line_counter < number_of_lines
             cp1_coords(line_counter, :) = rand(1,2) .* [x_length, y_length] + origin_coords;
         end
         if strcmp(line_type, 'cubic')
-            cp2_coords(line_counter, :) = rand(1,2) .* [x_length, y_length + origin_coords];
+            cp2_coords(line_counter, :) = rand(1,2) .* [x_length, y_length] + origin_coords;
         end
     end
 end

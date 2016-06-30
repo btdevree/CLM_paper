@@ -4,7 +4,12 @@ function [pdf_map, border_coords] = border_pdf_map(parameter_struct, displacemen
 % center of the image.
 %
 % Draws a light/dark border with a midpoint displacement algorithm using a
-% Gaussian distribution of displacement lengths.
+% Gaussian distribution of displacement lengths. Assumes a Carteisain
+% coordinate system with the origin is assumed to be in the lower left corner
+% of the lower left pixel unless the bounds indicate otherwise in the 
+% parameter structure. Uses single precision for added speed and 
+% lower memory requriements; with a 25 x 25 micrometer image coordinates 
+% are accurate to 2 picometers.
 %
 % Inputs:
 %   parameter_struct: parameter structure made with
@@ -58,7 +63,7 @@ end
 displacement_stdev = y_length * displacement_factor;
 
 % Initalize list of border coordinates
-border_coords = [x_length / 2, y_length; x_length / 2, 0];
+border_coords = single([x_length / 2, y_length; x_length / 2, 0] + repmat([min_x_bound, min_y_bound], 2, 1));
 
 % Split and randomize border for specified number of cycles
 for cycle_index = 1:number_of_cycles
@@ -68,27 +73,27 @@ for cycle_index = 1:number_of_cycles
     
     % Displace midpoints
     displacements = roughness_parameter.^(cycle_index - 1) * normrnd(0, displacement_stdev, size(midpoint_coords, 1), 1);
-    midpoint_coords(:, 1) = midpoint_coords(:, 1) + displacements;
+    midpoint_coords(:, 1) = midpoint_coords(:, 1) + single(displacements);
     
     % Interweave original and midpoint values
-    new_coords = zeros(4, size(border_coords, 1));
+    new_coords = zeros(4, size(border_coords, 1), 'single');
     new_coords(1:2, :) = border_coords.';
     new_coords(3:4, 1:end-1) = midpoint_coords.';
     new_coords = reshape(new_coords(:), 2, 2 * size(border_coords, 1));
     border_coords = new_coords(:, 1:end-1)';
 end
 
-% Calc grid vectors and meshgrids
-x_vec = [0.5: 1: num_pixels_x - 0.5] .* map_resolution;
-y_vec = [num_pixels_y - 0.5: -1: 0.5] .* map_resolution;
+% Calc meshgrid
+x_vec = single([0.5: 1: num_pixels_x - 0.5] .* map_resolution + min_x_bound); % add grid vector and origin coords
+y_vec = single([num_pixels_y - 0.5: -1: 0.5] .* map_resolution + min_y_bound);
 [xmesh, ~] = meshgrid(x_vec, y_vec);
 
 % Interpolate border onto the y_vec values
 border_crossing_x = interp1(border_coords(:, 2), border_coords(:, 1), y_vec);
 
 % Create pdf_map
-pdf_map = zeros(length(y_vec), length(x_vec));
-pdf_map = pdf_map + double(xmesh - repmat(border_crossing_x', 1, size(xmesh, 2)) >= 0);
+pdf_map = zeros(length(y_vec), length(x_vec), 'single');
+pdf_map = pdf_map + single(xmesh - repmat(border_crossing_x', 1, size(xmesh, 2)) >= 0);
 
 % Normalize the pdf map
 if ~isinf(light_to_background_ratio) % Any non-perfect image

@@ -33,14 +33,14 @@ params.STORM_pixel_size = 21; % works fine for 25 nm STORM precision, ideal imag
 
 % Regions
 region_number_images = 6;
-region_number_images = 1;
+region_number_images = 2;
 region_contrast_ratios = [0.5, 1.5, 4]; % background:additional_density
 region_event_number_range = [3e2, 1e6];
 region_number_vertices = [6];
 
 % Dots
 dots_number_images = 15;
-dots_number_images = 1;
+dots_number_images = 2;
 dots_contrast_ratios = [1, 4, 10];
 dots_sizes = [20, 50, 100, 200, 500]; % nanometers
 dots_event_number_range = [3e2, 3e6];
@@ -48,7 +48,7 @@ dots_number_dots = [10];
 
 % Actin lines
 actin_number_images = 18;
-actin_number_images = 1;
+actin_number_images = 2;
 actin_contrast_ratios = [1, 4, 10];
 actin_event_number_range = [3e2, 1e7];
 actin_line_types = {'line_segment', 'cubic', 'quadratic'};
@@ -57,7 +57,7 @@ actin_number_lines = [6];
 
 % Border
 border_number_images = 15;
-border_number_images = 1;
+border_number_images = 2;
 border_contrast_ratios = [0.5, 1.5, 4];
 border_event_number_range = [1e3, 1e7];
 border_roughness = [.35, .45, .55, .65, .75];
@@ -165,6 +165,10 @@ test_info.STORM_images = cell(total_number_images, 1);
 test_info.event_data = cell(total_number_images, 1);
 test_info.ground_truth_coords = cell(total_number_images, 1);
 
+% Initalize structure and cells for holding GUI display images
+GUI_info = struct();
+GUI_info.STORM_images = cell(total_number_images, 1);
+
 % Repeat image creation loop
 for image_index = 1:total_number_images
     
@@ -189,11 +193,16 @@ for image_index = 1:total_number_images
     
     % Generate event datapoint using pdf map
     [dataset_coords, ~, STORM_vars] = create_test_data_dv(params); % Uses pdf_map based on params setttings
-    test_info.event_data{image_index} = dataset_coords;
+    test_info.event_data{image_index} = single(dataset_coords); % Single precision is more than accurate enough
     
     % Create STORM image
     STORM_image = create_test_STORM_images_dv(params, dataset_coords, [], STORM_vars, false, true, true);
-    test_info.STORM_images{image_index} = STORM_image;
+    test_info.STORM_images{image_index} = single(STORM_image); % Single precision is more than accurate enough for this work, would want doubles for fourier-domain math
+    
+    % Create display STORM image, there's no reason to keep more precision than 0-255 values.
+    min_value = min(STORM_image(:));
+    max_value = max(STORM_image(:));
+    GUI_info.STORM_images{image_index} = uint8(256 * (STORM_image - min_value) / (max_value - min_value));
     
     % Calculate ideal image
     sigma = params.STORM_precision / params.ch1_distribution_params{2};
@@ -206,15 +215,16 @@ end
 % ---- Save files ----
 
 % Create folder
-mkdir(output_directory, ['Test_', num2str(test_number)]);
+folder_name = ['Test_', num2str(test_number)];
+if ~exist([output_directory, '/', folder_name], 'dir')
+    mkdir(output_directory, folder_name);
+end
 
-% Copy files for GUI
-GUI_info = struct();
+% Copy the rest of the files for GUI program
 GUI_info.test_number = test_info.test_number;
 GUI_info.image_info = test_info.image_info;
 GUI_info.params = test_info.params;
 GUI_info.test_version = test_info.test_version;
-GUI_info.STORM_images = test_info.STORM_images;
 
 % Save GUI info
 pathname = [output_directory, '/Test_', num2str(test_number),'/test_files.mat'];
