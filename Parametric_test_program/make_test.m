@@ -21,6 +21,9 @@ function make_test(parameter_structure, output_directory, test_number)
 % Rename parameter structure for convenience
 params = parameter_structure;
 
+% Start up a new parallel pool using default settings, if needed.
+gcp
+
 % ---- Define the test images -----
 
 % Define test characteristics
@@ -170,7 +173,11 @@ GUI_info = struct();
 GUI_info.STORM_images = cell(total_number_images, 1);
 
 % Repeat image creation loop
+fprintf('\nWorking on image number   ');
 for image_index = 1:total_number_images
+    
+    % Feedback to the console
+    fprintf('\b\b\b %2u', image_index);
     
     % Get and set parameters common to all images
     info = test_info.image_info{image_index};
@@ -213,6 +220,7 @@ for image_index = 1:total_number_images
 end
 
 % ---- Save files ----
+fprintf('\n Image creation done, saving files.');
 
 % Create folder
 folder_name = ['Test_', num2str(test_number)];
@@ -238,6 +246,8 @@ tar([tarfolder, '/test_archive.tar.gz'], 'test_archive.mat', tarfolder);
 
 % Delete archive matfile to save space
 delete(pathname);
+
+fprintf(' Done. \n');
 end
 
 function [choices, extra_choices] = choose_evenly(number_choices, choice_vector, extra_vector)

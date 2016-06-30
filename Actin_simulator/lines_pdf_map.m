@@ -136,8 +136,6 @@ end
 
 % Calculate each line seperately and add to total map
 for line_index = 1:size(start_coords, 1)
-    % Report
-    disp(['Working on line number ', num2str(line_index)]);
     
     % Prepare the control points for each type of line
     if strcmp(line_type, 'line_segment')
