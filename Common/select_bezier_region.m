@@ -6,7 +6,8 @@ function [linear_indicies, x_coords, y_coords] = select_bezier_region(bezier_cur
 % the curve defined by the given set of points belonging to the provided
 % bezier curve. Uses morphology operations, so not very exact. Returns a 
 % region that contains all distances up to the target distance. Assumes
-% square pixels.
+% a Carteisain coordinate system where mesh coordinate values represent the 
+% centers of square pixels. 
 %
 % Inputs:
 %   bezier_curve_points: floating-point double n by 2 matrix of x and y 
@@ -23,13 +24,27 @@ function [linear_indicies, x_coords, y_coords] = select_bezier_region(bezier_cur
 %   x_coords: column vector with all the x coordinate values.
 %   y_coords: column vector with all the y coordinate values.
 
-% Calculate the pixel size
+% Calculate the pixel size and mesh origin
 pixel_size = xmesh(1, 2) - xmesh(1, 1);
+mesh_origin_x = xmesh(end, 1) - pixel_size/2;
+mesh_origin_y = ymesh(end, 1) - pixel_size/2;
 
 % Convert x and y coordinates into index values
-image_height = size(ymesh, 1);
-curve_row_indices = ceil(image_height - (bezier_curve_points(:, 2) / pixel_size));
-curve_column_indices = ceil(bezier_curve_points(:, 1) / pixel_size);
+% Transform coordinates into pixel units from the upper left corner and select only ones in the meshgrid region
+image_height = size(xmesh, 1);
+image_width = size(xmesh, 2);
+curve_row_values = image_height - (bezier_curve_points(:, 2) - mesh_origin_y) / pixel_size;
+curve_column_values = (bezier_curve_points(:, 1) - mesh_origin_x) / pixel_size;
+valid_points_selector = curve_row_values >= 0 & curve_row_values < image_height & ...
+                        curve_column_values >= 0 & curve_column_values < image_width;
+
+% Round to integer indices and add in points on the exact top and left borders
+curve_row_indices = ceil(curve_row_values(valid_points_selector));
+curve_row_indices(curve_row_indices == 0) = 1; % Include values on the top border
+curve_column_indices = ceil(curve_column_values(valid_points_selector));
+curve_column_indices(curve_column_indices == 0) = 1; % Include values on the left border
+
+% Convert to linear indices
 curve_linear_indices = curve_row_indices + image_height * (curve_column_indices - 1);
 
 % Initalize an empty binary matrix and mark pixels that contain a curve point

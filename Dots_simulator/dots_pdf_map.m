@@ -1,6 +1,13 @@
 function [ pdf_map, center_coords] = dots_pdf_map(parameter_struct, number_of_dots, dot_radius, dot_to_background_ratio)
 %DOTS_PDF_MAP Makes a pdf map of circular regions with uniform density 
-%   randomly distributed in an image.
+% randomly distributed in an image.
+%
+% An even field with small "dot" regions at randomized positions. Assumes a
+% Carteisain coordinate system. The origin is assumed to be in the lower 
+% left corner of the lower left pixel unless the bounds indicate otherwise 
+% in the parameter structure. Uses single precision for added speed and 
+% lower memory requriements; with a 25 x 25 micrometer image coordinates 
+% are accurate to 2 picometers.
 %
 % Inputs:
 %   number_of_dots: number of regions to put in the pdf map.
@@ -35,14 +42,14 @@ num_pixels_x = ceil(num_STORM_pixels_x * STORM_resolution / map_resolution);
 num_pixels_y = ceil(num_STORM_pixels_y * STORM_resolution / map_resolution);
 
 % Calc meshgrid
-x_vec = [0.5: 1: num_pixels_x - 0.5] .* map_resolution;
-y_vec = [num_pixels_y - 0.5: -1: 0.5] .* map_resolution;
+x_vec = single([0.5: 1: num_pixels_x - 0.5] .* map_resolution + min_x_bound); % add grid vector and origin coords
+y_vec = single([num_pixels_y - 0.5: -1: 0.5] .* map_resolution + min_y_bound);
 [xmesh, ymesh] = meshgrid(x_vec, y_vec);
 
 % Initalize pdf_map and center point matricies
-pdf_map = zeros(size(xmesh));
-center_coords_x = rand(number_of_dots, 1) * (x_length - 2 * dot_radius) + dot_radius;
-center_coords_y = rand(number_of_dots, 1) * (y_length - 2 * dot_radius) + dot_radius;
+pdf_map = zeros(size(xmesh), 'single');
+center_coords_x = single(rand(number_of_dots, 1) * (x_length - 2 * dot_radius) + dot_radius + min_x_bound); % add centers and origin coords
+center_coords_y = single(rand(number_of_dots, 1) * (y_length - 2 * dot_radius) + dot_radius + min_y_bound);
 center_coords = [center_coords_x, center_coords_y];
 
 % Multiply all pixels inside spot radius by deisred dot to background ratio
@@ -56,7 +63,7 @@ for dot_index = 1:number_of_dots
     delta_dist = sqrt(delta_x.^2 + delta_y.^2);
     
     % Add 1 to the pdf map for the pixels that are within the radius
-    pdf_map = pdf_map + double(delta_dist <= dot_radius); 
+    pdf_map = pdf_map + single(delta_dist <= dot_radius); 
 end
 
 % Normalize the pdf map

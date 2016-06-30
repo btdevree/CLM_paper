@@ -6,7 +6,9 @@ function [pdf_map, control_points_x, control_points_y] = lines_pdf_map(parameter
 % Each line is randomly placed within the image, assuming a Carteisain
 % coordinate system. The origin is assumed to be in the lower left corner
 % of the lower left pixel unless the bounds indicate otherwise in the 
-% parameter structure.
+% parameter structure. Uses single precision for added speed and 
+% lower memory requriements; with a 25 x 25 micrometer image coordinates 
+% are accurate to 2 picometers.
 %
 % Inputs:
 %   parameter_struct: parameter structure made with
@@ -85,22 +87,23 @@ end
 if strcmp(line_type, 'cubic')
     cp2_coords = zeros(number_of_lines, 2);
 end
-line_counter = 0;
+origin_coords = [min_x_bound, min_y_bound];
 
 % Repeat loop until enough valid lines are generated
+line_counter = 0;
 while line_counter < number_of_lines 
     line_start = rand(1,2) .* [x_length, y_length];
     line_end = rand(1,2) .* [x_length, y_length];
     chord_length = sqrt(sum((line_end - line_start).^2, 2));
     if chord_length >= chord_min_length && chord_length <= chord_max_length
         line_counter = line_counter + 1;
-        start_coords(line_counter, :) = line_start;
-        end_coords(line_counter, :) = line_end;
+        start_coords(line_counter, :) = line_start + origin_coords;
+        end_coords(line_counter, :) = line_end + origin_coords;
         if strcmp(line_type, 'quadratic') || strcmp(line_type, 'cubic')
-            cp1_coords(line_counter, :) = rand(1,2) .* [x_length, y_length];
+            cp1_coords(line_counter, :) = rand(1,2) .* [x_length, y_length] + origin_coords;
         end
         if strcmp(line_type, 'cubic')
-            cp2_coords(line_counter, :) = rand(1,2) .* [x_length, y_length];
+            cp2_coords(line_counter, :) = rand(1,2) .* [x_length, y_length + origin_coords];
         end
     end
 end
@@ -114,21 +117,21 @@ num_pixels_x = ceil(num_STORM_pixels_x * STORM_resolution / map_resolution);
 num_pixels_y = ceil(num_STORM_pixels_y * STORM_resolution / map_resolution);
 
 % Calc meshgrid
-x_vec = [0.5: 1: num_pixels_x - 0.5] .* map_resolution;
-y_vec = [num_pixels_y - 0.5: -1: 0.5] .* map_resolution;
+x_vec = single([0.5: 1: num_pixels_x - 0.5] .* map_resolution + min_x_bound); % add grid vector and origin coords
+y_vec = single([num_pixels_y - 0.5: -1: 0.5] .* map_resolution + min_y_bound);
 [xmesh, ymesh] = meshgrid(x_vec, y_vec);
 
 % Initalize pdf_map and control point matricies
-pdf_map = zeros(size(xmesh));
+pdf_map = zeros(size(xmesh), 'single');
 if strcmp(line_type, 'line_segment')
-    control_points_x = zeros(number_of_lines, 2);
-    control_points_y = zeros(number_of_lines, 2);
+    control_points_x = zeros(number_of_lines, 2, 'single');
+    control_points_y = zeros(number_of_lines, 2, 'single');
 elseif strcmp(line_type, 'quadratic')
-    control_points_x = zeros(number_of_lines, 3);
-    control_points_y = zeros(number_of_lines, 3);
+    control_points_x = zeros(number_of_lines, 3, 'single');
+    control_points_y = zeros(number_of_lines, 3, 'single');
 elseif strcmp(line_type, 'cubic')
-    control_points_x = zeros(number_of_lines, 4);
-    control_points_y = zeros(number_of_lines, 4);
+    control_points_x = zeros(number_of_lines, 4, 'single');
+    control_points_y = zeros(number_of_lines, 4, 'single');
 end
 
 % Calculate each line seperately and add to total map
@@ -146,8 +149,8 @@ for line_index = 1:size(start_coords, 1)
     end
     
     % Record control points
-    control_points_x(line_index, :) = cp(:, 1)';
-    control_points_y(line_index, :) = cp(:, 2)';
+    control_points_x(line_index, :) = single(cp(:, 1)');
+    control_points_y(line_index, :) = single(cp(:, 2)');
     
     % Approximate the arc length
     testpoints = calc_bezier_line(cp, 25); % 25 points should most always us a length within 1% of the true value for cubic beziers
@@ -164,7 +167,7 @@ for line_index = 1:size(start_coords, 1)
     distances = distance_to_bezier(curve_points, x_coords, y_coords, false);
     
     % Add 1 to the pdf map for the pixels that are within the specified width
-    pdf_map(coord_linear_indices) = pdf_map(coord_linear_indices) + double(distances <= line_width/2);
+    pdf_map(coord_linear_indices) = pdf_map(coord_linear_indices) + single(distances <= line_width/2);
 end
 
 % Normalize the pdf map

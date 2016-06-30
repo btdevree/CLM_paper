@@ -5,7 +5,9 @@ function [pdf_map, polygon_coords] = region_pdf_map(parameter_struct, number_of_
 % A polygon with randomized verterx positions. Assumes a Carteisain
 % coordinate system. The origin is assumed to be in the lower left corner
 % of the lower left pixel unless the bounds indicate otherwise in the 
-% parameter structure.
+% parameter structure. Uses single precision for added speed and lower
+% memory requriements; with a 25 x 25 micrometer image coordinates are
+% accurate to 2 picometers.
 %
 % Inputs:
 %   parameter_struct: parameter structure made with
@@ -16,10 +18,10 @@ function [pdf_map, polygon_coords] = region_pdf_map(parameter_struct, number_of_
 %       polygon region to the general background. Use Inf for a image with 
 %       no background.
 % Outputs:
-%   pdf_map: array of floating-point doubles, normalized sampling of the
+%   pdf_map: array of floating-point singles, normalized sampling of the
 %       analytical pdf.
-%   polygon_coords: n by 2 matrix of (x, y) coordinates of the vertex 
-%       points of the polygon region.
+%   polygon_coords: n by 2 matrix of floating-point singles of (x, y) 
+%       coordinates of the vertex points of the polygon region.
 
 % Rename parameter structure for convenience
 params = parameter_struct;
@@ -49,7 +51,7 @@ base_polygon_coords = [relative_x_coords, relative_y_coords] + repmat(center_coo
 rand_angles = 2 * pi * rand(number_of_vertices, 1);
 rand_radii = randomization_radius * rand(number_of_vertices, 1);
 rand_offsets = [cos(rand_angles), sin(rand_angles)] .* repmat(rand_radii, 1, 2);
-polygon_coords = base_polygon_coords + rand_offsets;
+polygon_coords = base_polygon_coords + rand_offsets + repmat([min_x_bound, min_y_bound], number_of_vertices, 1); % add offsets and origin coords
 
 %Calc needed number of pixels
 STORM_resolution = params.STORM_pixel_size;
@@ -60,13 +62,13 @@ num_pixels_x = ceil(num_STORM_pixels_x * STORM_resolution / map_resolution);
 num_pixels_y = ceil(num_STORM_pixels_y * STORM_resolution / map_resolution);
 
 % Calc meshgrid
-x_vec = [0.5: 1: num_pixels_x - 0.5] .* map_resolution;
-y_vec = [num_pixels_y - 0.5: -1: 0.5] .* map_resolution;
+x_vec = single([0.5: 1: num_pixels_x - 0.5] .* map_resolution + min_x_bound); % add grid vector and origin coords
+y_vec = single([num_pixels_y - 0.5: -1: 0.5] .* map_resolution + min_y_bound);
 [xmesh, ymesh] = meshgrid(x_vec, y_vec);
 
 % Create pdf_map
-pdf_map = zeros(size(xmesh));
-pdf_map = pdf_map + double(inpolygon(xmesh, ymesh, polygon_coords(:, 1), polygon_coords(:, 2)));
+pdf_map = zeros(size(xmesh), 'single');
+pdf_map = pdf_map + inpolygon(xmesh, ymesh, polygon_coords(:, 1), polygon_coords(:, 2));
 
 % Normalize the pdf map
 if ~isinf(region_to_background_ratio) % Any non-perfect image
