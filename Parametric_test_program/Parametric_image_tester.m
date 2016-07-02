@@ -18,24 +18,34 @@ min_y_bound = params.bounds(2);
 max_x_bound = params.bounds(3);
 max_y_bound = params.bounds(4);
 
+% Get required constant values
+pixel_size = params.STORM_pixel_size;
+total_number_images = length(GUI_info.STORM_images);
+
+% Initalize variables
+current_image_type = '';
+current_answer_x = [];
+current_answer_y = [];
+current_image_index = 0;
+current_image_size = size(GUI_info.STORM_images{1});
+
 %  ---------------Create graphs-------------------
 
 % Create point data variables
 X_graph = [];
 Y_graph = [];
-A_graph = [];
 C_graph = [];
 
 % Create main axes object and handle
 haxes = axes('Units', 'pixels', 'Position', [300, 50, 850, 850]);
 
 % Display scatterplot in the axes and get a handle to the graph
-hscatter = scatter(haxes, X_graph, Y_graph, A_graph, C_graph);
+hscatter = scatter(haxes, X_graph, Y_graph, 5, C_graph);
 set(haxes, 'DataAspectRatio', [1,1,1], 'Xlim', [min_x_bound, max_x_bound], 'Ylim', [min_y_bound, max_y_bound], 'Color', 'none');
 
 % Create the background image axes with a default all black background
 hbackaxes = axes('Units', 'pixels', 'Position', get(haxes, 'Position'));
-hbackimage = imagesc(zeros(size(GUI_info.STORM_images{1}), 'uint8'), [0, 1]);
+hbackimage = imagesc(zeros(current_image_size, 'uint8'));
 uistack(hbackaxes,'bottom');% Move the background axes to the bottom
 set(hbackaxes, 'XTickLabel', [], 'YTickLabel', [], 'XTick', [], 'YTick', [], 'Ydir', 'rev');
 colormap(hbackaxes, gray);
@@ -44,7 +54,7 @@ colormap(hbackaxes, gray);
 
 % Create image heading
 image_number_text = uicontrol('Parent', hfig, 'Style', 'text',...
-    'Position', [25, 890, 225, 25], 'String', 'Practice Image 1', 'FontSize', 16);
+    'Position', [25, 890, 225, 25], 'String', 'Image Number 1', 'FontSize', 16);
 image_type_text = uicontrol('Parent', hfig, 'Style', 'text',...
     'Position', [25, 850, 225, 25], 'String', 'Image Type', 'FontSize', 14);
 
@@ -58,7 +68,7 @@ help_button = uicontrol('Parent', hfig, 'Style', 'pushbutton',...
 
 % Create button for save and continue.
 next_button = uicontrol('Parent', hfig, 'Style', 'pushbutton',...
-    'Position', [25, top-115, 225, 25], 'String', 'Save and Continue to Next Image',...
+    'Position', [25, top-115, 225, 25], 'String', 'Start Test',...
     'Callback', @next_button_callback);
 
 % Create undo button
@@ -96,10 +106,8 @@ overlay_toggle_button = uicontrol('Parent', hfig, 'Style', 'togglebutton',...
 % Display GUI
 set(hfig, 'Visible', 'on');
 
-% Load first image
-
-
-
+% Update graph
+graph_update
 
 %--------- Callback functions -----------
 
@@ -119,72 +127,252 @@ function overlay_toggle_callback(source, callbackdata)
     % Get the toggle button value
     toggle_val = get(source, 'Value');
     
-    % Change the data and color limits to the appropreate values
+    % Change the stacking of the plots
     if toggle_val == 1
-        image_data = image_filename_list{current_movie_index};
-        set(hbackimage, 'CData', image_data);
-        set(hbackaxes, 'CLim', [min(min(image_data)), max(max(image_data))]); 
+        uistack(hbackaxes,'bottom');% Move the background axes to the bottom
+        graph_update
     elseif toggle_val == 0
-        set(hbackimage, 'CData', zeros(size(image_filename_list{current_movie_index})));
-        set(hbackaxes, 'CLim', [0, 1]); 
+        uistack(hbackaxes,'top');% Move the background axes to the top
+        graph_update
+    end
+end
+
+function next_button_callback(source, callbackdata)
+    
+    % If it's the first time clicked, change button text
+    if current_image_index == 0
+        set(next_button, 'String', 'Save Response and Load New Image');
+    
+    % If it's not the first time, we'll have a response to save
+    else
+        save_response
     end
     
-    % Update the zoom levels 
-    main_xlim = get(haxes, 'Xlim');
-    main_ylim = get(haxes, 'Ylim');
-    set(hbackaxes, 'Xlim', main_xlim, 'Ylim', size(image_filename_list{current_movie_index}, 1) - [main_ylim(2), main_ylim(1)]);
+    % Add one to the current_image_index
+    current_image_index = current_image_index + 1;
+    
+    % If this is the last image, call the cleanup routine
+    if current_image_index > total_number_images
+        final_cleanup
+    end
+    
+    % Clear the response 
+    current_answer_x = [];
+    current_answer_y = [];
+    
+    % Get the image type
+    info = GUI_info.image_info{current_image_index};
+    current_image_type = info.image_type;
+    current_image_size = size(GUI_info.STORM_images{current_image_index});
+    
+    % Put new image into background image data variable
+    set(hbackimage, 'CData', GUI_info.STORM_images{current_image_index});
+
+    % Reset zoom
+    zoom out
+    
+    % Update graphs
+    graph_update 
 end
+
 
 % ----------Other Functions--------------
 
-function graph_update
+function graph_update 
     
     % Get x, y, and color data for graphing    
-    [Xp,Yp,Ap,Cp] = get_point_data; % Vectors of x, y, area, and and nx3 matrix of RGB color values
-    [Xl,Yl,Cl] = get_line_data; % Columns are vectors of x and y points defining a line, multiple lines in multiple columns. Cl is a nx3 matrix of RGB color values.  
+    [Xp, Yp, Cp] = get_point_data; % Vectors of x, y, area, and and nx3 matrix of RGB color values
+    [Xl, Yl, Cl] = get_line_data; % Columns are vectors of x and y points defining a line, multiple lines in multiple columns. Cl is a nx3 matrix of RGB color values.  
     
     % redraw scatterplot
     set(hscatter, 'Xdata', Xp)
     set(hscatter, 'Ydata', Yp)
     set(hscatter, 'CData', Cp)
-    set(hscatter, 'SizeData', Ap)
     
-    % Delete all existing lines and rectangles
+    % Delete all existing lines
     delete(findobj(haxes, 'type', 'line'));
-    delete(findobj(haxes, 'type', 'rectangle'));
     
     % Add a line plot for each particle track onto the graph
-    for line_index = 1:size(Xl, 2)
+    for line_index = 1:size(Xl, 1)
        
-        % Determine what color the line should be
-        if particle_list{current_movie_index}(track_index) == current_particle_ID
-            plot_color = [0, 1, 0];
-        else
-            plot_color = [.25, .35, 1];
+        % Plot each line with specified color
+        line(Xl{line_index}, Yl{line_index}, 'Parent', haxes, 'Color', Cl(line_index, :));
+    end
+        
+    % Update background zoom/pan
+    main_xlim = get(haxes, 'Xlim');
+    main_ylim = get(haxes, 'Ylim');
+    set(hbackaxes, 'Xlim', main_xlim ./ pixel_size, 'Ylim', current_image_size(1) - ([main_ylim(2), main_ylim(1)] ./ pixel_size));
+end
+
+function [X, Y, C] = get_point_data
+    % Returns the points and corrosponding colors of the points
+    
+    % Drawing vertices of the region polygon
+    if strcmp(current_image_type, 'region')
+        
+        % Orange for the first point, Yellow for the last, Red for all others
+        X = current_answer_x(:);
+        Y = current_answer_y(:);
+        C = repmat([1, 0, 0], size(X, 1), 1);
+        if size(X, 1) > 0
+            C(1, :) = [1, .5, 0];
+            C(end, :) = [1, 1, 0];
+        end
+            
+    % Marking the centers of the dots
+    elseif strcmp(current_image_type, 'dots')
+            
+        % Yellow for the last, Red for all others
+        X = current_answer_x(:);
+        Y = current_answer_y(:);
+        C = repmat([1, 0, 0], size(X, 1), 1);
+        if size(X, 1) > 0
+            C(end, :) = [1, 1, 0];        
         end
         
-        % Collect xy points for the plot and plot them as a line
-        plot_XY_data = particle_xy_list{current_movie_index}{particle_list{current_movie_index}(track_index)};
-        line(plot_XY_data(:,1), plot_XY_data(:,2), 'Parent', haxes, 'Color', plot_color);
+    % Marking the control points    
+    elseif strcmp(current_image_type, 'actin')
+        
+        % Orange for the first point, Yellow for the last, Red for all others
+        % All but the last set of control points are greyish
+        [num_lines, num_cp] = size(current_answer_x);
+        X = current_answer_x(:);
+        Y = current_answer_y(:);
+        C = repmat([.5, 0, 0], size(X, 1), 1);
+        if size(X, 1) < 0
+            C(1:num_lines:end, :) = [.5, .25, 0];
+            C(num_cp:num_lines:end, :) = [.5, .5, 0];
+            C(end-num_cp+1, :) = [1, 0, 0];
+            C(end-num_cp+2:end, :) = [1, .5, 0];
+            C(end, :) = [1, 1, 0];
+        end
+        
+    % No points graphed for borders    
+    elseif strcmp(current_image_type, 'border')
+        
+        % Return empty matrices
+        X = [];
+        Y = [];
+        C = zeros(0, 3);
     
-        % Plot a search circle at the current frame
-        rect_x = plot_XY_data(current_frame_index,1)-search_radius;
-        rect_y = plot_XY_data(current_frame_index,2)-search_radius;
-        rect_diameter = search_radius*2;
-        rectangle('Position', [rect_x, rect_y, rect_diameter, rect_diameter],...
-            'Curvature', [1,1], 'EdgeColor', plot_color, 'Parent', haxes)
+    % Return empty matrices for any other image type
+    else
+        X = [];
+        Y = [];
+        C = zeros(0, 3);
+    end
+    
+    
+end
+
+function [X, Y, C] = get_line_data
+    % Returns cell arrays of points that define lines on the graph and the corrosponding colors of the lines
+    % A line is a column vector, multiple lines are in multiple cells, colors are columns of RGB triple vectors
+    
+    % Drawing sides of the region polygon
+    if strcmp(current_image_type, 'region')
         
-        % Plot a particle circle at the current frame
-        rect_x = plot_XY_data(current_frame_index,1)-particle_radius;
-        rect_y = plot_XY_data(current_frame_index,2)-particle_radius;
-        rect_diameter = particle_radius*2;
-        rectangle('Position', [rect_x, rect_y, rect_diameter, rect_diameter],...
-            'Curvature', [1,1], 'EdgeColor', plot_color, 'Parent', haxes)
+        % No lines for 0 or 1 points
+        if size(current_answer_x, 1) < 2
+            X = {};
+            Y = {};
+            C = zeros(0, 3);
+        else % Orange for the line between the first and last point, Red for all others
+            X_mat = vercat(current_answer_x', [current_answer_x(2:end)', current_answer_x(1)]);
+            Y_mat = vercat(current_answer_y', [current_answer_y(2:end)', current_answer_y(1)]);
+            X = cell(size(X_mat, 2), 1);
+            Y = cell(size(Y_mat, 2), 1);
+            for index = 1:size(X_mat, 2)
+                X{index} = X_mat(:, index);
+                Y{index} = Y_mat(:, index);
+            end
+            C = repmat([1, 0, 0], size(X_mat, 2), 1);
+            C(end, :) = [1, .5, 0];
+        end
+            
+    % No lines for the dots images
+    elseif strcmp(current_image_type, 'dots')
+            
+       % Return empty cell arrays and matrices
+        X = {};
+        Y = {};
+        C = zeros(0, 3);
         
-        % Update background zoom/pan
-        main_xlim = get(haxes, 'Xlim');
-        main_ylim = get(haxes, 'Ylim');
-        set(hbackaxes, 'Xlim', main_xlim, 'Ylim', size(image_filename_list, 1) - [main_ylim(2), main_ylim(1)]);
+    % Drawing control net and bezier lines 
+    elseif strcmp(current_image_type, 'actin')
+        
+        % Red for all control net lines
+        % All but the last set of control points are greyish
+        if size(current_answer_x, 2) == 2
+            X_mat = current_answer_x';
+            Y_mat = current_answer_y';
+        elseif size(current_answer_x, 2) == 3
+            X_mat = horzcat(current_answer_x(:, 1:2)', current_answer_x(:, 2:3)');
+            Y_mat = horzcat(current_answer_y(:, 1:2)', current_answer_y(:, 2:3)');
+        elseif size(current_answer_x, 2) == 4
+            X_mat = horzcat(current_answer_x(:, 1:2)', current_answer_x(:, 2:3)', current_answer_x(:, 3:4)');
+            Y_mat = horzcat(current_answer_y(:, 1:2)', current_answer_y(:, 2:3)', current_answer_y(:, 3:4)');
+        else % no answer yet
+            X_mat = [];
+            Y_mat = [];
+        end  
+        X_cn = cell(size(X_mat, 2), 1);
+        Y_cn = cell(size(Y_mat, 2), 1);
+        for index = 1:size(X_mat, 2)
+            X_cn{index} = X_mat(:, index);
+            Y_cn{index} = Y_mat(:, index);
+        end
+        C_cn = repmat([.5, 0, 0], size(X_mat, 2), 1);
+        if size(C_cn, 1) > 0;
+            C_cn(end, :) = [1, 0, 0];
+        end
+        
+        % Calculate and graph the bezier lines
+        % Beziers are orange; all but the last one is greyish        
+        X_bz = cell(size(current_answer_x, 1), 1);
+        Y_bz = cell(size(current_answer_y, 1), 1);
+        for index = 1:size(X_bz, 1)
+            line_points = calc_bezier_line([current_answer_x(index, :)', current_answer_y(index, :)'], 1000);
+            X_bz{index} = line_points(:, 1);
+            Y_bz{index} = line_points(:, 2);
+        end
+        C_bz = repmat([.5, .25, 0], size(current_answer_x, 1), 1);
+        if size(C_bz, 1) > 0;
+            C_bz(end, :) = [1, .5, 0];
+        end
+        
+        % Add control network and bezier cells together
+        X = vertcat(X_cn, X_bz);
+        Y = vertcat(Y_cn, Y_bz);
+        C = vertcat(C_cn, C_bz);        
+        
+    % Graph the border line   
+    elseif strcmp(current_image_type, 'border')
+        
+        % Simply return the current answer
+        X = {current_answer_x};
+        Y = {current_answer_y};
+        C = [1, 0, 0];
+    
+    % Return empty cells for any other image type
+    else
+        X = {};
+        Y = {};
+        C = zeros(0, 3);
     end
 end
+
+function final_cleanup
+    
+    % Cleanup stuff - placeholder
+   
+end
+
+function save_response
+    
+    % Save stuff - placeholder
+   
+end
+
 end
