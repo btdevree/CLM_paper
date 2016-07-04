@@ -29,6 +29,7 @@ current_answer_x = [];
 current_answer_y = [];
 current_image_index = 0;
 current_image_size = size(GUI_info.STORM_images{1});
+previous_border_click_coords = [];
 
 %  ---------------Create graphs-------------------
 
@@ -158,14 +159,20 @@ function next_button_callback(source, callbackdata)
         final_cleanup
     end
     
-    % Clear the response 
-    current_answer_x = [];
-    current_answer_y = [];
-    
     % Get the image type
     info = GUI_info.image_info{current_image_index};
     current_image_type = info.image_type;
     current_image_size = size(GUI_info.STORM_images{current_image_index});
+    
+     % Clear the response 
+    current_answer_x = [];
+    current_answer_y = [];
+    
+    % Initalize with a straight line down the middle for a border type image
+    if strcmp(current_image_type, 'border')
+        current_answer_y = single([current_image_size(1) - 0.5: -1: 0.5]' * pixel_size + min_y_bound);
+        current_answer_x = ones(size(current_answer_y), 'single') * (min_x_bound + max_x_bound) / 2;
+    end
     
     % Put new image into background image data variable
     set(hbackimage, 'CData', GUI_info.STORM_images{current_image_index});
@@ -177,7 +184,7 @@ function next_button_callback(source, callbackdata)
         set(haxes, 'ButtonDownFcn', @region_dots_clickdown_callback);
     elseif strcmp(current_image_type, 'actin')
         set(haxes, 'ButtonDownFcn', @actin_clickdown_callback);
-    elseif strcmp(current_image_type, 'dots')
+    elseif strcmp(current_image_type, 'border')
         set(haxes, 'ButtonDownFcn', @border_clickdown_callback);
     end
     
@@ -249,7 +256,7 @@ function create_bezier_callback(source, callbackdata, index)
         current_answer_y(index, 2) = (mouse_point(1, 2) + clickdown_y) / 2;
         current_answer_x(index, 3) = mouse_point(1, 1);
         current_answer_y(index, 3) = mouse_point(1, 2);
-    elseif size(current_answer_x, 2) == 3;
+    elseif size(current_answer_x, 2) == 4;
         current_answer_x(index, 2) = (mouse_point(1, 1) + 2 * clickdown_x) / 3;
         current_answer_y(index, 2) = (mouse_point(1, 2) + 2 * clickdown_y) / 3;
         current_answer_x(index, 3) = (2 * mouse_point(1, 1) + clickdown_x) / 3;
@@ -260,13 +267,80 @@ function create_bezier_callback(source, callbackdata, index)
     graph_update
 end
 
+function border_clickhold_callback(source, callbackdata, buttontype)
+    
+    % Get current cursor postion
+    mouse_point = get(haxes, 'CurrentPoint');
+    
+    % Find the border coordinates in the y values range between previous and current mouse points
+    selection_vector = xor(previous_border_click_coords(1, 2) <= current_answer_y, mouse_point(1, 2) >= current_answer_y);
+    
+    % Get coordinate values of selected points
+    selection_y = current_answer_y(selection_vector);
+    previous_x = current_answer_x(selection_vector);
+    
+    % Get coordinate values of the points along the new line
+    slope = (mouse_point(1, 2) - previous_border_click_coords(1, 2)) / (mouse_point(1, 1) - previous_border_click_coords(1, 1));
+    intercept = -slope * previous_border_click_coords(1, 1) + previous_border_click_coords(1, 2);
+    click_x = (selection_y - intercept) / slope;
+    
+    % If it's a left click, take the maximum x value
+    if buttontype == 1
+        new_x = max(previous_x, click_x);
+    
+    % If it's a right click, take the minimum x value
+    elseif buttontype == 3
+        new_x = min(previous_x, click_x);
+    end
+    
+    % Replace answer with new values
+    current_answer_x(selection_vector) = new_x;
+    
+    % Update previous click and graph
+    previous_border_click_coords = mouse_point(1, 1:2);
+    graph_update
+end
+
 function clickup_callback(source, callbackdata)
 
     % Stop using the motion function
     set(hfig,'WindowButtonMotionFcn', '');
     
+    % Reset the previous border coordinate
+    previous_border_click_coords = [];
+    
     % Set a new undo savedpoint
     set_undo_savepoint;
+end
+
+function region_dots_clickdown_callback(source, callbackdata)
+    
+    % Get coordinates and type of click
+    clickdown_coords = callbackdata.IntersectionPoint(1:2);
+    click_type = callbackdata.Button;
+    
+    % Is the click next to an existing point?
+    existing_point_index = find_existing_point(clickdown_coords, 0.01, false);
+    
+    % If a point was found and it's a right click, we delete the point  
+    if ~isempty(existing_point_index) && click_type == 3;     
+        current_answer_x(existing_point_index) = [];
+        current_answer_y(existing_point_index) = [];
+        
+    % If a point was found and it's a left click, we move the point with the pointer  
+    elseif ~isempty(existing_point_index) && click_type == 1;
+        
+        % Set the window motion function to move the point around with the pointer
+        set(hfig,'WindowButtonMotionFcn', {@move_point_callback, existing_point_index});
+        
+    % If no point is found and it's a left click, add a new point to the end of the answer
+    elseif isempty(existing_point_index) && click_type == 1
+        current_answer_x(end+1, 1) = clickdown_coords(1);
+        current_answer_y(end+1, 1) = clickdown_coords(2);
+    end
+    
+    % Update the graph
+    graph_update
 end
 
 function actin_clickdown_callback(source, callbackdata)
@@ -310,31 +384,17 @@ function actin_clickdown_callback(source, callbackdata)
     graph_update
 end
 
-function region_dots_clickdown_callback(source, callbackdata)
+function border_clickdown_callback(source, callbackdata)
     
     % Get coordinates and type of click
     clickdown_coords = callbackdata.IntersectionPoint(1:2);
     click_type = callbackdata.Button;
     
-    % Is the click next to an existing point?
-    existing_point_index = find_existing_point(clickdown_coords, 0.01, false);
+    % Put the click into the previous coordinate variable
+    previous_border_click_coords = clickdown_coords;
     
-    % If a point was found and it's a right click, we delete the point  
-    if ~isempty(existing_point_index) && click_type == 3;     
-        current_answer_x(existing_point_index) = [];
-        current_answer_y(existing_point_index) = [];
-        
-    % If a point was found and it's a left click, we move the point with the pointer  
-    elseif ~isempty(existing_point_index) && click_type == 1;
-        
-        % Set the window motion function to move the point around with the pointer
-        set(hfig,'WindowButtonMotionFcn', {@move_point_callback, existing_point_index});
-        
-    % If no point is found and it's a left click, add a new point to the end of the answer
-    elseif isempty(existing_point_index) && click_type == 1
-        current_answer_x(end+1, 1) = clickdown_coords(1);
-        current_answer_y(end+1, 1) = clickdown_coords(2);
-    end
+    % Set the window motion function to move the point around with the pointer
+    set(hfig,'WindowButtonMotionFcn', {@border_clickhold_callback, clicktype});
     
     % Update the graph
     graph_update
@@ -448,7 +508,6 @@ function [X, Y, C, P] = get_line_data
             X = {};
             Y = {};
             C = zeros(0, 3);
-            P = zeros(0, 3);
         else % Orange for the line between the first and last point, Red for all others
             X_mat = vertcat(current_answer_x', [current_answer_x(2:end)', current_answer_x(1)]);
             Y_mat = vertcat(current_answer_y', [current_answer_y(2:end)', current_answer_y(1)]);
@@ -480,12 +539,15 @@ function [X, Y, C, P] = get_line_data
         if size(current_answer_x, 2) == 2
             X_mat = current_answer_x';
             Y_mat = current_answer_y';
+            last_line_indices = [size(current_answer_x, 1)];
         elseif size(current_answer_x, 2) == 3
             X_mat = horzcat(current_answer_x(:, 1:2)', current_answer_x(:, 2:3)');
             Y_mat = horzcat(current_answer_y(:, 1:2)', current_answer_y(:, 2:3)');
+            last_line_indices = [1:2] .* size(current_answer_x, 1);
         elseif size(current_answer_x, 2) == 4
             X_mat = horzcat(current_answer_x(:, 1:2)', current_answer_x(:, 2:3)', current_answer_x(:, 3:4)');
             Y_mat = horzcat(current_answer_y(:, 1:2)', current_answer_y(:, 2:3)', current_answer_y(:, 3:4)');
+            last_line_indices = [1:3] .* size(current_answer_x, 1);
         else % no answer yet
             X_mat = [];
             Y_mat = [];
@@ -496,16 +558,16 @@ function [X, Y, C, P] = get_line_data
             X_cn{index} = X_mat(:, index);
             Y_cn{index} = Y_mat(:, index);
         end
-        C_cn = repmat([.5, 0, 0], size(X_mat, 2), 1);
+        C_cn = repmat([.5, .25, .25], size(X_mat, 2), 1);
         if size(C_cn, 1) > 0;
-            C_cn(end, :) = [1, 0, 0];
+            C_cn(last_line_indices, :) = repmat([1, 0, 0], size(last_line_indices, 2), 1);
         end
         P_cn = zeros(size(X_cn));
         
         % Calculate and graph the bezier lines
         % Beziers are orange; all but the last one is greyish        
         X_bz = cell(size(current_answer_x, 1), 1);
-        Y_bz = cell(size(current_answer_y, 1), 1);
+        Y_bz = cell(size(current_answer_x, 1), 1);
         P_bz = zeros(size(current_answer_x, 1), 1);
         for index = 1:size(X_bz, 1)
             line_points = calc_bezier_line([current_answer_x(index, :)', current_answer_y(index, :)'], 1000);
@@ -513,7 +575,7 @@ function [X, Y, C, P] = get_line_data
             Y_bz{index} = line_points(:, 2);
             P_bz(index) = index;
         end
-        C_bz = repmat([.5, .25, 0], size(current_answer_x, 1), 1);
+        C_bz = repmat([.5, .35, .15], size(current_answer_x, 1), 1);
         if size(C_bz, 1) > 0;
             C_bz(end, :) = [1, .5, 0];
         end
@@ -598,8 +660,8 @@ function [existing_point_index] = find_existing_point(click_coords, relative_pic
 
         % Get the click to point distances in units of picking radii
         if last_row_only
-            xdist = (click_coords(1) - current_answer_x(end, :)) / pick_radius_x;
-            ydist = (click_coords(2) - current_answer_y(end, :)) / pick_radius_y;
+            xdist = (click_coords(1) - current_answer_x(end, :))' / pick_radius_x;
+            ydist = (click_coords(2) - current_answer_y(end, :))' / pick_radius_y;
         else
             xdist = (click_coords(1) - current_answer_x(:)) / pick_radius_x;
             ydist = (click_coords(2) - current_answer_y(:)) / pick_radius_y;
@@ -609,6 +671,9 @@ function [existing_point_index] = find_existing_point(click_coords, relative_pic
         % If any point is close enough, make sure to pick the one closest to the click 
         if any(dist <= 1)
             [~, existing_point_index] = min(dist);
+            if last_row_only % Correct to a linear index in the whole answer array when we've only selected the last row 
+                existing_point_index = existing_point_index * size(current_answer_x, 1);
+            end
         else
             existing_point_index = [];
         end
