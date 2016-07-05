@@ -31,7 +31,7 @@ current_image_index = 0;
 current_image_size = size(GUI_info.STORM_images{1});
 previous_border_click_coords = [];
 
-%  ---------------Create graphs-------------------
+%  ---------------Create graphs and objects-------------------
 
 % Create point data variables
 X_graph = [];
@@ -50,6 +50,13 @@ hbackimage = imagesc(zeros(current_image_size, 'uint8'));
 uistack(hbackaxes,'bottom');% Move the background axes to the bottom
 set(hbackaxes, 'XTickLabel', [], 'YTickLabel', [], 'XTick', [], 'YTick', [], 'Ydir', 'rev');
 colormap(hbackaxes, gray);
+
+% Force graphs to redraw when zoom or pan is used
+hzoom = zoom(hfig);
+set(hzoom, 'ActionPostCallback',@graph_update_callback);
+hpan = pan(hfig);
+set(hpan, 'ActionPostCallback',@graph_update_callback);
+
 
 % ----------Create buttons-----------------
 
@@ -83,14 +90,14 @@ start_over_button = uicontrol('Parent', hfig, 'Style', 'pushbutton',...
     'Callback', @start_over_button_callback);
 
 % Create pan button
-pan_button = uicontrol('Parent', hfig, 'Style', 'pushbutton',...
+pan_button = uicontrol('Parent', hfig, 'Style', 'togglebutton',...
     'Position', [25, top-285, 225, 25], 'String', 'Pan View',...
-    'Callback', @pan_callback);
+    'Value', 0, 'Callback', @pan_callback);
 
 % Create zoom button
-zoom_button = uicontrol('Parent', hfig, 'Style', 'pushbutton',...
+zoom_button = uicontrol('Parent', hfig, 'Style', 'togglebutton',...
     'Position', [25, top-325, 225, 25], 'String', 'Zoom View',...
-    'Callback', @zoom_callback);
+    'Value', 0, 'Callback', @zoom_callback);
 
 % Create view reset button
 reset_button = uicontrol('Parent', hfig, 'Style', 'pushbutton',...
@@ -112,14 +119,35 @@ graph_update
 
 %--------- Callback functions -----------
 
+function graph_update_callback(source, callbackdata)
+% Wrapper so graph_update can be called from a MATLAB callback without errors
+graph_update
+end
+
 % -- Buttons --
 
 function zoom_callback(source, callbackdata)
-    zoom
+    % Get the toggle button value
+    toggle_val = get(source, 'Value');
+    
+    % Turn the zoom mode on or off.
+    if toggle_val == 1
+        set(hzoom, 'Enable', 'on');
+    elseif toggle_val == 0
+        set(hzoom, 'Enable', 'off');
+    end
 end
 
 function pan_callback(source, callbackdata)
-    pan
+     % Get the toggle button value
+    toggle_val = get(source, 'Value');
+    
+    % Turn the pan mode on or off.
+    if toggle_val == 1
+        set(hpan, 'Enable', 'on');
+    elseif toggle_val == 0
+        set(hpan, 'Enable', 'off');
+    end
 end
 
 function reset_callback(source, callbackdata)
@@ -268,12 +296,12 @@ function create_bezier_callback(source, callbackdata, index)
 end
 
 function border_clickhold_callback(source, callbackdata, buttontype)
-    
+       
     % Get current cursor postion
     mouse_point = get(haxes, 'CurrentPoint');
     
     % Find the border coordinates in the y values range between previous and current mouse points
-    selection_vector = xor(previous_border_click_coords(1, 2) <= current_answer_y, mouse_point(1, 2) >= current_answer_y);
+    selection_vector = ~xor(previous_border_click_coords(1, 2) <= current_answer_y, mouse_point(1, 2) >= current_answer_y);
     
     % Get coordinate values of selected points
     selection_y = current_answer_y(selection_vector);
@@ -281,8 +309,12 @@ function border_clickhold_callback(source, callbackdata, buttontype)
     
     % Get coordinate values of the points along the new line
     slope = (mouse_point(1, 2) - previous_border_click_coords(1, 2)) / (mouse_point(1, 1) - previous_border_click_coords(1, 1));
-    intercept = -slope * previous_border_click_coords(1, 1) + previous_border_click_coords(1, 2);
-    click_x = (selection_y - intercept) / slope;
+    if isinf(slope) % Deal with vertical line
+        click_x = ones(size(selection_y)) * mouse_point(1, 1);
+    else
+        intercept = -slope * previous_border_click_coords(1, 1) + previous_border_click_coords(1, 2);
+        click_x = (selection_y - intercept) / slope;
+    end
     
     % If it's a left click, take the maximum x value
     if buttontype == 1
@@ -390,14 +422,34 @@ function border_clickdown_callback(source, callbackdata)
     clickdown_coords = callbackdata.IntersectionPoint(1:2);
     click_type = callbackdata.Button;
     
+    % Move a single point on the original click
+    % Find the nearest y coordinate
+    [~, selection_index] = min(abs(current_answer_y - clickdown_coords(1, 2)));
+    
+    % Get coordinate value of selected point
+    previous_x = current_answer_x(selection_index);
+    click_x = clickdown_coords(1, 1);
+      
+    % If it's a left click, take the maximum x value
+    if click_type == 1
+        new_x = max(previous_x, click_x);
+    
+    % If it's a right click, take the minimum x value
+    elseif click_type == 3
+        new_x = min(previous_x, click_x);
+    end
+    
+    % Replace answer with new values
+    current_answer_x(selection_index) = new_x;
+    
     % Put the click into the previous coordinate variable
     previous_border_click_coords = clickdown_coords;
     
-    % Set the window motion function to move the point around with the pointer
-    set(hfig,'WindowButtonMotionFcn', {@border_clickhold_callback, clicktype});
-    
-    % Update the graph
+    % Update graph for visual feedback
     graph_update
+
+    % Set the window motion function to move the point around with the pointer
+    set(hfig,'WindowButtonMotionFcn', {@border_clickhold_callback, click_type});
 end
 
 % ----------Other Functions--------------
