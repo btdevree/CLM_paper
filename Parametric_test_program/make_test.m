@@ -36,35 +36,31 @@ params.STORM_pixel_size = 21; % works fine for 25 nm STORM precision, ideal imag
 
 % Regions
 region_number_images = 6;
-region_number_images = 2;
 region_contrast_ratios = [0.5, 1.5, 4]; % background:additional_density
 region_event_number_range = [3e2, 1e6];
-region_number_vertices = [6];
+region_number_vertices = [5, 6, 6, 7]; % Don't want people to always know exactly how many points they should be able to find
 
 % Dots
 dots_number_images = 15;
-dots_number_images = 2;
 dots_contrast_ratios = [1, 4, 10];
 dots_sizes = [20, 50, 100, 200, 500]; % nanometers
 dots_event_number_range = [3e2, 3e6];
-dots_number_dots = [10];
+dots_number_dots = [8, 9, 9, 10, 10, 11, 11, 12]; % Don't want people to always know exactly how many points they should be able to find
 
 % Actin lines
 actin_number_images = 18;
-actin_number_images = 2;
 actin_contrast_ratios = [1, 4, 10];
 actin_event_number_range = [3e2, 1e7];
 actin_line_types = {'line_segment', 'cubic', 'quadratic'};
 actin_line_widths = [9, 26]; % actin and microtubules, respectivly
-actin_number_lines = [6];
+actin_number_lines = [4, 5, 5, 6]; % Don't want people to always know exactly how many lines they should be able to find
 
 % Border
 border_number_images = 15;
-border_number_images = 2;
 border_contrast_ratios = [0.5, 1.5, 4];
 border_event_number_range = [1e3, 1e7];
 border_roughness = [.35, .45, .55, .65, .75];
-border_displacement_factor = [.4, .35, .3, .25, .2]; % Apply together with the above roughness factor, not for all combinations possible
+border_displacement_factor = [.35, .325, .3, .25, .2]; % Apply together with the above roughness factor, not for all combinations possible
 
 % ---- Determine the required parameters for each image in the test ----
 
