@@ -22,6 +22,7 @@ max_y_bound = params.bounds(4);
 % Get required constant values
 pixel_size = params.STORM_pixel_size;
 total_number_images = length(GUI_info.STORM_images);
+max_number_undo_setpoints = 10;
 
 % Initalize variables
 current_image_type = '';
@@ -30,6 +31,11 @@ current_answer_y = [];
 current_image_index = 0;
 current_image_size = size(GUI_info.STORM_images{1});
 previous_border_click_coords = [];
+responses = struct;
+responses.x = cell(size(GUI_info.image_info));
+responses.y = cell(size(GUI_info.image_info));
+undo_setpoints_x = cell(0, 1);
+undo_setpoints_y = cell(0, 1);
 
 %  ---------------Create graphs and objects-------------------
 
@@ -41,7 +47,11 @@ C_graph = [];
 % Create main axes objects and handles
 haxes = axes('Units', 'pixels', 'Position', [300, 50, 850, 850]);
 hscatter = scatter(haxes, X_graph, Y_graph, 35, C_graph);
-set(hscatter,  'PickableParts', 'none'); % Points won't cover up clicking on the axes
+if verLessThan('matlab','8.4')
+    set(hscatter,  'HitTest', 'off'); % Points won't cover up clicking on the axes
+else
+    set(hscatter,  'PickableParts', 'none'); % Points won't cover up clicking on the axes
+end
 set(haxes, 'DataAspectRatio', [1,1,1], 'Xlim', [min_x_bound, max_x_bound], 'Ylim', [min_y_bound, max_y_bound], 'Color', 'none');
 
 % Create the background image axes with a default all black background
@@ -62,9 +72,9 @@ set(hpan, 'ActionPostCallback',@graph_update_callback);
 
 % Create image heading
 image_number_text = uicontrol('Parent', hfig, 'Style', 'text',...
-    'Position', [25, 890, 225, 25], 'String', 'Image Number 1', 'FontSize', 16);
+    'Position', [25, 890, 225, 25], 'String', 'Image Number -', 'FontSize', 16);
 image_type_text = uicontrol('Parent', hfig, 'Style', 'text',...
-    'Position', [25, 850, 225, 25], 'String', 'Image Type', 'FontSize', 14);
+    'Position', [25, 850, 225, 25], 'String', 'Press Start to Begin', 'FontSize', 14);
 
 % Top of the button stack
 top = 800;
@@ -127,11 +137,14 @@ end
 % -- Buttons --
 
 function zoom_callback(source, callbackdata)
+    
     % Get the toggle button value
     toggle_val = get(source, 'Value');
     
     % Turn the zoom mode on or off.
     if toggle_val == 1
+        set(pan_button, 'Value', 0);
+        set(hpan, 'Enable', 'off');
         set(hzoom, 'Enable', 'on');
     elseif toggle_val == 0
         set(hzoom, 'Enable', 'off');
@@ -139,11 +152,14 @@ function zoom_callback(source, callbackdata)
 end
 
 function pan_callback(source, callbackdata)
-     % Get the toggle button value
+    
+    % Get the toggle button value
     toggle_val = get(source, 'Value');
     
     % Turn the pan mode on or off.
     if toggle_val == 1
+        set(zoom_button, 'Value', 0);
+        set(hzoom, 'Enable', 'off');
         set(hpan, 'Enable', 'on');
     elseif toggle_val == 0
         set(hpan, 'Enable', 'off');
@@ -151,7 +167,16 @@ function pan_callback(source, callbackdata)
 end
 
 function reset_callback(source, callbackdata)
-    zoom out
+    
+    % Turn off the zoom and pan functions and un-press their buttons
+    set(hzoom, 'Enable', 'off');
+    set(hpan, 'Enable', 'off');
+    set(zoom_button, 'Value', 0);
+    set(pan_button, 'Value', 0);
+    
+    % Set the axes limits to the their original values  
+    set(haxes, 'DataAspectRatio', [1,1,1], 'Xlim', [min_x_bound, max_x_bound], 'Ylim', [min_y_bound, max_y_bound]);
+    graph_update
 end
 
 function overlay_toggle_callback(source, callbackdata)
@@ -172,12 +197,24 @@ function next_button_callback(source, callbackdata)
     
     % If it's the first time clicked, change button text
     if current_image_index == 0
-        set(next_button, 'String', 'Save Response and Load New Image');
+        set(next_button, 'String', 'Save and Load Next Image');
     
     % If it's not the first time, we'll have a response to save
     else
         save_response
     end
+    
+    % Set text headings
+    set(image_number_text, 'String', ['Image Number ', num2str(current_image_index)]);
+    if strcmp(current_image_type, 'region')
+        set(image_type_text, 'String', 'Outline Central Region');
+    elseif strcmp(current_image_type, 'dots')
+        set(image_type_text, 'String', 'Mark Dot Centers');
+    elseif strcmp(current_image_type, 'actin')
+        set(image_type_text, 'String', 'Trace Curves or Lines');
+    elseif strcmp(current_image_type, 'border')
+        set(image_type_text, 'String', 'Determine Border Between Regions');
+    end    
     
     % Add one to the current_image_index
     current_image_index = current_image_index + 1;
@@ -192,9 +229,11 @@ function next_button_callback(source, callbackdata)
     current_image_type = info.image_type;
     current_image_size = size(GUI_info.STORM_images{current_image_index});
     
-     % Clear the response 
+     % Clear the response and undo setpoints
     current_answer_x = [];
     current_answer_y = [];
+    undo_setpoints_x = cell(0, 1);
+    undo_setpoints_y = cell(0, 1);
     
     % Initalize with a straight line down the middle for a border type image
     if strcmp(current_image_type, 'border')
@@ -216,11 +255,52 @@ function next_button_callback(source, callbackdata)
         set(haxes, 'ButtonDownFcn', @border_clickdown_callback);
     end
     
-    % Reset zoom
-    zoom out
+    % Reset figure zoom and update graph 
+    reset_callback(source, callbackdata);
+end
+
+function start_over_button_callback(source, callbackdata)
     
-    % Update graphs
-    graph_update 
+    % Clear the response and undo setpoints
+    current_answer_x = [];
+    current_answer_y = [];
+    undo_setpoints_x = cell(0, 1);
+    undo_setpoints_y = cell(0, 1);
+    
+    % Initalize with a straight line down the middle for a border type image
+    if strcmp(current_image_type, 'border')
+        current_answer_y = single([current_image_size(1) - 0.5: -1: 0.5]' * pixel_size + min_y_bound);
+        current_answer_x = ones(size(current_answer_y), 'single') * (min_x_bound + max_x_bound) / 2;
+    end
+    
+    % Reset figure zoom and update graph 
+    reset_callback(source, callbackdata);
+end
+
+function undo_button_callback(source, callbackdata)
+    
+    % If list is used up, give a message saying so
+    if isempty(undo_setpoints_x)
+        msgbox('No more stored values for Undo function', 'Undo Failure');
+   
+    % Otherwise, back the answer up
+    else
+        
+        % Put the last answer of the undo list into current_answer_x/y
+        current_answer_x = undo_setpoints_x{end};
+        current_answer_y = undo_setpoints_y{end};
+        
+        % Delete the last answer in the undo list
+        undo_setpoints_x(end) = [];
+        undo_setpoints_y(end) = [];
+
+        graph_update
+    end
+end
+
+function help_button_callback(source, callbackdata)
+% Call help function at end of file
+    help_message(current_image_type);
 end
 
 % -- Mouse stuff --
@@ -236,8 +316,24 @@ end
 
 function click_bezier_callback(source, callbackdata, index)
     
-    % See if there is an active point nearby
-    clickdown_coords = callbackdata.IntersectionPoint(1:2);
+    % Get coordinates and type of click
+    if verLessThan('matlab','8.4') % Extra-stupid old method for 2014a and previous versions
+        old_click_type = get(hfig, 'SelectionType');
+        if strcmp(old_click_type, 'normal')
+            click_type = 1;
+        elseif strcmp(old_click_type, 'alt')
+            click_type = 3;
+        elseif strcmp(old_click_type, 'extend')
+            click_type = 2;
+        end
+        all_clickdown_coords = get(haxes,'CurrentPoint');
+        clickdown_coords = all_clickdown_coords(1, 1:2);
+    else
+        clickdown_coords = callbackdata.IntersectionPoint(1:2);
+        click_type = callbackdata.Button;
+    end
+    
+    % Loop for existing points behind the bezier
     existing_point_index = find_existing_point(clickdown_coords, 0.01, true);
     
     % Pass the click along if it is near an active point
@@ -245,10 +341,7 @@ function click_bezier_callback(source, callbackdata, index)
         actin_clickdown_callback(source, callbackdata)
     
     % Otherwise, work with the entire line
-        else
-
-        % Determine which button was clicked
-        click_type = callbackdata.Button;
+    else
 
         if click_type == 1 % Left click
 
@@ -348,108 +441,180 @@ end
 function region_dots_clickdown_callback(source, callbackdata)
     
     % Get coordinates and type of click
-    clickdown_coords = callbackdata.IntersectionPoint(1:2);
-    click_type = callbackdata.Button;
-    
-    % Is the click next to an existing point?
-    existing_point_index = find_existing_point(clickdown_coords, 0.01, false);
-    
-    % If a point was found and it's a right click, we delete the point  
-    if ~isempty(existing_point_index) && click_type == 3;     
-        current_answer_x(existing_point_index) = [];
-        current_answer_y(existing_point_index) = [];
-        
-    % If a point was found and it's a left click, we move the point with the pointer  
-    elseif ~isempty(existing_point_index) && click_type == 1;
-        
-        % Set the window motion function to move the point around with the pointer
-        set(hfig,'WindowButtonMotionFcn', {@move_point_callback, existing_point_index});
-        
-    % If no point is found and it's a left click, add a new point to the end of the answer
-    elseif isempty(existing_point_index) && click_type == 1
-        current_answer_x(end+1, 1) = clickdown_coords(1);
-        current_answer_y(end+1, 1) = clickdown_coords(2);
+    if verLessThan('matlab','8.4') % Extra-stupid old method for 2014a and previous versions
+        old_click_type = get(hfig, 'SelectionType');
+        if strcmp(old_click_type, 'normal')
+            click_type = 1;
+        elseif strcmp(old_click_type, 'alt')
+            click_type = 3;
+        elseif strcmp(old_click_type, 'extend')
+            click_type = 2;
+        end
+        all_clickdown_coords = get(haxes,'CurrentPoint');
+        clickdown_coords = all_clickdown_coords(1, 1:2);
+    else
+        clickdown_coords = callbackdata.IntersectionPoint(1:2);
+        click_type = callbackdata.Button;
     end
     
-    % Update the graph
-    graph_update
+    % If the middle button was clicked, toggle the zoom mode and nothing else
+    if click_type == 2
+        current_state = get(hzoom, 'Enable');
+        if strcmp(current_state, 'off') 
+            set(hzoom, 'Enable', 'on');
+        elseif strcmp(current_state, 'on')
+            set(hzoom, 'Enable', 'off');
+        end
+    else
+    
+        % Is the click next to an existing point?
+        existing_point_index = find_existing_point(clickdown_coords, 0.01, false);
+
+        % If a point was found and it's a right click, we delete the point  
+        if ~isempty(existing_point_index) && click_type == 3;     
+            current_answer_x(existing_point_index) = [];
+            current_answer_y(existing_point_index) = [];
+
+        % If a point was found and it's a left click, we move the point with the pointer  
+        elseif ~isempty(existing_point_index) && click_type == 1;
+
+            % Set the window motion function to move the point around with the pointer
+            set(hfig,'WindowButtonMotionFcn', {@move_point_callback, existing_point_index});
+
+        % If no point is found and it's a left click, add a new point to the end of the answer
+        elseif isempty(existing_point_index) && click_type == 1
+            current_answer_x(end+1, 1) = clickdown_coords(1);
+            current_answer_y(end+1, 1) = clickdown_coords(2);
+        end
+
+        % Update the graph
+        graph_update
+    end
 end
 
 function actin_clickdown_callback(source, callbackdata)
     
     % Get coordinates and type of click
-    clickdown_coords = callbackdata.IntersectionPoint(1:2);
-    click_type = callbackdata.Button;
-    
-    % Is the click next to an existing point?
-    existing_point_index = find_existing_point(clickdown_coords, 0.01, true);
-           
-    % If a point was found and it's a left click, we move the point with the pointer  
-    if ~isempty(existing_point_index) && click_type == 1;
-        
-        % Set the window motion function to move the point around with the pointer
-        set(hfig,'WindowButtonMotionFcn', {@move_point_callback, existing_point_index});
-        
-    % If no point is found and it's a left click, add a new line to the end of the answer
-    elseif isempty(existing_point_index) && click_type == 1
-        
-        % We need to determine what type of line we're adding
-        image_info = GUI_info.image_info{current_image_index};
-        if strcmp(image_info.line_type, 'line_segment')
-            number_cp = 2;
-        elseif strcmp(image_info.line_type, 'quadratic')
-            number_cp = 3;
-        elseif strcmp(image_info.line_type, 'cubic')
-            number_cp = 4;
+    if verLessThan('matlab','8.4') % Extra-stupid old method for 2014a and previous versions
+        old_click_type = get(hfig, 'SelectionType');
+        if strcmp(old_click_type, 'normal')
+            click_type = 1;
+        elseif strcmp(old_click_type, 'alt')
+            click_type = 3;
+        elseif strcmp(old_click_type, 'extend')
+            click_type = 2;
         end
-        
-        % Add a new row at bottom of matrix
-        new_index = size(current_answer_x, 1) + 1;
-        current_answer_x(new_index, 1:number_cp) = clickdown_coords(1);
-        current_answer_y(new_index, 1:number_cp) = clickdown_coords(2);
-        
-        % Set the window motion function to move the last point around with the pointer
-        set(hfig,'WindowButtonMotionFcn', {@create_bezier_callback, new_index});
+        all_clickdown_coords = get(haxes,'CurrentPoint');
+        clickdown_coords = all_clickdown_coords(1, 1:2);
+    else
+        clickdown_coords = callbackdata.IntersectionPoint(1:2);
+        click_type = callbackdata.Button;
     end
     
-    % Update the graph
-    graph_update
+    % If the middle button was clicked, toggle the zoom mode and nothing else
+    if click_type == 2
+        current_state = get(hzoom, 'Enable');
+        if strcmp(current_state, 'off') 
+            set(hzoom, 'Enable', 'on');
+        elseif strcmp(current_state, 'on')
+            set(hzoom, 'Enable', 'off');
+        end
+    else
+    
+        % Is the click next to an existing point?
+        existing_point_index = find_existing_point(clickdown_coords, 0.01, true);
+
+        % If a point was found and it's a left click, we move the point with the pointer  
+        if ~isempty(existing_point_index) && click_type == 1;
+
+            % Set the window motion function to move the point around with the pointer
+            set(hfig,'WindowButtonMotionFcn', {@move_point_callback, existing_point_index});
+
+        % If no point is found and it's a left click, add a new line to the end of the answer
+        elseif isempty(existing_point_index) && click_type == 1
+
+            % We need to determine what type of line we're adding
+            image_info = GUI_info.image_info{current_image_index};
+            if strcmp(image_info.line_type, 'line_segment')
+                number_cp = 2;
+            elseif strcmp(image_info.line_type, 'quadratic')
+                number_cp = 3;
+            elseif strcmp(image_info.line_type, 'cubic')
+                number_cp = 4;
+            end
+
+            % Add a new row at bottom of matrix
+            new_index = size(current_answer_x, 1) + 1;
+            current_answer_x(new_index, 1:number_cp) = clickdown_coords(1);
+            current_answer_y(new_index, 1:number_cp) = clickdown_coords(2);
+
+            % Set the window motion function to move the last point around with the pointer
+            set(hfig,'WindowButtonMotionFcn', {@create_bezier_callback, new_index});
+        end
+
+        % Update the graph
+        graph_update
+    end
 end
 
 function border_clickdown_callback(source, callbackdata)
     
     % Get coordinates and type of click
-    clickdown_coords = callbackdata.IntersectionPoint(1:2);
-    click_type = callbackdata.Button;
-    
-    % Move a single point on the original click
-    % Find the nearest y coordinate
-    [~, selection_index] = min(abs(current_answer_y - clickdown_coords(1, 2)));
-    
-    % Get coordinate value of selected point
-    previous_x = current_answer_x(selection_index);
-    click_x = clickdown_coords(1, 1);
-      
-    % If it's a left click, take the maximum x value
-    if click_type == 1
-        new_x = max(previous_x, click_x);
-    
-    % If it's a right click, take the minimum x value
-    elseif click_type == 3
-        new_x = min(previous_x, click_x);
+    if verLessThan('matlab','8.4') % Extra-stupid old method for 2014a and previous versions
+        old_click_type = get(hfig, 'SelectionType');
+        if strcmp(old_click_type, 'normal')
+            click_type = 1;
+        elseif strcmp(old_click_type, 'alt')
+            click_type = 3;
+        elseif strcmp(old_click_type, 'extend')
+            click_type = 2;
+        end
+        all_clickdown_coords = get(haxes,'CurrentPoint');
+        clickdown_coords = all_clickdown_coords(1, 1:2);
+    else
+        clickdown_coords = callbackdata.IntersectionPoint(1:2);
+        click_type = callbackdata.Button;
     end
     
-    % Replace answer with new values
-    current_answer_x(selection_index) = new_x;
+    % If the middle button was clicked, toggle the zoom mode and nothing else
+    if click_type == 2
+        current_state = get(hzoom, 'Enable');
+        if strcmp(current_state, 'off') 
+            set(hzoom, 'Enable', 'on');
+        elseif strcmp(current_state, 'on')
+            set(hzoom, 'Enable', 'off');
+        end
+    else
     
-    % Put the click into the previous coordinate variable
-    previous_border_click_coords = clickdown_coords;
-    
-    % Update graph for visual feedback
-    graph_update
+        % Move a single point on the original click
+        % Find the nearest y coordinate
+        [~, selection_index] = min(abs(current_answer_y - clickdown_coords(1, 2)));
 
-    % Set the window motion function to move the point around with the pointer
-    set(hfig,'WindowButtonMotionFcn', {@border_clickhold_callback, click_type});
+        % Get coordinate value of selected point
+        previous_x = current_answer_x(selection_index);
+        click_x = clickdown_coords(1, 1);
+
+        % If it's a left click, take the maximum x value
+        if click_type == 1
+            new_x = max(previous_x, click_x);
+
+        % If it's a right click, take the minimum x value
+        elseif click_type == 3
+            new_x = min(previous_x, click_x);
+        end
+
+        % Replace answer with new values
+        current_answer_x(selection_index) = new_x;
+
+        % Put the click into the previous coordinate variable
+        previous_border_click_coords = clickdown_coords;
+
+        % Update graph for visual feedback
+        graph_update
+
+        % Set the window motion function to move the point around with the pointer
+        set(hfig,'WindowButtonMotionFcn', {@border_clickhold_callback, click_type});
+    end
 end
 
 % ----------Other Functions--------------
@@ -474,7 +639,11 @@ function graph_update
         
         % Plot each line with specified color and picking properties
         if pick_index == 0
-            line(Xl{line_index}, Yl{line_index}, 'Parent', haxes, 'Color', Cl(line_index, :), 'PickableParts', 'none'); % Not pickable
+            if verLessThan('matlab','8.4')
+                line(Xl{line_index}, Yl{line_index}, 'Parent', haxes, 'Color', Cl(line_index, :), 'HitTest', 'off'); % Not pickable
+            else
+                line(Xl{line_index}, Yl{line_index}, 'Parent', haxes, 'Color', Cl(line_index, :), 'PickableParts', 'none'); % Not pickable
+            end
         else
             line(Xl{line_index}, Yl{line_index}, 'Parent', haxes, 'Color', Cl(line_index, :), 'ButtonDownFcn', {@click_bezier_callback, pick_index}); % A pick sends the corrosponding index to click_bezier_callback
         end
@@ -664,14 +833,29 @@ end
 
 function save_response
     
-    % Save stuff - placeholder
-   
+    % Copy current_answer_x/y into response structure
+    responses.x = current_answer_x;
+    responses.y = current_answer_y;
+    
+    % Save structure
+    save('response_info', 'responses', '-append');  
 end
 
 function set_undo_savepoint
+
+    % If we haven't reached the max number of setpoints, just add another to the end
+    current_num_setpoints = size(undo_setpoints_x, 1);
+    if current_num_setpoints < max_number_undo_setpoints
+        undo_setpoints_x{current_num_setpoints + 1, 1} = current_answer_x;
+        undo_setpoints_y{current_num_setpoints + 1, 1} = current_answer_y;
     
-    % Save undo - placeholder
-   
+    % If the undo list is full, move the previous entries and replace the last one
+    else
+        undo_setpoints_x(1:current_num_setpoints - 1, 1) = undo_setpoints_x(2:current_num_setpoints, 1);
+        undo_setpoints_x{current_num_setpoints, 1} = current_answer_x;
+        undo_setpoints_y(1:current_num_setpoints - 1, 1) = undo_setpoints_y(2:current_num_setpoints, 1);
+        undo_setpoints_y{current_num_setpoints, 1} = current_answer_y;
+    end
 end
 
 function [existing_point_index] = find_existing_point(click_coords, relative_pick_radius, last_row_only)
@@ -730,6 +914,11 @@ function [existing_point_index] = find_existing_point(click_coords, relative_pic
             existing_point_index = [];
         end
     end
+end
+
+function help_function(image_type)
+
+    % Help text here...
 end
     
 end
