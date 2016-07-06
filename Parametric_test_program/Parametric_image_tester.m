@@ -36,6 +36,7 @@ responses.x = cell(size(GUI_info.image_info));
 responses.y = cell(size(GUI_info.image_info));
 undo_setpoints_x = cell(0, 1);
 undo_setpoints_y = cell(0, 1);
+save('response_info', 'responses');
 
 %  ---------------Create graphs and objects-------------------
 
@@ -63,7 +64,7 @@ colormap(hbackaxes, gray);
 
 % Force graphs to redraw when zoom or pan is used
 hzoom = zoom(hfig);
-set(hzoom, 'ActionPostCallback',@graph_update_callback);
+set(hzoom, 'ActionPostCallback',@graph_update_callback, 'ButtonDownFilter', @zoom_button_filter_callback);
 hpan = pan(hfig);
 set(hpan, 'ActionPostCallback',@graph_update_callback);
 
@@ -184,13 +185,12 @@ function overlay_toggle_callback(source, callbackdata)
     toggle_val = get(source, 'Value');
     
     % Change the stacking of the plots
-    if toggle_val == 1
+    if toggle_val == 0
         uistack(hbackaxes,'bottom');% Move the background axes to the bottom
-        graph_update
-    elseif toggle_val == 0
+    elseif toggle_val == 1
         uistack(hbackaxes,'top');% Move the background axes to the top
-        graph_update
     end
+    graph_update
 end
 
 function next_button_callback(source, callbackdata)
@@ -204,18 +204,6 @@ function next_button_callback(source, callbackdata)
         save_response
     end
     
-    % Set text headings
-    set(image_number_text, 'String', ['Image Number ', num2str(current_image_index)]);
-    if strcmp(current_image_type, 'region')
-        set(image_type_text, 'String', 'Outline Central Region');
-    elseif strcmp(current_image_type, 'dots')
-        set(image_type_text, 'String', 'Mark Dot Centers');
-    elseif strcmp(current_image_type, 'actin')
-        set(image_type_text, 'String', 'Trace Curves or Lines');
-    elseif strcmp(current_image_type, 'border')
-        set(image_type_text, 'String', 'Determine Border Between Regions');
-    end    
-    
     % Add one to the current_image_index
     current_image_index = current_image_index + 1;
     
@@ -228,6 +216,18 @@ function next_button_callback(source, callbackdata)
     info = GUI_info.image_info{current_image_index};
     current_image_type = info.image_type;
     current_image_size = size(GUI_info.STORM_images{current_image_index});
+    
+    % Set text headings
+    set(image_number_text, 'String', ['Image Number ', num2str(current_image_index)]);
+    if strcmp(current_image_type, 'region')
+        set(image_type_text, 'String', 'Outline Central Region');
+    elseif strcmp(current_image_type, 'dots')
+        set(image_type_text, 'String', 'Mark Dot Centers');
+    elseif strcmp(current_image_type, 'actin')
+        set(image_type_text, 'String', 'Trace Curves or Lines');
+    elseif strcmp(current_image_type, 'border')
+        set(image_type_text, 'String', 'Determine Border Between Regions');
+    end    
     
      % Clear the response and undo setpoints
     current_answer_x = [];
@@ -281,7 +281,7 @@ function undo_button_callback(source, callbackdata)
     
     % If list is used up, give a message saying so
     if isempty(undo_setpoints_x)
-        msgbox('No more stored values for Undo function', 'Undo Failure');
+        waitfor(msgbox('No more stored values for Undo function', 'Undo Failure'));
    
     % Otherwise, back the answer up
     else
@@ -304,6 +304,26 @@ function help_button_callback(source, callbackdata)
 end
 
 % -- Mouse stuff --
+
+function click_passthrough_flag = zoom_button_filter_callback(source, callbackdata)
+  
+    % Find out which button was called - no useful callbackdata is passed as of R2016a, don't know when they'll update it. 
+    old_click_type = get(hfig, 'SelectionType');
+    if strcmp(old_click_type, 'normal')
+        click_type = 1;
+    elseif strcmp(old_click_type, 'alt')
+        click_type = 3;
+    elseif strcmp(old_click_type, 'extend')
+        click_type = 2;
+    end
+    
+    % Set the flag to pass a middle button click through to the axes to intrepret
+    if click_type == 2
+        click_passthrough_flag = true;
+    else
+        click_passthrough_flag = false;
+    end
+end
 
 function move_point_callback(source, callbackdata, index)
     
@@ -457,13 +477,15 @@ function region_dots_clickdown_callback(source, callbackdata)
         click_type = callbackdata.Button;
     end
     
-    % If the middle button was clicked, toggle the zoom mode and nothing else
+    % If the middle button was clicked, toggle the zoom mode
     if click_type == 2
         current_state = get(hzoom, 'Enable');
         if strcmp(current_state, 'off') 
             set(hzoom, 'Enable', 'on');
+            set(zoom_button, 'Value', 1);
         elseif strcmp(current_state, 'on')
             set(hzoom, 'Enable', 'off');
+            set(zoom_button, 'Value', 0);
         end
     else
     
@@ -511,13 +533,15 @@ function actin_clickdown_callback(source, callbackdata)
         click_type = callbackdata.Button;
     end
     
-    % If the middle button was clicked, toggle the zoom mode and nothing else
+    % If the middle button was clicked, toggle the zoom mode
     if click_type == 2
         current_state = get(hzoom, 'Enable');
         if strcmp(current_state, 'off') 
             set(hzoom, 'Enable', 'on');
+            set(zoom_button, 'Value', 1);
         elseif strcmp(current_state, 'on')
             set(hzoom, 'Enable', 'off');
+            set(zoom_button, 'Value', 0);
         end
     else
     
@@ -576,13 +600,15 @@ function border_clickdown_callback(source, callbackdata)
         click_type = callbackdata.Button;
     end
     
-    % If the middle button was clicked, toggle the zoom mode and nothing else
+    % If the middle button was clicked, toggle the zoom mode
     if click_type == 2
         current_state = get(hzoom, 'Enable');
         if strcmp(current_state, 'off') 
             set(hzoom, 'Enable', 'on');
+            set(zoom_button, 'Value', 1);
         elseif strcmp(current_state, 'on')
             set(hzoom, 'Enable', 'off');
+            set(zoom_button, 'Value', 0);
         end
     else
     
@@ -827,15 +853,18 @@ end
 
 function final_cleanup
     
-    % Cleanup stuff - placeholder
+    % Tell user they're done
+    waitfor(msgbox('No more images, Thank You for your responses!', 'Test Done'));
    
+    % Close figure - we already saved the last response at this point
+    close(hfig)
 end
 
 function save_response
     
     % Copy current_answer_x/y into response structure
-    responses.x = current_answer_x;
-    responses.y = current_answer_y;
+    responses.x{current_image_index} = current_answer_x;
+    responses.y{current_image_index} = current_answer_y;
     
     % Save structure
     save('response_info', 'responses', '-append');  
