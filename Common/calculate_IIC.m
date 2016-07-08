@@ -25,7 +25,8 @@ function [info_improvement_data, exp_discrepency_data, ideal_discrepency_data] =
 % Output:
 %   info_improvement_data: matrix or cell array of matricies of information
 %       improvement fractions, arranged as seperate columns for each 
-%       pseudoreplicate.
+%       pseudoreplicate. Returns cell array if multiple discrepency methods
+%       are requested.
 %   experimental_discrepency: raw experimental image discrepency values,
 %       arranged in the same order as the info_improvement_data.
 %   ideal_discrepency: raw ideal image discrepency values, arranged in the 
