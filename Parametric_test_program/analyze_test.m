@@ -211,6 +211,14 @@ ts.dots.missing_points = missing_points;
 
 % -------Actin lines analysis------------------
 
+% NOTE: We are going to estimate the areas by taking a sum of rectangular 
+% blocks as long as the minimum distance between one curve and any points
+% on the the other curve. The estimate is the average with the same
+% strategy performed starting with the other curve. Endpoint areas are 
+% estimated as a triangle between the last point on one curve, the endpoint
+% of the other curve, and the point on the other curve closest to the last
+% point on the one curve. 
+
 % Initalize results variables
 found_lines = template_struct;
 found_lines.area = [];
@@ -226,12 +234,59 @@ extra_lines.true_length = [];
 extra_lines.type = [];
 extra_lines.size = [];
 
-matching_area_cutoff = 500; 
-for image_index = dots_indices;
+matching_area_cutoff = 100; % nanometers squared per nanometermeter length 
+for image_index = actin_indices;
     info = test_info.image_info{image_index};
-    ground_truth = test_info.ground_truth_coords;
+    ground_truth_x = test_info.ground_truth_coords(:, :, 1);
+    ground_truth_y = test_info.ground_truth_coords(:, :, 2);
+    
+    % Get number of responses
+    number_response_curves = size(response.x, 1);
+    number_true_curves = size(ground_truth_x, 1);
+    
+    % Get the length and a bunch of points on each response curve
+    response_arc_length = zeros(number_response_curves, 1);
+    response_curve_points = cell(number_response_curves, 1);
+    for curve_index = 1:number_response_curves
+
+        % Construct the control_points matrix
+        control_points = [response.x(curve_index, :)', response.y(curve_index, :)'];
+
+        % Approximate the arc length
+        approx_curve_points = calc_bezier_line(control_points, 25);
+        approx_length = sum(sqrt(sum((approx_curve_points(2:end, :) - approx_curve_points(1:end-1, :)).^2 , 2)), 1);
+
+        % Get points along the bezier curve 
+        curve_points = calc_bezier_line(control_points, round(approx_length/3)); % Get curves with about 3 nm spaced points
+        response_curve_points{curve_index} = curve_points;
+        response_arc_length(curve_index) = sum(sqrt(sum((curve_points(2:end, :) - curve_points(1:end-1, :)).^2 , 2)), 1);
+    end
+    
+    % Get the length and a bunch of points on each ground truth curve
+    true_arc_length = zeros(number_true_curves, 1);
+    true_curve_points = cell(number_true_curves, 1);
+    for curve_index = 1:number_true_curves
+
+        % Construct the control_points matrix
+        control_points = [ground_truth_x(curve_index, :)', ground_truth_y(curve_index, :)'];
+
+        % Approximate the arc length
+        approx_curve_points = calc_bezier_line(control_points, 25);
+        approx_length = sum(sqrt(sum((approx_curve_points(2:end, :) - approx_curve_points(1:end-1, :)).^2 , 2)), 1);
+
+        % Get points along the bezier curve 
+        curve_points = calc_bezier_line(control_points, round(approx_length/3)); % Get curves with about 3 nm spaced points
+        true_curve_points{curve_index} = curve_points;
+        true_arc_length(curve_index) = sum(sqrt(sum((curve_points(2:end, :) - curve_points(1:end-1, :)).^2 , 2)), 1);
+    end
     
     % Get the distance between the response points and the nearest true coordinate
+    if number_response_curves > 0 % No need to do any of this if there is no response
+
+        % Get the closest point on the other curve to the endpoints of each
+        % curve
+        
+        
     if ~isempty(responses.x{image_index});
         distances = distance_to_bezier(ground_truth, responses.x{image_index}, responses.y{image_index}, true);
     else

@@ -1,4 +1,4 @@
-function [distances] = min_dist_to_curve(coords, curve)
+function [distances] = min_dist_to_curve(coords, curve, keep_index_flag)
 %MIN_DIST_TO_CURVE Calculates the minimum distance between each of the x
 % and y coordinates to any point on the sampled curves.
 %
@@ -7,6 +7,7 @@ function [distances] = min_dist_to_curve(coords, curve)
 %       measure the distances from.
 %   curve: floating-point double m by 2 matrix of x and y coordinates that
 %       define a curve to measure the coords against.
+%   keep_index_flag: 
 % Output:
 %   distances: floating-point double n by 2 matrix of Eucledian distances 
 %       from the points given in coords to any point contained in curve.\
