@@ -217,7 +217,9 @@ ts.dots.missing_points = missing_points;
 % strategy performed starting with the other curve. Endpoint areas are 
 % estimated as a triangle between the last point on one curve, the endpoint
 % of the other curve, and the point on the other curve closest to the last
-% point on the one curve. 
+% point on the one curve. No attempt is made to combine several ground
+% truth curves in the case that intersecting curves leads to tracing along
+% multiple different tracks in the same response. 
 
 % Initalize results variables
 found_lines = template_struct;
@@ -282,12 +284,19 @@ for image_index = actin_indices;
     
     % Get the distance between the response points and the nearest true coordinate
     if number_response_curves > 0 % No need to do any of this if there is no response
-
-        % Get the closest point on the other curve to the endpoints of each
-        % curve
         
-        
-    if ~isempty(responses.x{image_index});
+        % Compute areas for each response-truth curve pair.
+        for response_curve_index = 1:number_response_curves
+            for true_curve_index = 1:number_true_curves
+                 
+                % Get endpoints and the closest point to on the other curve to the endpoints
+                true_endpoints = [true_curve_points{true_curve_index}(1, :); true_curve_points{true_curve_index}(end, :)];
+                response_endpoints = [response_curve_points{response_curve_index}(1, :); response_curve_points{response_curve_index}(end, :)];
+                [true_closepoints, true_closepoint_indices] = distance_to_bezier(true_curve_points{true_curve_index}, response_endpoints, true);
+                [response_closepoints, response_closepoint_indices] = distance_to_bezier(response_curve_points{response_curve_index}, true_endpoints, true);
+                
+                
+        if ~isempty(responses.x{image_index});
         distances = distance_to_bezier(ground_truth, responses.x{image_index}, responses.y{image_index}, true);
     else
         distances = [];

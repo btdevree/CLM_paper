@@ -17,7 +17,7 @@ function [distances, curve_indices] = min_dist_to_curve(coords, curve, keep_inde
 %       that is closest to each coord value.
 
 % Set default
-if nargin < 2; keep_index_flag = false; end;
+if nargin < 3; keep_index_flag = false; end;
 
 % Get lengths of matrices
 coord_length = size(coords, 1);
@@ -33,8 +33,16 @@ for curve_index = 1:curve_length
     % Keep the distance measurement if it's smaller than the last
     if curve_index == 1
         distances = new_distances; % Copy all on the first iteration
+        if keep_index_flag
+            curve_indices = repmat(curve_index, size(new_distances));
+        end
     else
-        distances = min(distances, new_distances);
+        if keep_index_flag
+            [distances, min_indices] = min([distances, new_distances], [], 2);
+            curve_indices(min_indices == 2) = curve_index;
+        else
+            distances = min(distances, new_distances);
+        end
     end
 end    
 end

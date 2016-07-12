@@ -48,12 +48,10 @@ else % Use the C++ MEX routine
     
     if nargout > 1
          % Run measurement MEX function with index tracking
-        [distances_linear, closest_bezier_indices_linear] = min_dist_to_curve_with_indices_MEX(coords_matrix, bezier_curve_points);
-        distances = reshape(distances_linear, size(x_coords));
-        closest_bezier_indices = reshape(closest_bezier_indices_linear, size(x_coords));
+        [distances_linear, closest_bezier_indices_linear] = min_dist_to_curve_MEX(coords_matrix, bezier_curve_points), size(x_coords));
     else
-        % Run measurement MEX function
-        distances = reshape(min_dist_to_curve_MEX(coords_matrix, bezier_curve_points), size(x_coords));
+    % Run measurement MEX function
+    distances = reshape(min_dist_to_curve_MEX(coords_matrix, bezier_curve_points), size(x_coords));
     end
 end
 
