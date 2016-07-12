@@ -1,4 +1,4 @@
-function [distances] = min_dist_to_curve(coords, curve, keep_index_flag)
+function [distances, curve_indices] = min_dist_to_curve(coords, curve, keep_index_flag)
 %MIN_DIST_TO_CURVE Calculates the minimum distance between each of the x
 % and y coordinates to any point on the sampled curves.
 %
@@ -7,10 +7,17 @@ function [distances] = min_dist_to_curve(coords, curve, keep_index_flag)
 %       measure the distances from.
 %   curve: floating-point double m by 2 matrix of x and y coordinates that
 %       define a curve to measure the coords against.
-%   keep_index_flag: 
+%   keep_index_flag: if set to true, the index of the curve point that is
+%       closest to each coord value is returned as well. Optional, default
+%       = false;
 % Output:
 %   distances: floating-point double n by 2 matrix of Eucledian distances 
-%       from the points given in coords to any point contained in curve.\
+%       from the points given in coords to any point contained in curve.
+%   curve_indices; n by 2 matrix of the row index value for the curve point
+%       that is closest to each coord value.
+
+% Set default
+if nargin < 2; keep_index_flag = false; end;
 
 % Get lengths of matrices
 coord_length = size(coords, 1);

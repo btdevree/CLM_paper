@@ -1,4 +1,4 @@
-function [distances] = distance_to_bezier(bezier_curve_points, x_coords, y_coords, use_MEX_flag)
+function [distances, closest_bezier_indices] = distance_to_bezier(bezier_curve_points, x_coords, y_coords, use_MEX_flag)
 %DISTANCE_TO_BEZIER Approximates the distance between a sampled line segment
 % and the given (x,y) coordinates.
 
@@ -19,6 +19,8 @@ function [distances] = distance_to_bezier(bezier_curve_points, x_coords, y_coord
 %   distances: Minimum distance between the coordinates and any testpoint 
 %       on the length of the curve. Returned as the same shape as the 
 %       x_coords argument.
+%   closest_bezier_indices: the row index value of the bezier point that is
+%       closest to the specified x and y coordinates. Optional.
 
 % Set defaults
 if nargin < 4; use_MEX_flag = true; end;
@@ -27,7 +29,13 @@ if nargin < 4; use_MEX_flag = true; end;
 if ~use_MEX_flag % Don't use C++ MEX routine
     
     % Run measurement function
-    distances = reshape(min_dist_to_curve([x_coords(:), y_coords(:)], bezier_curve_points), size(x_coords));
+    if nargout > 1
+        [distances_linear, closest_bezier_indices_linear] = min_dist_to_curve([x_coords(:), y_coords(:)], bezier_curve_points, true); % Set flag to return the indices as well
+        distances = reshape(distances_linear, size(x_coords));
+        closest_bezier_indices = reshape(closest_bezier_indices_linear, size(x_coords));
+    else
+        distances = reshape(min_dist_to_curve([x_coords(:), y_coords(:)], bezier_curve_points), size(x_coords));
+    end
     
 else % Use the C++ MEX routine
     
@@ -38,7 +46,11 @@ else % Use the C++ MEX routine
     assert(ismatrix(coords_matrix) && size(coords_matrix, 2) == 2 && (isa(coords_matrix, 'double')));
     assert(ismatrix(bezier_curve_points) && size(bezier_curve_points, 2) == 2 && (isa(bezier_curve_points, 'double')));
     
+    if nargout > 1
+    
+    else
     % Run measurement MEX function
-    distances = reshape(min_dist_to_curve_MEX(coords_matrix, bezier_curve_points), size(x_coords));   
+    distances = reshape(min_dist_to_curve_MEX(coords_matrix, bezier_curve_points), size(x_coords));
+    end
 end
 
