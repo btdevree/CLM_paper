@@ -236,7 +236,8 @@ extra_lines.true_length = [];
 extra_lines.type = [];
 extra_lines.size = [];
 
-matching_area_cutoff = 100; % nanometers squared per nanometermeter length 
+matching_area_cutoff = 100; % nanometers squared per nanometermeter length
+matching_endpoint_cutoff = 500; % nanometers
 for image_index = actin_indices;
     info = test_info.image_info{image_index};
     ground_truth_x = test_info.ground_truth_coords(:, :, 1);
@@ -285,7 +286,10 @@ for image_index = actin_indices;
     % Get the distance between the response points and the nearest true coordinate
     if number_response_curves > 0 % No need to do any of this if there is no response
         
-        % Compute areas for each response-truth curve pair.
+        % Compute areas and endpoint distances for each response-truth curve pair.
+        area_estimates = inf(number_response_curves, number_true_curves); % inf makes sure that undetermined areas evaluate higher than any calculated value
+        endpoint_1_distances = inf(number_response_curves, number_true_curves);
+        endpoint_2_distances = inf(number_response_curves, number_true_curves);
         for response_curve_index = 1:number_response_curves
             for true_curve_index = 1:number_true_curves
                  
@@ -295,6 +299,64 @@ for image_index = actin_indices;
                 [true_closepoints, true_closepoint_indices] = distance_to_bezier(true_curve_points{true_curve_index}, response_endpoints, true);
                 [response_closepoints, response_closepoint_indices] = distance_to_bezier(response_curve_points{response_curve_index}, true_endpoints, true);
                 
+                % Get endpoint to endpoint distances
+                r1_t1_dist = sqrt(sum((true_endpoints(1, :) - response_endpoints(1, :)).^2, 2));
+                r1_t2_dist = sqrt(sum((true_endpoints(2, :) - response_endpoints(1, :)).^2, 2));
+                r2_t2_dist = sqrt(sum((true_endpoints(2, :) - response_endpoints(2, :)).^2, 2));
+                r2_t1_dist = sqrt(sum((true_endpoints(1, :) - response_endpoints(2, :)).^2, 2));
+                
+                % Match endpoints
+                if r1_t1_dist < r1_t2_dist
+                    endpoint_1_distances(response_curve_index, true_curve_index) = r1_t1_dist;
+                    end_group_1 = [response_endpoints(1, :); true_endpoints(1, :); response_closepoints(1, :); true_closepoints(1, :)];
+                    r1_index = response_closepoint_indices(1);
+                    t1_index = true_closepoint_indices(1);
+                else
+                    endpoint_1_distances(response_curve_index, true_curve_index) = r1_t2_dist;
+                    end_group_1 = [response_endpoints(1, :); true_endpoints(2, :); response_closepoints(2, :); true_closepoints(1, :)];
+                    r1_index = response_closepoint_indices(2);
+                    t1_index = true_closepoint_indices(1);
+                end
+                if r2_t2_dist < r2_t1_dist
+                    endpoint_2_distances(response_curve_index, true_curve_index) = r2_t2_dist;
+                    end_group_2 = [response_endpoints(2, :); true_endpoints(2, :); response_closepoints(2, :); true_closepoints(2, :)];
+                    r2_index = response_closepoint_indices(2);
+                    t2_index = true_closepoint_indices(2);
+                else
+                    endpoint_2_distances(response_curve_index, true_curve_index) = r2_t1_dist;
+                    end_group_2 = [response_endpoints(2, :); true_endpoints(1, :); response_closepoints(1, :); true_closepoints(2, :)];
+                    r1_index = response_closepoint_indices(1);
+                    t1_index = true_closepoint_indices(2);
+                end
+                
+                % If the endpoints are not close enough, skip to the next pair of curves
+                if endpoint_1_distances(response_curve_index, true_curve_index) > matching_endpoint_cutoff ||...
+                    endpoint_2_distances(response_curve_index, true_curve_index) > matching_endpoint_cutoff;
+                    continue
+                end
+                
+                % Calculate the index vales for each section of the curves between the closepoints
+                response_center_indices = [r1_index:r2_index]'; % We know r1 is closer to t=0 on the curve
+                if t1_index < t2_index % t1 may be larger or smaller than t2
+                    true_center_indices = [t1_index:t2_index]'; % increasing order
+                else
+                    true_center_indices = [t1_index:-1:t2_index]'; % decreasing order
+                end
+                
+                % Copy curve segments for convenience
+                r_curve_center = response_curve_points{response_curve_index}(response_center_indices, :);
+                t_curve_center = true_curve_points{true_curve_index}(true_center_indices, :);
+                
+                % Get the area between the closepoints as an average of the Riemann sum calculated from each curve.
+                response_values = distance_to_bezier(t_curve_center, r_curve_center, true);
+                response_center_area = sqrt(sum((r_curve_center(2:end, :) - r_curve_center(1:end - 1, :)).^2, 2)) .* ((response_values(1:end-1) + response_values(2:end)) / 2);
+                true_values = distance_to_bezier(r_curve_center, t_curve_center, true);
+                true_center_area = sqrt(sum((t_curve_center(2:end, :) - t_curve_center(1:end - 1, :)).^2, 2)) .* ((true_values(1:end-1) + true_values(2:end)) / 2);
+                center_area = (response_center_area + true_center_area) / 2;
+                
+                
+                
+                %%%%
                 
         if ~isempty(responses.x{image_index});
         distances = distance_to_bezier(ground_truth, responses.x{image_index}, responses.y{image_index}, true);
