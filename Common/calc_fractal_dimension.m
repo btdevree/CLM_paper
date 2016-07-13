@@ -23,7 +23,8 @@ function [fractal_dim] = calc_fractal_dimension(line_points, number_repeats, div
 
 % Set defaults
 if nargin < 2; number_repeats = 30; end;
-if nargin < 3; show_Richardson_plot = false; end;
+if nargin < 3; divider_length_range = []; end;
+if nargin < 4; show_Richardson_plot = false; end;
 
 % Set parameters
 number_divider_lengths = 10;
