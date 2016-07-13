@@ -242,6 +242,7 @@ for image_index = actin_indices;
     info = test_info.image_info{image_index};
     ground_truth_x = test_info.ground_truth_coords(:, :, 1);
     ground_truth_y = test_info.ground_truth_coords(:, :, 2);
+    found_true_curve_indices = [];
     
     % Get number of responses
     number_response_curves = size(response.x, 1);
@@ -354,49 +355,79 @@ for image_index = actin_indices;
                 true_center_area = sqrt(sum((t_curve_center(2:end, :) - t_curve_center(1:end - 1, :)).^2, 2)) .* ((true_values(1:end-1) + true_values(2:end)) / 2);
                 center_area = (response_center_area + true_center_area) / 2;
                 
+                % Estimate endpoint areas as triangles
+                % Most endpoints will have one endpoint and closepoint as the same point
+                end_close_dist_1 = sqrt(sum((end_group_1(3:4, :) - end_group_1(1:2, :)).^2, 2));
+                if end_close_dist_1(1) == 0 % Triangle between closepoints and second endpoint
+                    end_area_1 = triangle_area(end_group_1(2, :), end_group_1(3, :), end_group_1(4, :));
+                elseif end_close_dist_1(2) == 0 % Triangle between closepoints and first endpoint
+                    end_area_1 = triangle_area(end_group_1(1, :), end_group_1(3, :), end_group_1(4, :));
+                else % Rare, but two triangles between closepoints and first endpoint and endpoints and second closepoint
+                    end_area_1 = triangle_area(end_group_1(1, :), end_group_1(3, :), end_group_1(4, :)) +...
+                                 triangle_area(end_group_1(1, :), end_group_1(2, :), end_group_1(4, :));
+                end
+                end_close_dist_2 = sqrt(sum((end_group_2(3:4, :) - end_group_2(1:2, :)).^2, 2));
+                if end_close_dist_2(1) == 0 % Triangle between closepoints and second endpoint
+                    end_area_2 = triangle_area(end_group_2(2, :), end_group_2(3, :), end_group_2(4, :));
+                elseif end_close_dist_1(2) == 0 % Triangle between closepoints and first endpoint
+                    end_area_2 = triangle_area(end_group_2(1, :), end_group_2(3, :), end_group_2(4, :));
+                else % Rare, but two triangles between closepoints and first endpoint and endpoints and second closepoint
+                    end_area_2 = triangle_area(end_group_2(1, :), end_group_2(3, :), end_group_2(4, :)) +...
+                                 triangle_area(end_group_2(1, :), end_group_2(2, :), end_group_2(4, :));
+                end
                 
-                
-                %%%%
-                
-        if ~isempty(responses.x{image_index});
-        distances = distance_to_bezier(ground_truth, responses.x{image_index}, responses.y{image_index}, true);
-    else
-        distances = [];
+                % Sum the final area
+                area_estimates(response_curve_index, true_curve_index) = center_area + end_area_1 + end_area_2;
+            end
+        end % end true-response curve pair loops
+        
+        % Record matches and extra curves
+        for curve_index = 1:number_response_curves
+            
+            % Get best match for each curve
+            [min_area, min_index] = min(area_estimates(curve_index, :));
+            
+            % Record a match if it is within tolerence
+            if min_area <= matching_area_cutoff * true_arc_length(min_index)
+                found_lines.contrast_ratios = [found_lines.contrast_ratios; info.contrast_ratio];
+                found_lines.ECI = [found_lines.ECI; ts.ECI{image_index}];
+                found_lines.TCI = [found_lines.TCI; ts.TCI{image_index}];
+                found_lines.area = [found_lines.area; min_area];
+                found_lines.true_length = [found_lines.true_length; true_arc_length(min_index)];
+                found_lines.type = [found_lines.type];
+                found_lines.size = [found_lines.size];
+                found_true_curve_indices = [found_true_curve_indices; min_index]; % Cleared for each new image above
+            
+            % Otherwise, the response can't be matched and it's an extra.
+            else
+                extra_lines.contrast_ratios = [extra_lines.contrast_ratios; info.contrast_ratio];
+                extra_lines.ECI = [extra_lines.ECI; ts.ECI{image_index}];
+                extra_lines.TCI = [extra_lines.TCI; ts.TCI{image_index}];
+                extra_lines.true_length = [extra_lines.true_length; true_arc_length(min_index)];
+                extra_lines.type = [extra_lines.type];
+                extra_lines.size = [extra_lines.size];
+            end
+        end 
+    end % end if statement for no responses
+    
+    % Record missing curves
+    for curve_index = 1:number_true_curves 
+        if ~ismember(curve_index, found_true_curve_indices)
+            missing_lines.contrast_ratios = [missing_lines.contrast_ratios; info.contrast_ratio];
+            missing_lines.ECI = [missing_lines.ECI; ts.ECI{image_index}];
+            missing_lines.TCI = [missing_lines.TCI; ts.TCI{image_index}];
+            missing_lines.true_length = [missing_lines.true_length; true_arc_length(min_index)];
+            missing_lines.type = [missing_lines.type];
+            missing_lines.size = [missing_lines.size];
+        end
     end
-    
-    % If the distance is beyond the cutoff, throw it away and count it as an extra point
-    extra_point_selector = distances > dots_distance_cutoff;
-    distances = distances(~extra_point_selector);
-    number_extra_points = sum(extra_point_selector);
-   
-    % Record distances and related information for the found points and the extra points
-    found_points.distances = [found_points.distances; distances];
-    found_points.contrast_ratios = [found_points.contrast_ratios; repmat([info.contrast_ratio], size(distances, 1), 1)];
-    found_points.ECI = [found_points.ECI; repmat([ts.ECI{image_index}], size(distances, 1), 1)];
-    found_points.TCI = [found_points.TCI; repmat([ts.TCI{image_index}], size(distances, 1), 1)];
-    extra_points.contrast_ratios = [extra_points.contrast_ratios; repmat([info.contrast_ratio], number_extra_points, 1)];
-    extra_points.ECI = [extra_points.ECI; repmat([ts.ECI{image_index}], number_extra_points, 1)];
-    extra_points.TCI = [extra_points.TCI; repmat([ts.TCI{image_index}], number_extra_points, 1)];
-    
-    % Get the distance between the true coordinates and the nearest response to look for missed detections
-    if ~isempty(responses.x{image_index});
-        distances = distance_to_bezier([responses.x{image_index}, responses.y{image_index}], ground_truth(:, 1), ground_truth(:, 2), true);
-        missing_point_selector = distances > dots_distance_cutoff;
-        number_missing_points = sum(missing_point_selector);
-    else
-        number_missing_points = size(ground_truth, 1);
-    end
-    
-    % Record distances and related information for the found points and the extra points
-    missing_points.contrast_ratios = [missing_points.contrast_ratios; repmat([info.contrast_ratio], number_missing_points, 1)];
-    missing_points.ECI = [missing_points.ECI; repmat([ts.ECI{image_index}], number_missing_points, 1)];
-    missing_points.TCI = [missing_points.TCI; repmat([ts.TCI{image_index}], number_missing_points, 1)];
-end
+end % end actin image loop
 
 % Copy into summary structure
-ts.dots.found_points = found_points;
-ts.dots.extra_points = extra_points;
-ts.dots.missing_points = missing_points;
+ts.actin.found_points = found_points;
+ts.actin.extra_points = extra_points;
+ts.actin.missing_points = missing_points;
 
 
-end
+
+        end
