@@ -210,6 +210,7 @@ function next_button_callback(source, callbackdata)
     % If this is the last image, call the cleanup routine
     if current_image_index > total_number_images
         final_cleanup
+        return
     end
     
     % Get the image type

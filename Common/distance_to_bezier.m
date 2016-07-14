@@ -39,6 +39,17 @@ if ~use_MEX_flag % Don't use C++ MEX routine
     
 else % Use the C++ MEX routine
     
+    % MEX requires doubles
+    if ~isa(bezier_curve_points, 'double')
+        bezier_curve_points = double(bezier_curve_points);
+    end
+    if ~isa(x_coords, 'double')
+        x_coords = double(x_coords);
+    end
+    if ~isa(y_coords, 'double')
+        y_coords = double(y_coords);
+    end
+    
     % Prep coords for measurement function
     coords_matrix = [x_coords(:), y_coords(:)];
     

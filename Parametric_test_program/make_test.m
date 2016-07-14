@@ -27,7 +27,10 @@ gcp
 % ---- Define the test images -----
 
 % Define test characteristics
-test_version = '0.1';
+test_version = '0.2';
+
+% Change log: 
+%   v0.2 - reduce maximum event number to 3e6 to help avoind out of memory errors
 
 % Define important pdf and STORM image parameters just in case the given params don't have this set correctly
 % NOTE: If you want to change these, you'll probalby have to change the code below to make sure the ideal image is still correct.
@@ -50,7 +53,7 @@ dots_number_dots = [8, 9, 9, 10, 10, 11, 11, 12]; % Don't want people to always 
 % Actin lines
 actin_number_images = 18;
 actin_contrast_ratios = [1, 4, 10];
-actin_event_number_range = [3e2, 1e7];
+actin_event_number_range = [3e2, 3e6];
 actin_line_types = {'line_segment', 'cubic', 'quadratic'};
 actin_line_widths = [9, 26]; % actin and microtubules, respectivly
 actin_number_lines = [4, 5, 5, 6]; % Don't want people to always know exactly how many lines they should be able to find
@@ -58,7 +61,7 @@ actin_number_lines = [4, 5, 5, 6]; % Don't want people to always know exactly ho
 % Border
 border_number_images = 15;
 border_contrast_ratios = [0.5, 1.5, 4];
-border_event_number_range = [1e3, 1e7];
+border_event_number_range = [1e3, 3e6];
 border_roughness = [.35, .45, .55, .65, .75];
 border_displacement_factor = [.35, .325, .3, .25, .2]; % Apply together with the above roughness factor, not for all combinations possible
 

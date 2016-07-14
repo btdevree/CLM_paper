@@ -15,9 +15,6 @@ function analyze_test(test_directory, output_directory)
 % Output:
 %   Summary is saved to the output directory as "test_summary.mat"
 
-% Turn on testmode
-testmode = true;
-
 % Set defaults
 if nargin < 1; test_directory = ''; end;
 if nargin < 2; output_directory = test_directory; end;    
@@ -89,7 +86,7 @@ for image_index = 1:number_images
 %     TCI_data = 1 - (ideal_discrepency_results(end, :) ./ ideal_discrepency_results(1, :));
 %     ts.TCI_mean{image_index} =mean(TCI_data, 2);
 %     ts.TCI_stdev{image_index} = std(TCI_data, 0, 2);
-%     
+    
     % testmode
     ts.ECI_mean{image_index} = .5;
     ts.ECI_stdev{image_index} = .5;
@@ -104,7 +101,7 @@ dots_indices = [];
 actin_indices = [];
 border_indices = [];
 for image_index = 1:number_images
-    info = test_info.ideal_images{image_index};
+    info = test_info.image_info{image_index};
     if strcmp(info.image_type, 'region')
         region_indices = [region_indices; image_index];
     elseif strcmp(info.image_type, 'dots')
@@ -120,8 +117,8 @@ end
 
 %Calc needed number of pixels
 area_map_resolution = 3; % nanometers
-num_pixels_x = ceil(x_length / map_resolution);
-num_pixels_y = ceil(y_length / map_resolution);
+num_pixels_x = ceil(x_length / area_map_resolution);
+num_pixels_y = ceil(y_length / area_map_resolution);
 
  % Calc meshgrid
 x_vec = single([0.5: 1: num_pixels_x - 0.5] .* area_map_resolution + min_x_bound); % add grid vector and origin coords
@@ -135,9 +132,9 @@ found_regions.abs_area = [];
 found_regions.true_area = [];
 missing_regions = template_struct;
 
-for image_index = region_indices;
+for image_index = region_indices'; % for loops only work with row vectors
     info = test_info.image_info{image_index};
-    ground_truth = test_info.ground_truth_coords;
+    ground_truth = test_info.ground_truth_coords{image_index};
        
     if ~isempty(responses.x{image_index});
    
@@ -184,9 +181,9 @@ missing_points = template_struct;
 extra_points = template_struct;
 
 dots_distance_cutoff = 500; 
-for image_index = dots_indices;
+for image_index = dots_indices';
     info = test_info.image_info{image_index};
-    ground_truth = test_info.ground_truth_coords;
+    ground_truth = test_info.ground_truth_coords{image_index};
     
     % Get the distance between the response points and the nearest true coordinate
     if ~isempty(responses.x{image_index});
@@ -251,27 +248,28 @@ ts.dots.missing_points = missing_points;
 found_lines = template_struct;
 found_lines.area = [];
 found_lines.true_length = [];
+found_lines.response_length = [];
 found_lines.type = [];
-found_lines.size = [];
+found_lines.width = [];
 missing_lines = template_struct;
 missing_lines.true_length = [];
 missing_lines.type = [];
-missing_lines.size = [];
+missing_lines.width = [];
 extra_lines = template_struct;
-extra_lines.true_length = [];
+extra_lines.response_length = [];
 extra_lines.type = [];
-extra_lines.size = [];
+extra_lines.width = [];
 
 matching_area_cutoff = 100; % nanometers squared per nanometermeter length
 matching_endpoint_cutoff = 500; % nanometers
-for image_index = actin_indices;
+for image_index = actin_indices';
     info = test_info.image_info{image_index};
-    ground_truth_x = test_info.ground_truth_coords(:, :, 1);
-    ground_truth_y = test_info.ground_truth_coords(:, :, 2);
+    ground_truth_x = test_info.ground_truth_coords{image_index}(:, :, 1);
+    ground_truth_y = test_info.ground_truth_coords{image_index}(:, :, 2);
     found_true_curve_indices = [];
     
     % Get number of responses
-    number_response_curves = size(response.x{image_index}, 1);
+    number_response_curves = size(responses.x{image_index}, 1);
     number_true_curves = size(ground_truth_x, 1);
     
     % Get the length and a bunch of points on each response curve
@@ -280,7 +278,7 @@ for image_index = actin_indices;
     for curve_index = 1:number_response_curves
 
         % Construct the control_points matrix
-        control_points = [response.x{image_index}(curve_index, :)', response.y{image_index}(curve_index, :)'];
+        control_points = [responses.x{image_index}(curve_index, :)', responses.y{image_index}(curve_index, :)'];
 
         % Approximate the arc length
         approx_curve_points = calc_bezier_line(control_points, 25);
@@ -323,8 +321,8 @@ for image_index = actin_indices;
                 % Get endpoints and the closest point to on the other curve to the endpoints
                 true_endpoints = [true_curve_points{true_curve_index}(1, :); true_curve_points{true_curve_index}(end, :)];
                 response_endpoints = [response_curve_points{response_curve_index}(1, :); response_curve_points{response_curve_index}(end, :)];
-                [true_closepoints, true_closepoint_indices] = distance_to_bezier(true_curve_points{true_curve_index}, response_endpoints, true);
-                [response_closepoints, response_closepoint_indices] = distance_to_bezier(response_curve_points{response_curve_index}, true_endpoints, true);
+                [true_closepoints, true_closepoint_indices] = distance_to_bezier(true_curve_points{true_curve_index}, response_endpoints(:, 1), response_endpoints(:, 2), true);
+                [response_closepoints, response_closepoint_indices] = distance_to_bezier(response_curve_points{response_curve_index}, true_endpoints(:, 1), true_endpoints(:, 2), true);
                 
                 % Get endpoint to endpoint distances
                 r1_t1_dist = sqrt(sum((true_endpoints(1, :) - response_endpoints(1, :)).^2, 2));
@@ -375,9 +373,9 @@ for image_index = actin_indices;
                 t_curve_center = true_curve_points{true_curve_index}(true_center_indices, :);
                 
                 % Get the area between the closepoints as an average of the Riemann sum calculated from each curve. Assumes curves are close to parallel.
-                response_values = distance_to_bezier(t_curve_center, r_curve_center, true);
+                response_values = distance_to_bezier(t_curve_center, r_curve_center(:, 1), r_curve_center(:, 2), true);
                 response_center_area = sqrt(sum((r_curve_center(2:end, :) - r_curve_center(1:end - 1, :)).^2, 2)) .* ((response_values(1:end-1) + response_values(2:end)) / 2);
-                true_values = distance_to_bezier(r_curve_center, t_curve_center, true);
+                true_values = distance_to_bezier(r_curve_center, t_curve_center(:, 1), t_curve_center(:, 2), true);
                 true_center_area = sqrt(sum((t_curve_center(2:end, :) - t_curve_center(1:end - 1, :)).^2, 2)) .* ((true_values(1:end-1) + true_values(2:end)) / 2);
                 center_area = (response_center_area + true_center_area) / 2;
                 
@@ -422,8 +420,9 @@ for image_index = actin_indices;
                 found_lines.TCI_stdev = [found_lines.TCI_stdev; ts.TCI_stdev{image_index}];
                 found_lines.area = [found_lines.area; min_area];
                 found_lines.true_length = [found_lines.true_length; true_arc_length(min_index)];
+                found_lines.response_length = [found_lines.response_length; response_arc_length(curve_index)];
                 found_lines.type = [found_lines.type; info.line_type];
-                found_lines.size = [found_lines.size; info.line_size];
+                found_lines.width = [found_lines.width; info.line_width];
                 found_true_curve_indices = [found_true_curve_indices; min_index]; % Cleared when loading each new image above
             
             % Otherwise, the response can't be matched and it's an extra.
@@ -433,9 +432,9 @@ for image_index = actin_indices;
                 extra_lines.TCI = [extra_lines.TCI; ts.TCI_mean{image_index}];
                 extra_lines.ECI_stdev = [extra_lines.ECI_stdev; ts.ECI_stdev{image_index}];
                 extra_lines.TCI_stdev = [extra_lines.TCI_stdev; ts.TCI_stdev{image_index}];
-                extra_lines.true_length = [extra_lines.true_length; true_arc_length(min_index)];
+                extra_lines.response_length = [extra_lines.response_length; response_arc_length(curve_index)];
                 extra_lines.type = [extra_lines.type; info.line_type];
-                extra_lines.size = [extra_lines.size; info.line_size];
+                extra_lines.width = [extra_lines.width; info.line_width];
             end
         end 
     end % end if statement for no responses
@@ -448,9 +447,9 @@ for image_index = actin_indices;
             missing_lines.TCI = [missing_lines.TCI; ts.TCI_mean{image_index}];
             missing_lines.ECI_stdev = [missing_lines.ECI_stdev; ts.ECI_stdev{image_index}];
             missing_lines.TCI_stdev = [missing_lines.TCI_stdev; ts.TCI_stdev{image_index}];
-            missing_lines.true_length = [missing_lines.true_length; true_arc_length(min_index)];
+            missing_lines.true_length = [missing_lines.true_length; true_arc_length(curve_index)];
             missing_lines.type = [missing_lines.type; info.line_type];
-            missing_lines.size = [missing_lines.size; info.line_size];
+            missing_lines.width = [missing_lines.width; info.line_width];
         end
     end
 end % end actin image loop
@@ -467,17 +466,18 @@ borders = template_struct;
 borders.net_area = [];
 borders.abs_area = [];
 borders.rmsd = [];
+borders.fractal_dim = [];
 
-for image_index = border_indices;
+for image_index = border_indices';
     info = test_info.image_info{image_index};
-    ground_truth = test_info.ground_truth_coords;
+    ground_truth = test_info.ground_truth_coords{image_index};
     
     % Measure the fractal dimension of the border
     fractal_dim = calc_fractal_dimension(ground_truth);
     
     % Get interpolated response coordinates
     interp_response = struct();
-    interp_response.x = interp1(response.y{image_index}, response.x{image_index}, ground_truth(:, 2));
+    interp_response.x = interp1(responses.y{image_index}, responses.x{image_index}, ground_truth(:, 2));
     
     % Get distances between true and response curves
     dist_x = interp_response.x - ground_truth(:, 1);
@@ -494,6 +494,7 @@ for image_index = border_indices;
     borders.abs_area = [borders.abs_area; abs_area];
     borders.rmsd = [borders.rmsd; rmsd];
     borders.contrast_ratios = [borders.contrast_ratios; info.contrast_ratio];
+    borders.fractal_dim = [borders.fractal_dim; fractal_dim];
     borders.ECI = [borders.ECI; ts.ECI_mean{image_index}];
     borders.TCI = [borders.TCI; ts.TCI_mean{image_index}];
     borders.ECI_stdev = [borders.ECI_stdev; ts.ECI_stdev{image_index}];
