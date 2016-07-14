@@ -112,6 +112,11 @@ y_vector = [0.5 : 1 : total_number_pixels_y - 0.5].' * resolution;
 calc_cutoff_pixels_y = calc_cutoff_pixels;
 calc_cutoff_pixels_x = calc_cutoff_pixels;
 
+% If we are using the MEX function, we can't use single floating point values, so cast all to doubles
+if use_MEX_flag
+    xy_data = double(xy_data);
+end
+
 % Get the full image from Gauss_STORM_image
 if ~use_MEX_flag
     full_image = Gauss_STORM_image(xy_data, resolution, covar_inv, covar_det, calc_cutoff_pixels_x, calc_cutoff_pixels_y, x_vector, y_vector);

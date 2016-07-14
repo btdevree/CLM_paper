@@ -40,7 +40,7 @@ if nargin < 4; number_pseudoreplicates = 1; end;
 if nargin < 5; discrepency_method = 'sum_of_squares'; end;
 if nargin < 6; ideal_image = []; end;
 if nargin < 7; optimize_flag = true; end;
-if nargin < 8; force_return_cells = true; end;
+if nargin < 8; force_return_cells = false; end;
 
 % If the discrepency_method is a simple string, put it into a cell array
 if ischar(discrepency_method)
@@ -48,9 +48,10 @@ if ischar(discrepency_method)
 end
 
 % Get a copy of the STORMvars structure and channel 2 data created with the given parameter structures
-testparams = params; % param_array from loading in 'FD_data_SNxx'
+testparams = params;
 testparams.number_events_ch1 = 10;
 testparams.number_background_events_ch1 = 10;
+testparams.ch1_distribution = 'random'; % no ch1_distribution_params required
 [ ~, data_ch2, STORMvars] = create_test_data_dv(testparams, 10);
 
 % Get the full image

@@ -23,7 +23,7 @@ if nargin < 2; output_directory = test_directory; end;
 gcp
 
 % Expand and load the test, load the answers
-untar([test_directory, '/test_archive.tar.gz'], output_directory);
+%untar([test_directory, '/test_archive.tar.gz'], output_directory);
 load([test_directory, '/test_archive.mat']); % Loads test_info
 load([test_directory, '/response_info.mat']); % Load responses
 
@@ -57,6 +57,9 @@ template_struct.TCI = [];
 % Define fraction of events, number of events, and replicates
 fraction_vector = [0; .005; .01; .02; .04; .06; .08; .1; .15; .2; .25; .3; .35; .4; .5; .6; .7; .8; .9; 1];
 number_pseudoreplicates = 30; % Number of times to split up each dataset
+
+fraction_vector = [0; .02; .06; .15; .3; .6; 1];
+number_pseudoreplicates = 3; % Number of times to split up each dataset
 
 % Run IIC curve script for each image
 for image_index = 1:number_images
@@ -473,5 +476,10 @@ ts.borders = borders;
 
 % Rename and save results
 test_summary = ts;
-save('test_summary.mat', 'test_summary');
+if ~strcmp(output_directory, '');
+    filepath = [output_directory, '/test_summary.mat'];
+else
+    filepath = 'test_summary.mat';
+end
+save(filepath, 'test_summary');
 end
