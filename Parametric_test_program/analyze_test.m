@@ -249,15 +249,15 @@ found_lines = template_struct;
 found_lines.area = [];
 found_lines.true_length = [];
 found_lines.response_length = [];
-found_lines.type = [];
+found_lines.type = cell(0);
 found_lines.width = [];
 missing_lines = template_struct;
 missing_lines.true_length = [];
-missing_lines.type = [];
+missing_lines.type = cell(0);
 missing_lines.width = [];
 extra_lines = template_struct;
 extra_lines.response_length = [];
-extra_lines.type = [];
+extra_lines.type = cell(0);
 extra_lines.width = [];
 
 matching_area_cutoff = 100; % nanometers squared per nanometermeter length
@@ -321,8 +321,10 @@ for image_index = actin_indices';
                 % Get endpoints and the closest point to on the other curve to the endpoints
                 true_endpoints = [true_curve_points{true_curve_index}(1, :); true_curve_points{true_curve_index}(end, :)];
                 response_endpoints = [response_curve_points{response_curve_index}(1, :); response_curve_points{response_curve_index}(end, :)];
-                [true_closepoints, true_closepoint_indices] = distance_to_bezier(true_curve_points{true_curve_index}, response_endpoints(:, 1), response_endpoints(:, 2), true);
-                [response_closepoints, response_closepoint_indices] = distance_to_bezier(response_curve_points{response_curve_index}, true_endpoints(:, 1), true_endpoints(:, 2), true);
+                [~, true_closepoint_indices] = distance_to_bezier(true_curve_points{true_curve_index}, response_endpoints(:, 1), response_endpoints(:, 2), true);
+                true_closepoints = true_curve_points{true_curve_index}(true_closepoint_indices, :);
+                [~, response_closepoint_indices] = distance_to_bezier(response_curve_points{response_curve_index}, true_endpoints(:, 1), true_endpoints(:, 2), true);
+                response_closepoints = response_curve_points{response_curve_index}(response_closepoint_indices, :);
                 
                 % Get endpoint to endpoint distances
                 r1_t1_dist = sqrt(sum((true_endpoints(1, :) - response_endpoints(1, :)).^2, 2));
@@ -370,13 +372,14 @@ for image_index = actin_indices';
                 
                 % Copy curve segments for convenience
                 r_curve_center = response_curve_points{response_curve_index}(response_center_indices, :);
+                save('cheat.mat');
                 t_curve_center = true_curve_points{true_curve_index}(true_center_indices, :);
                 
                 % Get the area between the closepoints as an average of the Riemann sum calculated from each curve. Assumes curves are close to parallel.
                 response_values = distance_to_bezier(t_curve_center, r_curve_center(:, 1), r_curve_center(:, 2), true);
-                response_center_area = sqrt(sum((r_curve_center(2:end, :) - r_curve_center(1:end - 1, :)).^2, 2)) .* ((response_values(1:end-1) + response_values(2:end)) / 2);
+                response_center_area = sum(sqrt(sum((r_curve_center(2:end, :) - r_curve_center(1:end - 1, :)).^2, 2)) .* ((response_values(1:end-1) + response_values(2:end)) / 2), 1);
                 true_values = distance_to_bezier(r_curve_center, t_curve_center(:, 1), t_curve_center(:, 2), true);
-                true_center_area = sqrt(sum((t_curve_center(2:end, :) - t_curve_center(1:end - 1, :)).^2, 2)) .* ((true_values(1:end-1) + true_values(2:end)) / 2);
+                true_center_area = sum(sqrt(sum((t_curve_center(2:end, :) - t_curve_center(1:end - 1, :)).^2, 2)) .* ((true_values(1:end-1) + true_values(2:end)) / 2), 1);
                 center_area = (response_center_area + true_center_area) / 2;
                 
                 % Estimate endpoint areas as triangles

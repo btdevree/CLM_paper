@@ -79,7 +79,7 @@ void mexFunction(int nlhs, mxArray *plhs[],
             if(new_distance < distances[coord_index])
             {
                 distances[coord_index] = new_distance;
-                indices[coord_index] = static_cast<double>(curve_index);
+                indices[coord_index] = 1 + static_cast<double>(curve_index); //Add 1 to put into MATLAB 1-based indices
             } 
         } // Close coord loop    
     } //Close curve loop
