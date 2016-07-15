@@ -35,8 +35,8 @@ if isempty(divider_length_range)
     % Auto estimate sizes
     total_number_points = size(line_points, 1);
     maximum_length = sum(sqrt(sum((line_points(2:end, :) - line_points(1:end-1, :)).^2, 2)), 1);
-    min_divider = .05 * maximum_length / total_number_points; % half the mean step distance
-    max_divider = .2 * maximum_length; % 1/5th of max length
+    min_divider = .5 * maximum_length / total_number_points; % half the mean step distance
+    max_divider = .001 * maximum_length; % 1/100th of max length
     divider_lengths = logspace(log10(min_divider), log10(max_divider), number_divider_lengths)';
 else
      min_divider = divider_length_range(1);
@@ -260,12 +260,19 @@ vec_12 = segment_point_2 - segment_point_1;
 vec_13 = third_point - segment_point_1;
 length_12 = sqrt(sum(vec_12.^2, 2));
 length_13 = sqrt(sum(vec_13.^2, 2));
-angle_213 = acos(dot(vec_12, vec_13) / (length_12 * length_13));
+angle_213 = real(acos(dot(vec_12, vec_13) / (length_12 * length_13))); % Roundoff error can occationally cause acos to return an imaginary angle
 
 % Special case if points 1 and 3 are the same
 if length_13 == 0;
     % Add new point on the line segment between 1 and 2
     divider_point = segment_point_1 + vec_12 .* (divider_line_length / length_12);
+    
+% Special case if the three points are colinear
+elseif angle_213 - pi <= 2 * eps(single(pi))
+    % Add new point on the line segment between 1 and 2
+    divider_point = segment_point_1 + vec_12 .* ((divider_line_length - length_13) / length_12);
+
+% Solving with normal triangles    
 else
 
     % Find the two solutions to the angle between the divider line and the line segment.
