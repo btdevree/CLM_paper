@@ -291,8 +291,8 @@ extra_lines.width = [];
 fprintf('\nCalculating line matching analysis on image number   ');
 
 % Loop through each image
-matching_area_cutoff = 100; % nanometers squared per nanometermeter length
-matching_endpoint_cutoff = 500; % nanometers
+matching_area_cutoff = 250; % nanometers squared per nanometermeter length
+matching_endpoint_cutoff = 1000; % nanometers
 for image_index = actin_indices';
     
     % Report
@@ -410,11 +410,6 @@ for image_index = actin_indices';
                 
                 % Copy curve segments for convenience
                 r_curve_center = response_curve_points{response_curve_index}(response_center_indices, :);
-%                 r1_index
-%                 r2_index
-%                 t1_index
-%                 t2_index
-%                 save('cheat.mat');
                 t_curve_center = true_curve_points{true_curve_index}(true_center_indices, :);
                 
                 % Get the area between the closepoints as an average of the Riemann sum calculated from each curve. Assumes curves are close to parallel.
@@ -532,18 +527,17 @@ for image_index = border_indices';
     %fractal_dim = calc_fractal_dimension(ground_truth, 3);
     
     % Get interpolated response coordinates
-    interp_response = struct();
-    interp_response.x = interp1(responses.y{image_index}, responses.x{image_index}, ground_truth(:, 2));
+    interp_x = interp1(responses.y{image_index}, responses.x{image_index}, ground_truth(:, 2),'linear', 'extrap');
     
     % Get distances between true and response curves
-    dist_x = interp_response.x - ground_truth(:, 1);
-    delta_x = dist_x(1:end-1) - dist_x(2:end);
+    dist_x = interp_x - ground_truth(:, 1);
+    average_dist = (dist_x(1:end-1) + dist_x(2:end)) / 2;
     delta_y = ground_truth(1:end-1, 2) - ground_truth(2:end, 2);
     
     % Calculate areas and rmsd
-    net_area = sum(delta_x .* delta_y, 1);
-    abs_area = sum(abs(delta_x) .* delta_y, 1);
-    rmsd = sqrt(mean(dist_x.^2));
+    net_area = sum(average_dist .* delta_y, 1);
+    abs_area = sum(abs(average_dist) .* delta_y, 1);
+    rmsd = sqrt(mean(dist_x.^2, 1));
     
     % Copy information
     borders.net_area = [borders.net_area; net_area];

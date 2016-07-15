@@ -22,26 +22,26 @@ function [fractal_dim] = calc_fractal_dimension(line_points, number_repeats, div
 % troubleshooting.
 
 % Set defaults
-if nargin < 2; number_repeats = 30; end;
+if nargin < 2; number_repeats = 3; end;
 if nargin < 3; divider_length_range = []; end;
 if nargin < 4; show_Richardson_plot = false; end;
 
-% Set parameters
+% Set parameters and get constants
 number_divider_lengths = 10;
+total_number_points = size(line_points, 1);
 
 % Determine divider sizes if not given
 if isempty(divider_length_range)
    
     % Auto estimate sizes
-    total_number_points = size(line_points, 1);
     maximum_length = sum(sqrt(sum((line_points(2:end, :) - line_points(1:end-1, :)).^2, 2)), 1);
     min_divider = .5 * maximum_length / total_number_points; % half the mean step distance
     max_divider = .001 * maximum_length; % 1/100th of max length
-    divider_lengths = logspace(log10(min_divider), log10(max_divider), number_divider_lengths)';
 else
      min_divider = divider_length_range(1);
      max_divider = divider_length_range(2);
 end    
+divider_lengths = logspace(log10(min_divider), log10(max_divider), number_divider_lengths)';
 
 % Initalize distance results matrix
 curve_distance = zeros(number_divider_lengths, number_repeats);
@@ -268,7 +268,7 @@ if length_13 == 0;
     divider_point = segment_point_1 + vec_12 .* (divider_line_length / length_12);
     
 % Special case if the three points are colinear
-elseif angle_213 - pi <= 2 * eps(single(pi))
+elseif pi - angle_213 <= 3 * eps(single(pi))
     % Add new point on the line segment between 1 and 2
     divider_point = segment_point_1 + vec_12 .* ((divider_line_length - length_13) / length_12);
 
