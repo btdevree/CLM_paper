@@ -27,7 +27,7 @@ if nargin < 3; divider_length_range = []; end;
 if nargin < 4; show_Richardson_plot = false; end;
 
 % Set parameters and get constants
-number_divider_lengths = 10;
+number_divider_lengths = 7;
 total_number_points = size(line_points, 1);
 
 % Determine divider sizes if not given
@@ -43,10 +43,11 @@ else
 end    
 divider_lengths = logspace(log10(min_divider), log10(max_divider), number_divider_lengths)';
 
-% Initalize distance results matrix
+% Initalize results matrix
 curve_distance = zeros(number_divider_lengths, number_repeats);
 
-% Repeat the measurement process from multiple starting points
+% Prepare arguments for parallel execution
+args = struct('divider_length', [], 'starting_point_index', [], 'divider_index', [], 'repeat_index', []);
 for repeat_index = 1:number_repeats
     
     % Choose a point at random to start at
@@ -54,9 +55,25 @@ for repeat_index = 1:number_repeats
         
     % Repeat measurement for all divider lengths
     for divider_index = 1:number_divider_lengths
-        divider_length = divider_lengths(divider_index);
-        curve_distance(divider_index, repeat_index) = calc_distance(line_points, divider_length, starting_point_index);
+        
+        % Record arguments
+        args(divider_index, repeat_index).divider_length = divider_lengths(divider_index);
+        args(divider_index, repeat_index).starting_point_index = starting_point_index;
     end
+end
+
+% Start up a pool of future calc_distance evaluations
+for eval_index = 1:size(args(:), 1)
+    future_results(eval_index) = parfeval(@calc_distance, 1, line_points, args(eval_index));
+end
+
+% Create an onCleanup to ensure we do not leave any futures running when we exit.
+cancelFutures = onCleanup(@() cancel(futures));
+
+% Collect the future_results and put them in the distance result matrix
+for eval_index = 1:size(args(:), 1)
+   [completed_index, new_result] = fetchNext(future_results);
+   curve_distance(completed_index) = new_result;
 end
 
 %  Transform to Richardson's plot
@@ -81,9 +98,13 @@ if show_Richardson_plot
 end
 end
         
-function [distance, divider_points] = calc_distance(line_points, divider_length, start_index)
+function [distance, divider_points] = calc_distance(line_points, args)
 % Local function to calculate the distance of a curve for a particular
 % divider length. Optional output gives all the divider points.
+
+% Unpack args
+divider_length = args.divider_length;
+start_index = args.start_index;
 
 % Enable/disable graphical feedback, false = off
 draw_plots = false;
