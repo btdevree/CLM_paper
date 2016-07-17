@@ -115,6 +115,7 @@ function [distance, divider_points] = calc_distance(line_points, args)
 % Unpack args
 divider_length = args.divider_length;
 start_index = args.start_index;
+points_required = args.points_required_per_divider; 
 
 % Enable/disable graphical feedback, false = off
 draw_plots = false;
@@ -145,169 +146,92 @@ for step_direction = [-1, 1]
     step_count = 0;
     reached_end_flag = false;
     current_index = start_index;
-    current_coords = start_coords;
     current_divider_coords = start_coords;
-    current_distance = 0;
+    points_required_multiplier = 1;
        
-    % Loop through divider lengths until the line points are used up
+    % Loop through adding dividers until we've reached the end and break the loop
     while true
 
-        % Go through line points until the step length is larger than the divider
-        while current_distance < divider_length
+        % Try to get a set of point values that is expected to contain the next divider point
+        try % Usually, get the coordinates of the next/previous point and the following points in the set
+             current_coord_set = line_points(current_index + step_direction : step_direction : current_index + step_direction * points_required * points_required_multiplier, :);
 
-            % Try to get values at the previous index
-            try % Usually, get the coordinates of the previous point on the line
-                current_coords = line_points(current_index + step_direction, :);
-                current_index = current_index + step_direction; % Will not evaluate if error is thrown
-            catch ME % If the point doesn't exist, we've reached the beginning or end of the line
-                if strcmp(ME.identifier, 'MATLAB:badsubscript');
-                    reached_end_flag = true;
-                    break % exit line point walking loop
-                elseargs(divider_index, repeat_index).points_required_per_divider = num_points;
-                    throw(ME); % Rethrow any other error
+        % If the points don't exist, we've reached the beginning or end of the line
+        catch ME 
+            if strcmp(ME.identifier, 'MATLAB:badsubscript');
+
+                % Take the set from the current_index to the end of the curve instead, current_index should always be > 1 or < end
+                if step_direction == -1
+                    current_coord_set = line_points(current_index + step_direction : -1 : 1, :);
+                elseif step_direction == 1
+                    current_coord_set = line_points(current_index + step_direction : 1 : end, :);
                 end
-            end % End try 
-            
-            % Calculate the distance between the divider point and the new coordinates
-            current_distance = sqrt(sum((current_coords - current_divider_coords).^2, 2)); 
-            if draw_plots
-                draw_plot(line_points, divider_points, current_coords, current_divider_coords, start_index);
-            end
-            
-        end % End distance loop, the divider coordinate lies between the points at the current index and the previous index
+                reached_end_flag = true;
 
-        % Quit looping when we hit the end of the line points
-        if reached_end_flag
-            break % Exit divider finding loop
-        end
-
-        % Get the dividing point
-        new_divider_coords = divide_line_segment(line_points(current_index - step_direction, :), line_points(current_index, :), current_divider_coords, divider_length);
-
-        % Add the new point to the list, if requested
-        if log_points_flag
-            if step_direction == -1 % stepping backwards
-                divider_points = [new_divider_coords; divider_points];
-            elseif step_direction == 1 % stepping forwards
-                divider_points = [divider_points; new_divider_coords];
+            % Rethrow any other error
+            else
+                throw(ME);
             end
         end
 
-        % Set the new divider coords and increment counter 
-        current_divider_coords = new_divider_coords;
-        step_count = step_count + 1;
-
-        % Recalculate current step distance
-        current_distance = sqrt(sum((current_coords - current_divider_coords).^2, 2));
+        % Calculate the distances between the divider point and the new coordinates
+        current_distances = sqrt(sum((current_coord_set - repmat(current_divider_coords, size(current_coord_set, 1), 1)).^2, 2)); 
         if draw_plots
-            draw_plot(line_points, divider_points, current_coords, current_divider_coords, start_index);
+            draw_plot(line_points, divider_points, current_coord_set, current_divider_coords, start_index);
         end
 
-        % Check if the next divider falls on the current line segment; if so,
-        %   add divider points until less than one divider length remains.
-        if current_distance > divider_length
+        % Check if we have points that include the divider length
+        crosspoint_index = find(current_distances >= divider_length, 1); % returns empty 1 x 0 matrix if there's no point that's far enough
 
-            % Get an offest vector for the additional lengths
-            segment_vector = current_coords - current_divider_coords;        
-            offset_vector = segment_vector * (divider_length / current_distance);
+        % If we found a valid index, split the line segment and set new current points and indices
+        if ~isempty(crosspoint_index)
 
-            % Figure out how many divider lengths will fit on the remander of the line segment 
-            number_additional_lengths = floor(current_distance / divider_length);
+            % Get the dividing point
+            point_1_index = current_index + crosspoint_index * step_direction - step_direction;
+            point_2_index = current_index + crosspoint_index * step_direction;
+            current_divider_coords = divide_line_segment(line_points(point_1_index, :), line_points(point_2_index, :), current_divider_coords, divider_length);
 
-            % Add any additional divider lengths on the current line segment
-            for addlen_index = 1:number_additional_lengths
-                new_divider_coords = current_divider_coords + offset_vector;
+            % Count, set indices and flags 
+            current_index = point_1_index;
+            step_count = step_count + 1;
+            reached_end_flag = false; % If we found a point, we should check for another between the current index and the end
+            points_required_multiplier = 1;
 
-                % Add the new point to the list, if requested
-                if log_points_flag
-                    if step_direction == -1 % stepping backwards
-                        divider_points = [new_divider_coords; divider_points];
-                    elseif step_direction == 1 % stepping forwards
-                        divider_points = [divider_points; new_divider_coords];
-                    end
+            % Add the new point to the list, if requested
+            if log_points_flag
+                if step_direction == -1 % stepping backwards
+                    divider_points = [current_divider_coords; divider_points];
+                elseif step_direction == 1 % stepping forwards
+                    divider_points = [divider_points; current_divider_coords];
                 end
-
-                % Set the new divider coords and increment counter 
-                current_divider_coords = new_divider_coords;
-                step_count = step_count + 1;
             end
 
-            % Recalculate current step distance
-            current_distance = sqrt(sum((current_coords - current_divider_coords).^2, 2));
-            if draw_plots
-                draw_plot(line_points, divider_points, current_coords, current_divider_coords, start_index);
-            end
-            
-        end % end colinear segment adding  
-    end % end divider function finding
+        % If no point in the set was long enough but we didn't get to the end of the curve yet, try again with more points
+        elseif isempty(crosspoint_index) && ~reached_end_flag
 
-    % Get the distance between the last divider coordinate and the last point of the line
-    extra_distance = current_distance;
-    
-    % Add the new point to the list, if requested
-    if log_points_flag
-        if step_direction == -1 % stepping backwards
-            divider_points = [line_points(current_index, :); divider_points];
-        elseif step_direction == 1 % stepping forwards
-            divider_points = [divider_points; line_points(current_index, :)];
+            % Add another multiple of points to the set that's taken
+            points_required_multiplier = points_required_multiplier + 1;
+
+        % If no point in the set was long enough and we're at the end of the curve, add the endpoint distances and quit looking for points 
+        elseif isempty(crosspoint_index) && reached_end_flag
+
+            % Record the extra distances
+            extra_distance = sqrt(sum((current_coord_set(end, 1) - current_divider_coords).^2, 2));
+            if step_direction == -1 % stepping backwards
+                backwards_extra = extra_distance;
+            elseif step_direction == 1 % stepping forwards
+                forwards_extra = extra_distance;
+            end
+
+            % Quit looking for points in this direction
+            break
         end
     end
-    
-    % Add up distance
-    direction_distance = step_count * divider_length + extra_distance;
-    
-    % Record the distances
-    if step_direction == -1 % stepping backwards
-        backwards_distance = direction_distance;
-    elseif step_direction == 1 % stepping forwards
-        forwards_distance = direction_distance;
-    end
-    
-end % End forward or backward for loop
-
-% Add backwards and forwards distances together
-distance = backwards_distance + forwards_distance;
 end
 
-function [number_points] = calc_number_poins_per_divider(divider, mean, stdev, skew)
-% Local function to estimate the number of points we'll need to assay in
-% order to include the next divider length 99.5% of the time. Accounts for
-% skewed step size distributions and small numbers of steps. 
-
-% Loop cap
-max_iterations = 1e4;
-
-% Increase the number of points until we find enough to satisfy the problem
-number_points = 1;
-while true 
-    
-    % Determine the statistics of the path length sum
-    path_mean = number_points * mean; % Wasserman, "All of Statistics" page 28, iii.
-    path_stdev = sqrt(number_points) * stdev; % Wasserman, "All of Statistics" page 28, iii.
-    path_skew = (1/sqrt(number_points)) * skew; % From skew definition, given in Eriksson, "A simulation method for skewness correction" (Master's thesis, Uppasla U.), Appendex 1, Corollary 4. 
-    
-    % Approximate as normal with a corrected mean due to the skew
-    adjusted_path_mean = path_mean + (path_skew / (6 * path_stdev.^2 * number_points)); % Norman J. Johnson, "Modified t Tests and Confidence Intervals for Asymmetrical Populations" JASA, v73:p536-44, eqn 2.7
-
-    % Get value of the path length that is smaller than 99.5% of the expected paths
-    cutoff_path_length = adjusted_path_mean - 2.78 * path_stdev; % p = 0.005 for single tailed test
-    
-    % Assume path is 2D random walk: rmsd = <r> * sqrt(n) --> (path length / n) * sqrt(n) --> path length / sqrt(n)
-    % NOTE: behavior as n --> infinity: rmsd = sqrt(n)* mu - 2.78 * sigma, we shouldn't get stuck in an infinite loop, but this is a foolish
-    %   algorithm for large dividers and small steps. In such a case, use the limiting behavior equation instead.
-    cutoff_rmsd_estimate = cutoff_path_length / sqrt(number_points);
-    
-    % Stop loop if we've gone enough steps or reached the cap
-    if cutoff_rmsd_estimate > divider || number_points >= max_iterations;
-        break
-    else
-        % Add another point
-        number_points = number_points + 1;
-    end
+% Add up the distances
+distance = step_count * divider_length + backwards_extra + forwards_extra;
 end
-
-end
-
 
 function [divider_point] = divide_line_segment(segment_point_1, segment_point_2, third_point, divider_line_length)
 % Local function to solve the law of sines problem in order to divide a
