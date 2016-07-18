@@ -66,23 +66,23 @@ for repeat_index = 1:number_repeats
     end
 end
 
-% % Start up a pool of future calc_distance evaluations
+% % Nonparallel execution - Run instead of parallel feval for debuging/graphing
 % for eval_index = 1:size(args(:), 1)
-%     future_results(eval_index) = parfeval(@calc_distance, 1, line_points, args(eval_index));
-% end
-% 
-% % Create an onCleanup to ensure we do not leave any futures running when we exit.
-% cancelFutures = onCleanup(@() cancel(futures));
-% 
-% % Collect the future_results and put them in the distance result matrix
-% for eval_index = 1:size(args(:), 1)
-%    [completed_index, new_result] = fetchNext(future_results);
-%    curve_distance(completed_index) = new_result;
+%     curve_distance(eval_index) = calc_distance(line_points, args(eval_index));
 % end
 
-% Nonparallel execution
+% Start up a pool of future calc_distance evaluations
 for eval_index = 1:size(args(:), 1)
-curve_distance(eval_index) = calc_distance(line_points, args(eval_index));
+    future_results(eval_index) = parfeval(@calc_distance, 1, line_points, args(eval_index));
+end
+
+% Create an onCleanup to ensure we do not leave any futures running when we exit.
+cancelFutures = onCleanup(@() cancel(future_results));
+
+% Collect the future_results and put them in the distance result matrix
+for eval_index = 1:size(args(:), 1)
+   [completed_index, new_result] = fetchNext(future_results);
+   curve_distance(completed_index) = new_result;
 end
 
 %  Transform to Richardson's plot
@@ -175,22 +175,54 @@ for step_direction = [-1, 1]
 
         % Calculate the distances between the divider point and the new coordinates
         current_distances = sqrt(sum((current_coord_set - repmat(current_divider_coords, size(current_coord_set, 1), 1)).^2, 2)); 
-        if draw_plots
-            draw_plot(line_points, divider_points, current_coord_set, current_divider_coords, start_index);
-        end
-
+               
         % Check if we have points that include the divider length
         crosspoint_index = find(current_distances >= divider_length, 1); % returns empty 1 x 0 matrix if there's no point that's far enough
+        
+        % If the first point in the coord set is already far enough away, add as many colinear dividers as possible.
+        if crosspoint_index == 1
+ 
+            % Get an offset vector for the additional lengths
+            segment_vector = current_coord_set(1, :) - current_divider_coords;        
+            offset_vector = segment_vector * (divider_length / current_distances(1));
+ 
+            % Figure out how many divider lengths will fit on the remander of the line segment 
+            number_additional_lengths = floor(current_distances(1) / divider_length);
 
+            % Add any additional divider lengths on the current line segment
+            for addlen_index = 1:number_additional_lengths
+                current_divider_coords = current_divider_coords + offset_vector;
+                step_count = step_count + 1;
+                
+                % Add the new point to the list, if requested
+                if log_points_flag
+                    if step_direction == -1 % stepping backwards
+                        divider_points = [current_divider_coords; divider_points];
+                    elseif step_direction == 1 % stepping forwards
+                        divider_points = [divider_points; current_divider_coords];
+                    end
+                end
+            end
+            
+            % Recalculate the crosspoint from the new divider coordinates
+            current_distances = sqrt(sum((current_coord_set - repmat(current_divider_coords, size(current_coord_set, 1), 1)).^2, 2)); 
+            crosspoint_index = find(current_distances >= divider_length, 1);
+        end                
+        
         % If we found a valid index, split the line segment and set new current points and indices
         if ~isempty(crosspoint_index)
 
             % Get the dividing point
             point_1_index = current_index + crosspoint_index * step_direction - step_direction;
             point_2_index = current_index + crosspoint_index * step_direction;
-            current_divider_coords = divide_line_segment(line_points(point_1_index, :), line_points(point_2_index, :), current_divider_coords, divider_length);
- 
+            new_divider_coords = divide_line_segment(line_points(point_1_index, :), line_points(point_2_index, :), current_divider_coords, divider_length);
+            
+            if isempty(new_divider_coords)
+                disp('What is happening here?');
+            end
+            
             % Count, set indices and flags 
+            current_divider_coords = new_divider_coords;
             current_index = point_1_index;
             step_count = step_count + 1;
             reached_end_flag = false; % If we found a point, we should check for another between the current index and the end
@@ -225,6 +257,12 @@ for step_direction = [-1, 1]
             % Quit looking for points in this direction
             break
         end
+        
+        % Plot changes if requested
+        if draw_plots
+            draw_plot(line_points, divider_points, current_coord_set, current_divider_coords, start_index);
+        end
+
     end
 end
 
@@ -253,13 +291,15 @@ function [divider_point] = divide_line_segment(segment_point_1, segment_point_2,
 % Solves the intersection of
 % y = mx + b and (x - h)^2 + (y - k)^2 = r^2
 
-% Find required constants
+% Find required constants - enforce conversion to double because we have a lot of adding to do
+segment_point_2 = double(segment_point_2);
+segment_point_1 = double(segment_point_1);
 vec_12 = segment_point_2 - segment_point_1;
 m = vec_12(2) / vec_12(1); % m = slope of line
 b = segment_point_1(2) - m * segment_point_1(1); % b = intercept of line
-h = third_point(1);
-k = third_point(2);
-r = divider_line_length;
+h = double(third_point(1));
+k = double(third_point(2));
+r = double(divider_line_length);
 
 % Normal solving, but a special case is required if the line is vertical
 if ~isinf(m)
@@ -269,7 +309,7 @@ if ~isinf(m)
     % Problem is quadratic, solve for two solutions of x, then find y with line equation
     A = 1 + m^2;
     B = 2 * (-h + m * b - m * k);
-    C = h^2 + b^2 - 2 * b* k + k^2 - r^2;
+    C = h^2 + b^2 - 2 * b * k + k^2 - r^2;
     discriminant = B^2 - 4 * A * C;
 
     % Results based on discriminant
@@ -296,7 +336,7 @@ if ~isinf(m)
 
 % Special case when line is vertical, x is a constant, so solve circle equation for y as a quadratic equation: y^2 - 2ky + k^2 + (x - h)^2 -r^2 = 0
 else
-    x = segment_point_1(1);
+    x = double(segment_point_1(1));
     A = 1;
     B = -2 * k;
     C = k^2 + (x - h)^2 - r^2;
@@ -321,6 +361,11 @@ else
         divider_point = [];
     end
 end
+
+% Return divider point as a single if point 1 is also single
+if isa(segment_point_1, 'single')
+    divider_point = single(divider_point);
+end
 end
 
 function [point] = choose_point(p1, p2, segment_point_1, segment_point_2)
@@ -331,12 +376,14 @@ min_x = min(segment_point_1(1), segment_point_2(1));
 max_x = max(segment_point_1(1), segment_point_2(1));
 min_y = min(segment_point_1(2), segment_point_2(2));
 max_y = max(segment_point_1(2), segment_point_2(2));
-if min_x <= p1(1) && p1(1) <= max_x && min_y <= p1(2) && p1(2) <= max_y
+tol_x = 2*eps(single(max_x)); % Allow for precision issues with single-point coordinates 
+tol_y = 2*eps(single(max_y));
+if min_x - p1(1) <= tol_x && p1(1) - max_x <= tol_x && min_y - p1(2) <= tol_y && p1(2) - max_y <= tol_y
     p1_OK_flag = true;
 else
     p1_OK_flag = false;
 end
-if min_x <= p2(1) && p2(1) <= max_x && min_y <= p2(2) && p2(2) <= max_y
+if min_x - p2(1) <= tol_x && p2(1) - max_x <= tol_x && min_y - p2(2) <= tol_y && p2(2) - max_y <= tol_y
     p2_OK_flag = true;
 else
     p2_OK_flag = false;
@@ -345,16 +392,16 @@ end
 % Usually only one solution will be valid, but it is possible that both are OK. In this case we use the solution that is closer to 
 % point 1 as this is the first point that the divider line crosses as we trace along line_points.
 if p1_OK_flag && ~p2_OK_flag
-    point = [x1, y1];
+    point = p1;
 elseif ~p1_OK_flag && p2_OK_flag
-    point = [x2, y2];
-elseif s1_OK_flag && s2_OK_flag;
-    dist_p1 = sqrt(sum((segment_point_1 - [x1, y1]).^2, 2));
-    dist_p2 = sqrt(sum((segment_point_1 - [x2, y2]).^2, 2));
-    if dist_s1 <= dist_s2
-        point = [x1, y1];
+    point = p2;
+elseif p1_OK_flag && p2_OK_flag;
+    dist_p1 = sqrt(sum((segment_point_1 - p1).^2, 2));
+    dist_p2 = sqrt(sum((segment_point_1 - p2).^2, 2));
+    if dist_p1 <= dist_p2
+        point = p1;
     else
-        point = [x2, y2];
+        point = p2;
     end
 end
 end
@@ -398,12 +445,12 @@ end
 
 end
 
-function draw_plot(line_points, divider_points, current_point, current_divider_point, start_index)
+function draw_plot(line_points, divider_points, current_point_set, current_divider_point, start_index)
 % function for aiding in visualization of progress during troubleshooting
 plot(gca, line_points(max(1, start_index - 100):start_index, 1), line_points(max(1, start_index - 100):start_index, 2), '-or');
 hold on
 plot(divider_points(:, 1), divider_points(:, 2), '-xb');
-scatter(current_point(1), current_point(2), 5, 'g');
+scatter(current_point_set(:, 1), current_point_set(:, 2), 5, 'g');
 scatter(current_divider_point(1), current_divider_point(2), 5, 'k')
 hold off
 waitforbuttonpress
