@@ -15,12 +15,6 @@ function [fractal_dim] = calc_fractal_dimension(line_points, number_repeats, div
 % Output:
 %   fractal_dim: estimate of the fractal dimension.
 
-% NOTE: Not the greatest algorithm; it was suprisingly complex to code. I
-% suspect either vectors or intersections of line segments and circles can
-% be used simplify it, if the code is being refactored. A plotting function
-% in the calc_distance local function can be turned on to aid in
-% troubleshooting.
-
 % Set defaults
 if nargin < 2; number_repeats = 3; end;
 if nargin < 3; divider_length_range = []; end;
@@ -195,7 +189,7 @@ for step_direction = [-1, 1]
             point_1_index = current_index + crosspoint_index * step_direction - step_direction;
             point_2_index = current_index + crosspoint_index * step_direction;
             current_divider_coords = divide_line_segment(line_points(point_1_index, :), line_points(point_2_index, :), current_divider_coords, divider_length);
-
+ 
             % Count, set indices and flags 
             current_index = point_1_index;
             step_count = step_count + 1;
@@ -239,9 +233,9 @@ distance = step_count * divider_length + backwards_extra + forwards_extra;
 end
 
 function [divider_point] = divide_line_segment(segment_point_1, segment_point_2, third_point, divider_line_length)
-% Local function to solve the law of sines problem in order to divide a
-% line segment so that the divider length is equal to the exact value
-% requested.
+% Local function to solve the intersection of a line and circle in order to
+% divide a line segment so that the divider length is equal to the exact 
+% value requested.
 %
 % Inputs:
 %   segment_point_1/2: the two points that define the line segment along
@@ -253,103 +247,116 @@ function [divider_point] = divide_line_segment(segment_point_1, segment_point_2,
 %   divider_line_length: the length of the divider line.
 % Outputs:
 %   divider_point: the point along the line segment between points 1 and 2
-%       that creates the a divider line of desired length.
+%       that creates the a divider line of desired length. Returns empty
+%       matrix if there is no solution
 
-% Find the angle across from the divider line
+% Solves the intersection of
+% y = mx + b and (x - h)^2 + (y - k)^2 = r^2
+
+% Find required constants
 vec_12 = segment_point_2 - segment_point_1;
-vec_13 = third_point - segment_point_1;
-length_12 = sqrt(sum(vec_12.^2, 2));
-length_13 = sqrt(sum(vec_13.^2, 2));
-angle_213 = real(acos(dot(vec_12, vec_13) / (length_12 * length_13))); % Roundoff error can occationally cause acos to return an imaginary angle
+m = vec_12(2) / vec_12(1); % m = slope of line
+b = segment_point_1(2) - m * segment_point_1(1); % b = intercept of line
+h = third_point(1);
+k = third_point(2);
+r = divider_line_length;
 
-% Special case if points 1 and 3 are the same
-if length_13 == 0;
-    % Add new point on the line segment between 1 and 2
-    divider_point = segment_point_1 + vec_12 .* (divider_line_length / length_12);
-    
-% Special case if the three points are colinear
-elseif pi - angle_213 <= 3 * eps(single(pi))
-    % Add new point on the line segment between 1 and 2
-    divider_point = segment_point_1 + vec_12 .* ((divider_line_length - length_13) / length_12);
+% Normal solving, but a special case is required if the line is vertical
+if ~isinf(m)
 
-% Solving with normal triangles    
+    % Subsitute y = mx + b into circle equation, expanding all products and collecting terms gives:
+    % x^2(1 + m^2) + x(-2h + 2mb - 2mk) + (h^2 + b^2 - 2bk + k^2 - r^2) = 0
+    % Problem is quadratic, solve for two solutions of x, then find y with line equation
+    A = 1 + m^2;
+    B = 2 * (-h + m * b - m * k);
+    C = h^2 + b^2 - 2 * b* k + k^2 - r^2;
+    discriminant = B^2 - 4 * A * C;
+
+    % Results based on discriminant
+    % Two intersection points
+    if discriminant > 0
+        x_1 =  (-B - sqrt(discriminant)) / (2 * A);
+        x_2 =  (-B + sqrt(discriminant)) / (2 * A);
+        y_1 = m * x_1 + b;
+        y_2 = m * x_2 + b;
+        
+        % Choose the correct point
+        [divider_point] = choose_point([x_1, y_1], [x_2, y_2], segment_point_1, segment_point_2);
+
+    % Line is tangent
+    elseif discriminant == 0 
+        x = -B / (2 * A);
+        y = m * x + b;
+        divider_point = [x, y];
+
+    % No intersection
+    elseif discriminant < 0
+        divider_point = [];
+    end
+
+% Special case when line is vertical, x is a constant, so solve circle equation for y as a quadratic equation: y^2 - 2ky + k^2 + (x - h)^2 -r^2 = 0
 else
+    x = segment_point_1(1);
+    A = 1;
+    B = -2 * k;
+    C = k^2 + (x - h)^2 - r^2;
+    discriminant = B^2 - 4 * A * C;
 
-    % Find the two solutions to the angle between the divider line and the line segment.
-    law_of_sines_ratio = sin(angle_213) / divider_line_length;
-    angle_1d3_s1 = asin(length_13 * law_of_sines_ratio); % asin always returns angles between -pi/2 and pi/2
-    angle_1d3_s2 = pi - angle_1d3_s1;
+    % Results based on discriminant
+    % Two intersection points
+    if discriminant > 0
+        y_1 =  (-B - sqrt(discriminant)) / (2 * A);
+        y_2 =  (-B + sqrt(discriminant)) / (2 * A);
+        
+        % Choose the correct point
+        [divider_point] = choose_point([x, y_1], [x, y_2], segment_point_1, segment_point_2);
+        
+    % Line is tangent
+    elseif discriminant == 0 
+        y = -B / (2 * A);
+        divider_point = [x, y];
 
-    % Get the equations of the two intersecting lines
-    slope_12 = vec_12(2) / vec_12(1);
-    intercept_12 = segment_point_1(2) - slope_12 * segment_point_1(1);
-    slope_divider_s1 = tan(angle_1d3_s1 + atan(slope_12) - pi);
-    slope_divider_s2 = tan(angle_1d3_s2 + atan(slope_12) - pi);
-    intercept_divider_s1 = third_point(2) - slope_divider_s1 * third_point(1);
-    intercept_divider_s2 = third_point(2) - slope_divider_s2 * third_point(1);
+    % No intersection
+    elseif discriminant < 0
+        divider_point = [];
+    end
+end
+end
 
-    % Solve the equations
-    if isinf(slope_12) % Special solutions for vertical lines
-        divider_x_s1 = segment_point_1(1);
-        divider_x_s2 = segment_point_1(1);
-        divider_y_s1 = slope_divider_s1 * divider_x_s1 + intercept_divider_s1;
-        divider_y_s2 = slope_divider_s2 * divider_x_s2 + intercept_divider_s2;
-    elseif isinf(slope_divider_s1) && ~isinf(slope_divider_s2)
-        divider_x_s1 = third_point(1);
-        divider_x_s2 = (intercept_divider_s2 - intercept_12) / (slope_12 - slope_divider_s2);
-        divider_y_s1 = slope_12 * divider_x_s1 + intercept_12;
-        divider_y_s2 = slope_12 * divider_x_s2 + intercept_12;
-    elseif ~isinf(slope_divider_s1) && isinf(slope_divider_s2)
-        divider_x_s1 = (intercept_divider_s1 - intercept_12) / (slope_12 - slope_divider_s1);
-        divider_x_s2 = third_point(1);
-        divider_y_s1 = slope_12 * divider_x_s1 + intercept_12;
-        divider_y_s2 = slope_12 * divider_x_s2 + intercept_12;
-    elseif isinf(slope_divider_s1) && isinf(slope_divider_s2) % Pretty unlikley, but just in case...
-        divider_x_s1 = third_point(1);
-        divider_x_s2 = third_point(1);
-        divider_y_s1 = slope_12 * divider_x_s1 + intercept_12;
-        divider_y_s2 = slope_12 * divider_x_s2 + intercept_12;
+function [point] = choose_point(p1, p2, segment_point_1, segment_point_2)
+% Local function to choose the correct point when given two solutions
+
+% Test which solution is for a point that lies between points 1 and 2 
+min_x = min(segment_point_1(1), segment_point_2(1));
+max_x = max(segment_point_1(1), segment_point_2(1));
+min_y = min(segment_point_1(2), segment_point_2(2));
+max_y = max(segment_point_1(2), segment_point_2(2));
+if min_x <= p1(1) && p1(1) <= max_x && min_y <= p1(2) && p1(2) <= max_y
+    p1_OK_flag = true;
+else
+    p1_OK_flag = false;
+end
+if min_x <= p2(1) && p2(1) <= max_x && min_y <= p2(2) && p2(2) <= max_y
+    p2_OK_flag = true;
+else
+    p2_OK_flag = false;
+end
+
+% Usually only one solution will be valid, but it is possible that both are OK. In this case we use the solution that is closer to 
+% point 1 as this is the first point that the divider line crosses as we trace along line_points.
+if p1_OK_flag && ~p2_OK_flag
+    point = [x1, y1];
+elseif ~p1_OK_flag && p2_OK_flag
+    point = [x2, y2];
+elseif s1_OK_flag && s2_OK_flag;
+    dist_p1 = sqrt(sum((segment_point_1 - [x1, y1]).^2, 2));
+    dist_p2 = sqrt(sum((segment_point_1 - [x2, y2]).^2, 2));
+    if dist_s1 <= dist_s2
+        point = [x1, y1];
     else
-        divider_x_s1 = (intercept_divider_s1 - intercept_12) / (slope_12 - slope_divider_s1);
-        divider_x_s2 = (intercept_divider_s2 - intercept_12) / (slope_12 - slope_divider_s2);
-        divider_y_s1 = slope_12 * divider_x_s1 + intercept_12;
-        divider_y_s2 = slope_12 * divider_x_s2 + intercept_12;
+        point = [x2, y2];
     end
-
-    % Test if the solution is for a point that lies between points 1 and 2 
-    min_x = min(segment_point_1(1), segment_point_2(1));
-    max_x = max(segment_point_1(1), segment_point_2(1));
-    min_y = min(segment_point_1(2), segment_point_2(2));
-    max_y = max(segment_point_1(2), segment_point_2(2));
-    if min_x <= divider_x_s1 && divider_x_s1 <= max_x && min_y <= divider_y_s1 && divider_y_s1 <= max_y
-        s1_OK_flag = true;
-    else
-        s1_OK_flag = false;
-    end
-    if min_x <= divider_x_s2 && divider_x_s2 <= max_x && min_y <= divider_y_s2 && divider_y_s2 <= max_y
-        s2_OK_flag = true;
-    else
-        s2_OK_flag = false;
-    end
-
-    % Usually only one solution will be valid. It is possible that both are OK if the 1d3 angle
-    % is close to 90 degrees, in which case we use solution that is closer to the closer to 
-    % point 1 and thus the first point that the divider line crosses as we trace along line_points.
-    if s1_OK_flag && ~s2_OK_flag
-        divider_point = [divider_x_s1, divider_y_s1];
-    elseif ~s1_OK_flag && s2_OK_flag
-        divider_point = [divider_x_s2, divider_y_s2];
-    elseif s1_OK_flag && s2_OK_flag;
-        dist_s1 = sqrt(sum((segment_point_1 - [divider_x_s1, divider_y_s1]).^2, 2));
-        dist_s2 = sqrt(sum((segment_point_1 - [divider_x_s2, divider_y_s2]).^2, 2));
-        if dist_s1 <= dist_s2
-            divider_point = [divider_x_s1, divider_y_s1];
-        else
-            divider_point = [divider_x_s2, divider_y_s2];
-        end
-    end
-end % end else for special case with points 1 and 3
-save('cheat.mat')
+end
 end
 
 function [number_points] = calc_number_poins_per_divider(divider, mean, stdev, skew)
