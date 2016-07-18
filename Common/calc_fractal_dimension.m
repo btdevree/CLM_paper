@@ -31,8 +31,8 @@ number_divider_lengths = 7;
 total_number_points = size(line_points, 1);
 distances = sqrt(sum((line_points(2:end, :) - line_points(1:end-1, :)).^2, 2));
 maximum_length = sum(distances, 1);
-stdev_length = std(distance, 0, 1);
-skew_length = skewness(distance, 1, 1);
+stdev_length = std(distances, 0, 1);
+skew_length = skewness(distances, 1, 1);
 mean_length = maximum_length / total_number_points;
 
 % Determine divider sizes
@@ -63,27 +63,32 @@ for repeat_index = 1:number_repeats
     for divider_index = 1:number_divider_lengths
         
         % Calculate the number of points that we should calculate the distance from for each cycle of the divider algorithm
-        num_points = calc_number_poins_per_divider(divider_lengths(divider_index), mean_length, median_length, stdev_length, skew_length);
+        num_points = calc_number_poins_per_divider(divider_lengths(divider_index), mean_length, stdev_length, skew_length);
         
         % Record arguments
         args(divider_index, repeat_index).divider_length = divider_lengths(divider_index);
-        args(divider_index, repeat_index).starting_point_index = starting_point_index;
+        args(divider_index, repeat_index).start_index = starting_point_index;
         args(divider_index, repeat_index).points_required_per_divider = num_points;
     end
 end
 
-% Start up a pool of future calc_distance evaluations
-for eval_index = 1:size(args(:), 1)
-    future_results(eval_index) = parfeval(@calc_distance, 1, line_points, args(eval_index));
-end
+% % Start up a pool of future calc_distance evaluations
+% for eval_index = 1:size(args(:), 1)
+%     future_results(eval_index) = parfeval(@calc_distance, 1, line_points, args(eval_index));
+% end
+% 
+% % Create an onCleanup to ensure we do not leave any futures running when we exit.
+% cancelFutures = onCleanup(@() cancel(futures));
+% 
+% % Collect the future_results and put them in the distance result matrix
+% for eval_index = 1:size(args(:), 1)
+%    [completed_index, new_result] = fetchNext(future_results);
+%    curve_distance(completed_index) = new_result;
+% end
 
-% Create an onCleanup to ensure we do not leave any futures running when we exit.
-cancelFutures = onCleanup(@() cancel(futures));
-
-% Collect the future_results and put them in the distance result matrix
+% Nonparallel execution
 for eval_index = 1:size(args(:), 1)
-   [completed_index, new_result] = fetchNext(future_results);
-   curve_distance(completed_index) = new_result;
+curve_distance(eval_index) = calc_distance(line_points, args(eval_index));
 end
 
 %  Transform to Richardson's plot
@@ -344,6 +349,46 @@ else
         end
     end
 end % end else for special case with points 1 and 3
+save('cheat.mat')
+end
+
+function [number_points] = calc_number_poins_per_divider(divider, mean, stdev, skew)
+% Local function to estimate the number of points we'll need to assay in
+% order to include the next divider length 99.5% of the time. Accounts for
+% skewed step size distributions and small numbers of steps. 
+
+% Loop cap
+max_iterations = 1e4;
+
+% Increase the number of points until we find enough to satisfy the problem
+number_points = 1;
+while true 
+    
+    % Determine the statistics of the path length sum
+    path_mean = number_points * mean; % Wasserman, "All of Statistics" page 28, iii.
+    path_stdev = sqrt(number_points) * stdev; % Wasserman, "All of Statistics" page 28, iii.
+    path_skew = (1/sqrt(number_points)) * skew; % From skew definition, given in Eriksson, "A simulation method for skewness correction" (Master's thesis, Uppasla U.), Appendex 1, Corollary 4. 
+    
+    % Approximate as normal with a corrected mean due to the skew
+    adjusted_path_mean = path_mean + (path_skew / (6 * path_stdev.^2 * number_points)); % Norman J. Johnson, "Modified t Tests and Confidence Intervals for Asymmetrical Populations" JASA, v73:p536-44, eqn 2.7
+
+    % Get value of the path length that is smaller than 99.5% of the expected paths
+    cutoff_path_length = adjusted_path_mean - 2.78 * path_stdev; % p = 0.005 for single tailed test
+    
+    % Assume path is 2D random walk: rmsd = <r> * sqrt(n) --> (path length / n) * sqrt(n) --> path length / sqrt(n)
+    % NOTE: behavior as n --> infinity: rmsd = sqrt(n)* mu - 2.78 * sigma, we shouldn't get stuck in an infinite loop, but this is a foolish
+    %   algorithm for large dividers and small steps. In such a case, use the limiting behavior equation instead.
+    cutoff_rmsd_estimate = cutoff_path_length / sqrt(number_points);
+    
+    % Stop loop if we've gone enough steps or reached the cap
+    if cutoff_rmsd_estimate > divider || number_points >= max_iterations;
+        break
+    else
+        % Add another point
+        number_points = number_points + 1;
+    end
+end
+
 end
 
 function draw_plot(line_points, divider_points, current_point, current_divider_point, start_index)
