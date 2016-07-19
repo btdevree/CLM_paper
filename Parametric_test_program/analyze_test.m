@@ -1,4 +1,4 @@
-function analyze_test(test_directory, output_directory)
+function analyze_test(test_directory, output_directory, skip_ECI)
 %ANALYZE_TEST Compare responses of a parametric STORM image test to the 
 % ground truth and save the summary statistics.
 %
@@ -12,18 +12,27 @@ function analyze_test(test_directory, output_directory)
 %       directory.
 %   output_directory: string, filepath for saving the test results.
 %       Optional, default = test_directory.
+%   skip_ECI: boolean, if set to true we load in the ECI and TCI data from
+%       test_summary.mat instead of recalculating it. Default = false.
 % Output:
 %   Summary is saved to the output directory as "test_summary.mat"
 
 % Set defaults
 if nargin < 1; test_directory = ''; end;
-if nargin < 2; output_directory = test_directory; end;    
+if nargin < 2; output_directory = test_directory; end;
+if nargin < 3; skip_ECI = false; end;
 
 % Start up a new parallel pool using default settings, if needed.
 gcp
 
+% Load old results if we're not recalculating the ECI/TCI
+if skip_ECI
+    load([test_directory, '/test_summary.mat']); % Load old info
+    ts = test_summary;
+end
+
 % Expand and load the test, load the answers
-%untar([test_directory, '/test_archive.tar.gz'], output_directory);
+untar([test_directory, '/test_archive.tar.gz'], output_directory);
 load([test_directory, '/test_archive.mat']); % Loads test_info
 load([test_directory, '/response_info.mat']); % Load responses
 
@@ -39,12 +48,16 @@ max_y_bound = params.bounds(4);
 x_length = max_x_bound - min_x_bound;
 y_length = max_y_bound - min_y_bound;
 
-% Initalize variables
-ts = struct(); % For test_summary, shorten for convenience
-ts.TCI_mean = cell(number_images, 1);
-ts.ECI_mean = cell(number_images, 1);
-ts.TCI_stdev = cell(number_images, 1);
-ts.ECI_stdev = cell(number_images, 1);
+% Skip the ECI calculation if it's already done
+if ~skip_ECI
+
+    % Initalize variables
+    ts = struct(); % For test_summary, shorten for convenience
+    ts.TCI_mean = cell(number_images, 1);
+    ts.ECI_mean = cell(number_images, 1);
+    ts.TCI_stdev = cell(number_images, 1);
+    ts.ECI_stdev = cell(number_images, 1);
+end
 
 % A template structure for the shared attributes that all the image type need to keep track of. 
 template_struct = struct();
@@ -56,49 +69,51 @@ template_struct.TCI_stdev = [];
 
 % ------Calculate the TCI and ECI of each image-------
 
-% % Define fraction of events, number of events, and replicates
-% fraction_vector = [0; .005; .01; .02; .04; .06; .08; .1; .15; .2; .25; .3; .35; .4; .5; .6; .7; .8; .9; 1];
-% number_pseudoreplicates = 30; % Number of times to split up each dataset
+% Skip the ECI calculation if it's already done
+if ~skip_ECI
 
-% Define fraction of events, number of events, and replicates
-fraction_vector = [0; .04; .1; .2; .35; .6; 1];
-number_pseudoreplicates = 3; % Number of times to split up each dataset
+    % Define fraction of events, number of events, and replicates
+    fraction_vector = [0; .005; .01; .02; .04; .06; .08; .1; .15; .2; .25; .3; .35; .4; .5; .6; .7; .8; .9; 1];
+    number_pseudoreplicates = 3; % Number of times to split up each dataset
 
-% Report
-fprintf('\nCalculating ECI and TCI on image number   ');
+    % Report
+    fprintf('\nCalculating ECI and TCI on image number   ');
 
-% Run IIC curve script for each image
-for image_index = 1:number_images
-      
-      % Report
-      fprintf('\b\b\b %2u', image_index);
+    % Run IIC curve script for each image
+    for image_index = 1:number_images
 
-%     % Get the ideal image and dataset
-%     ideal_image = test_info.ideal_images{image_index};
-%     dataset = test_info.event_data{image_index};
-% 
-%     % Get the IIC and ideal discrepency results
-%     [IIC_results, ~, ideal_discrepency_results] = calculate_IIC(params, dataset, fraction_vector, number_pseudoreplicates, 'sum_of_squares', ideal_image, true);
-% 
-%     % Calculate the AOC and ECI of the sum of squares IIC curves
-%     dFrac = fraction_vector(2:end) - fraction_vector(1:end-1);
-%     midpoint_II = (IIC_results(2:end, :) + IIC_results(1:end-1, :))/2;
-%     AOC = sum(repmat(dFrac, 1, size(midpoint_II, 2)) .* midpoint_II, 1);
-%     ECI_data = (2 * AOC - 1);
-%     ts.ECI_mean{image_index} = mean(ECI_data, 2);
-%     ts.ECI_stdev{image_index} = std(ECI_data, 0, 2);
-% 
-%     % Calculate the corrosponding TCI 
-%     TCI_data = 1 - (ideal_discrepency_results(end, :) ./ ideal_discrepency_results(1, :));
-%     ts.TCI_mean{image_index} =mean(TCI_data, 2);
-%     ts.TCI_stdev{image_index} = std(TCI_data, 0, 2);
-    
-    % testmode
-    ts.ECI_mean{image_index} = .5;
-    ts.ECI_stdev{image_index} = .5;
-    ts.TCI_mean{image_index} = .5;
-    ts.TCI_stdev{image_index} = .5;
-    
+        % Report
+        fprintf('\b\b\b %2u', image_index);
+
+        % Get the ideal image and dataset
+        ideal_image = test_info.ideal_images{image_index};
+        dataset = test_info.event_data{image_index};
+
+        % Get the IIC and ideal discrepency results
+        [IIC_results, ~, ideal_discrepency_results] = calculate_IIC(params, dataset, fraction_vector, number_pseudoreplicates, 'sum_of_squares', ideal_image, true);
+
+        % Calculate the AOC and ECI of the sum of squares IIC curves
+        dFrac = fraction_vector(2:end) - fraction_vector(1:end-1);
+        midpoint_II = (IIC_results(2:end, :) + IIC_results(1:end-1, :))/2;
+        AOC = sum(repmat(dFrac, 1, size(midpoint_II, 2)) .* midpoint_II, 1);
+        ECI_data = (2 * AOC - 1);
+        ts.ECI_mean{image_index} = mean(ECI_data, 2);
+        ts.ECI_stdev{image_index} = std(ECI_data, 0, 2);
+
+        % Calculate the corrosponding TCI 
+        TCI_data = 1 - (ideal_discrepency_results(end, :) ./ ideal_discrepency_results(1, :));
+        ts.TCI_mean{image_index} =mean(TCI_data, 2);
+        ts.TCI_stdev{image_index} = std(TCI_data, 0, 2);    
+    end
+
+    % Rename and save results
+    test_summary = ts;
+    if ~strcmp(output_directory, '');
+        filepath = [output_directory, '/test_summary.mat'];
+    else
+        filepath = 'test_summary.mat';
+    end
+    save(filepath, 'test_summary');
 end
 
 % Find indices for each type of image
@@ -522,9 +537,7 @@ for image_index = border_indices';
     ground_truth = test_info.ground_truth_coords{image_index};
     
     % Measure the fractal dimension of the border
-    %figure
-    %fractal_dim = calc_fractal_dimension(ground_truth, 3, [], true);
-    %fractal_dim = calc_fractal_dimension(ground_truth, 3);
+    fractal_dim = calc_fractal_dimension(ground_truth, 3, [2, 2000]);
     
     % Get interpolated response coordinates
     interp_x = interp1(responses.y{image_index}, responses.x{image_index}, ground_truth(:, 2),'linear', 'extrap');
@@ -544,7 +557,7 @@ for image_index = border_indices';
     borders.abs_area = [borders.abs_area; abs_area];
     borders.rmsd = [borders.rmsd; rmsd];
     borders.contrast_ratios = [borders.contrast_ratios; info.contrast_ratio];
-    %borders.fractal_dim = [borders.fractal_dim; fractal_dim];
+    borders.fractal_dim = [borders.fractal_dim; fractal_dim];
     borders.ECI = [borders.ECI; ts.ECI_mean{image_index}];
     borders.TCI = [borders.TCI; ts.TCI_mean{image_index}];
     borders.ECI_stdev = [borders.ECI_stdev; ts.ECI_stdev{image_index}];

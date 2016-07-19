@@ -145,11 +145,13 @@ if log_points_flag
     divider_points = start_coords;
 end
 
+% Initalize step counts
+step_count = 0;
+
 % Walk the divider lengths forwards and backwards from the start point
 for step_direction = [-1, 1]
 
     %Initalize flags, counters, and coordinates
-    step_count = 0;
     reached_end_flag = false;
     current_index = start_index;
     current_divider_coords = start_coords;
@@ -224,8 +226,24 @@ for step_direction = [-1, 1]
             point_2_index = current_index + crosspoint_index * step_direction;
             new_divider_coords = divide_line_segment(line_points(point_1_index, :), line_points(point_2_index, :), current_divider_coords, divider_length);
             
+            % Failures to find a point seem to be due to precision issues
             if isempty(new_divider_coords)
-                disp('What is happening here?');
+                
+                % Try to shift the divider coords randomly by a very small amount to avoid whatever precision issue is causing the failure
+                for shift_attempt_index = 1:100
+                    coord_precision = eps(single(current_divider_coords));
+                    shifted_divider_coords = double(current_divider_coords) + rand(1, 2) * 2 * coord_precision - coord_precision;
+                    new_divider_coords = divide_line_segment(line_points(point_1_index, :), line_points(point_2_index, :), shifted_divider_coords, divider_length);
+                    if ~isempty(new_divider_coords)
+                        disp('Shifted coordinate to compensate for precision issues!')
+                        break
+                    end
+                end
+                
+                % If it's still empty, fail
+                if isempty(new_divider_coords)
+                    error('Failed to find a valid divider coordinate')
+                end
             end
             
             % Count, set indices and flags 
@@ -410,6 +428,8 @@ elseif p1_OK_flag && p2_OK_flag;
     else
         point = p2;
     end
+else
+    point = [];
 end
 end
 
@@ -431,7 +451,7 @@ while true
     path_skew = (1/sqrt(number_points)) * skew; % From skew definition, given in Eriksson, "A simulation method for skewness correction" (Master's thesis, Uppasla U.), Appendex 1, Corollary 4. 
     
     % Approximate as normal with a corrected mean due to the skew
-    adjusted_path_mean = path_mean - (path_skew / (6 * path_stdev.^2 * number_points)); % Norman J. Johnson, "Modified t Tests and Confidence Intervals for Asymmetrical Populations" JASA, v73:p536-44, eqn 2.7, but I swear the plus sign should be a minus
+    adjusted_path_mean = path_mean - (path_skew / (6 * path_stdev.^2)); % Norman J. Johnson, "Modified t Tests and Confidence Intervals for Asymmetrical Populations" JASA, v73:p536-44, eqn 2.7, but I swear the plus sign should be a minus
 
     % Get value of the path length that is smaller than 99.5% of the expected paths
     cutoff_path_length = adjusted_path_mean - 2.78 * path_stdev; % p = 0.005 for single tailed test
