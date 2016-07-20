@@ -41,7 +41,7 @@ elseif size(summary_paths, 1) >= 2
         load([test_directory, '/', summary_paths(summary_index).name]); % Loads test_summary
 
         % Add summaries together into one big summary
-        summary_struct = add_summaries(summary_struct, test_summary);
+        summary_struct = add_summaries(summary_struct, test_summary, 1);
     end
     
 % No files, give error
@@ -49,7 +49,29 @@ else
     error('No test_summary files found');
 end
 
-disp('Hi')
+% ---- Regions -----
+
+% Rename for convenience
+s = summary_struct.regions;
+
+% Found accuracy image
+% Create new figure
+hfig = figure('Units', 'pixels', 'Position', [100, 100, 700, 500], 'PaperPositionMode', 'auto', 'InvertHardcopy', 'off', 'Color', [1, 1, 1]);
+
+% Create clear axes for plotting shapes
+haxes = axes('Units', 'pixels', 'Position', [70, 50, 600, 400]);
+plot(haxes, s.found_regions.ECI, s.found_regions.net_area, 'LineWidth', 4, 'Color', [0, 0, 0]);
+set(haxes, 'Xlim', [0, 1], 'Color', 'none');
+title('Net Area Between Response and Ground Truth Regions', 'FontSize', 16);
+xlabel('Estimated Completeness Index','FontSize', 12);
+ylabel('Probability Density','FontSize', 12);
+
+% Save image
+filename = [figure_path, 'localization_precision'];
+print(hfig, filename, '-dpng');
+
+% Cleanup
+delete(hfig);
 
 end
 
@@ -64,8 +86,7 @@ function [new_struct] = add_summaries(s1, s2, cat_dimension)
 % Output:
 %   new_struct: structures with the same fields and stacked entries.
 
-% preallocate a structure.
-new_struct = struct('region', [], 'dots', [], 'actin', [], 'borders', []);
+% Preallocate a structure.
 new_struct = struct();
 
 % Get first level fieldnames and loop through each name (region, dots, etc.)
