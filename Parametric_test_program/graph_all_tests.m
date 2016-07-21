@@ -90,7 +90,7 @@ else
     hlt = text('Parent', hlegend.DecorationContainer, 'String', 'Contrast Ratio', 'HorizontalAlignment', 'center', ...
         'VerticalAlignment', 'bottom', 'Position', [0.5, 1.05], 'Units', 'normalized', 'FontSize', 10);
 end
-title('Relative Area Between Response and Ground Truth Regions', 'FontSize', 16);
+title('Relative Area Between Response and Ground Truth Regions', 'FontSize', 14);
 xlabel('Estimated Completeness Index','FontSize', 12);
 ylabel('Relative Area','FontSize', 12);
 hold off
@@ -118,23 +118,23 @@ ECI_cr_4 = select_summary_subset(s.missing_regions, 'ECI', 'contrast_ratios', 4)
 
 % Calcaulate histogram
 max_ECI = 0.3;
-histogram_edges = linspace(0, max_ECI, 11);
-missing_cr_0_5 = histc(ECI_cr_0_5, histogram_edges);
+histogram_edges = linspace(0, max_ECI, 11)';
+missing_cr_0_5 = histc(ECI_cr_0_5, histogram_edges, 1);
 if isempty(missing_cr_0_5); missing_cr_0_5 = zeros(size(histogram_edges)); end;
-missing_cr_1_5 = histc(ECI_cr_1_5, histogram_edges);
+missing_cr_1_5 = histc(ECI_cr_1_5, histogram_edges, 1);
 if isempty(missing_cr_1_5); missing_cr_1_5 = zeros(size(histogram_edges)); end;
-missing_cr_4 = histc(ECI_cr_4, histogram_edges);
+missing_cr_4 = histc(ECI_cr_4, histogram_edges, 1);
 if isempty(missing_cr_4); missing_cr_4 = zeros(size(histogram_edges)); end;
 
 
 % Plot histogram for each contrast ratio
 haxes = axes('Units', 'pixels', 'Position', [70, 50, 600, 400]);
-bar(haxes, histogram_edges, missing_cr_0_5, 'FaceColor', [0, 0, 0], 'EdgeColor', 'k');
-hold on
-bar(haxes, histogram_edges, missing_cr_1_5, 'FaceColor', [.4, .4, .4], 'EdgeColor', 'k');
-bar(haxes, histogram_edges, missing_cr_4, 'FaceColor', [.8, .8, .8], 'EdgeColor', 'k');
-set(haxes, 'Xlim', [0, max_ECI]);
-legend_labels = {'1:1.5', '1:2.5', '1:5'};
+    hold on
+    hbar = bar(haxes, histogram_edges, [missing_cr_0_5, missing_cr_1_5, missing_cr_4], 'EdgeColor', 'k', 'BarLayout', 'grouped');
+    set(hbar(1), 'FaceColor', [0, 0, 0]);
+    set(hbar(2), 'FaceColor', [.4, .4, .4]);
+    set(hbar(3), 'FaceColor', [.8, .8, .8]);
+    set(haxes, 'Xlim', [-0.05, max_ECI + 0.05]);legend_labels = {'1:1.5', '1:2.5', '1:5'};
 hlegend = legend(legend_labels, 'Location', 'best');
 if verLessThan('matlab','8.4') % Stupid MATLAB changed lots of stuff about graphics
     hlt = get(hlegend, 'title');
@@ -143,7 +143,7 @@ else
     hlt = text('Parent', hlegend.DecorationContainer, 'String', 'Contrast Ratio', 'HorizontalAlignment', 'center', ...
         'VerticalAlignment', 'bottom', 'Position', [0.5, 1.05], 'Units', 'normalized', 'FontSize', 10);
 end
-title('Missing Responses Histogram of Regions', 'FontSize', 16);
+title('Missing Responses Histogram of Regions', 'FontSize', 14);
 xlabel('Estimated Completeness Index','FontSize', 12);
 ylabel('Number Missing Responses','FontSize', 12);
 hold off
@@ -168,6 +168,7 @@ s = summary_struct.dots;
 
 % Repeat images for each dot size
 dot_sizes = [20, 50, 100, 200, 500]; % nanometers
+dot_sizes = [1, 2, 3];
 for dot_radius = dot_sizes
 
 
@@ -177,19 +178,19 @@ for dot_radius = dot_sizes
     ECI_cr_10 = select_summary_subset(s.found_points, 'ECI', {'contrast_ratios'; 'radius'}, {10; dot_radius});
 
     % Get distance vectors and calculate relative absolute area
-    dist_cr_1 = select_summary_subset(s.found_points, {'contrast_ratios'; 'radius'}, {1; dot_radius});
-    dist_cr_4 = select_summary_subset(s.found_regions, {'contrast_ratios'; 'radius'}, {4; dot_radius});
-    dist_cr_10 = select_summary_subset(s.found_regions, {'contrast_ratios'; 'radius'}, {10; dot_radius});
+    dist_cr_1 = select_summary_subset(s.found_points, 'distances', {'contrast_ratios'; 'radius'}, {1; dot_radius});
+    dist_cr_4 = select_summary_subset(s.found_points, 'distances', {'contrast_ratios'; 'radius'}, {4; dot_radius});
+    dist_cr_10 = select_summary_subset(s.found_points, 'distances', {'contrast_ratios'; 'radius'}, {10; dot_radius});
     
     % Create new figure
     hfig = figure('Units', 'pixels', 'Position', [100, 100, 700, 500], 'PaperPositionMode', 'auto', 'InvertHardcopy', 'off', 'Color', [1, 1, 1]);
 
     % Plot scatter plot of each contrast ratio
     haxes = axes('Units', 'pixels', 'Position', [70, 50, 600, 400]);
-    scatter(haxes, ECI_cr_0_5, relative_area_cr_0_5, 'Marker', 'o', 'MarkerEdgeColor', 'k');
+    scatter(haxes, ECI_cr_1, dist_cr_1, 'Marker', 'o', 'MarkerEdgeColor', 'k');
     hold on
-    scatter(haxes, ECI_cr_1_5, relative_area_cr_1_5, 'Marker', '^', 'MarkerEdgeColor', 'k');
-    scatter(haxes, ECI_cr_4, relative_area_cr_4, 'Marker', 's', 'MarkerEdgeColor', 'k');
+    scatter(haxes, ECI_cr_4, dist_cr_4, 'Marker', '^', 'MarkerEdgeColor', 'k');
+    scatter(haxes, ECI_cr_10, dist_cr_10, 'Marker', 's', 'MarkerEdgeColor', 'k');
     set(haxes, 'Xlim', [0, 1]);
     legend_labels = {'1:1.5', '1:2.5', '1:5'};
     hlegend = legend(legend_labels, 'Location', 'best');
@@ -200,16 +201,17 @@ for dot_radius = dot_sizes
         hlt = text('Parent', hlegend.DecorationContainer, 'String', 'Contrast Ratio', 'HorizontalAlignment', 'center', ...
             'VerticalAlignment', 'bottom', 'Position', [0.5, 1.05], 'Units', 'normalized', 'FontSize', 10);
     end
-    title('Relative Area Between Response and Ground Truth Regions', 'FontSize', 16);
+    title(['Distance Between Response and Ground Truth ', num2str(dot_radius), ' nm Dots'], 'FontSize', 14);
     xlabel('Estimated Completeness Index','FontSize', 12);
-    ylabel('Relative Area','FontSize', 12);
+    ylabel('Distance (nm)','FontSize', 12);
     hold off
 
     % Save image
+    name = ['dots_', num2str(dot_radius), 'nm_distance.png'];
     if ~strcmp(output_directory, '');
-        filepath = [output_directory, '/region_abs_area.png'];
+        filepath = [output_directory, '/', name];
     else
-        filepath = 'region_abs_area.png';
+        filepath = name;
     end
     print(hfig, filepath, '-dpng');
 
@@ -221,28 +223,29 @@ for dot_radius = dot_sizes
     hfig = figure('Units', 'pixels', 'Position', [100, 100, 700, 500], 'PaperPositionMode', 'auto', 'InvertHardcopy', 'off', 'Color', [1, 1, 1]);
 
     % Get vectors for the ECI
-    ECI_cr_0_5 = select_summary_subset(s.missing_regions, 'ECI', 'contrast_ratios', 0.5);
-    ECI_cr_1_5 = select_summary_subset(s.missing_regions, 'ECI', 'contrast_ratios', 1.5);
-    ECI_cr_4 = select_summary_subset(s.missing_regions, 'ECI', 'contrast_ratios', 4);
+    ECI_cr_1= select_summary_subset(s.missing_points, 'ECI', {'contrast_ratios'; 'radius'}, {1; dot_radius});
+    ECI_cr_4 = select_summary_subset(s.missing_points, 'ECI', {'contrast_ratios'; 'radius'}, {4; dot_radius});
+    ECI_cr_10 = select_summary_subset(s.missing_points, 'ECI', {'contrast_ratios'; 'radius'}, {10; dot_radius});
 
     % Calcaulate histogram
-    max_ECI = 0.3;
-    histogram_edges = linspace(0, max_ECI, 11);
-    missing_cr_0_5 = histc(ECI_cr_0_5, histogram_edges);
-    if isempty(missing_cr_0_5); missing_cr_0_5 = zeros(size(histogram_edges)); end;
-    missing_cr_1_5 = histc(ECI_cr_1_5, histogram_edges);
-    if isempty(missing_cr_1_5); missing_cr_1_5 = zeros(size(histogram_edges)); end;
-    missing_cr_4 = histc(ECI_cr_4, histogram_edges);
+    max_ECI = 1;
+    histogram_edges = linspace(0, max_ECI, 11)';
+    missing_cr_1 = histc(ECI_cr_1, histogram_edges, 1);
+    if isempty(missing_cr_1); missing_cr_1 = zeros(size(histogram_edges)); end;
+    missing_cr_4 = histc(ECI_cr_4, histogram_edges, 1);
     if isempty(missing_cr_4); missing_cr_4 = zeros(size(histogram_edges)); end;
+    missing_cr_10 = histc(ECI_cr_10, histogram_edges, 1);
+    if isempty(missing_cr_10); missing_cr_10 = zeros(size(histogram_edges)); end;
 
 
     % Plot histogram for each contrast ratio
     haxes = axes('Units', 'pixels', 'Position', [70, 50, 600, 400]);
-    bar(haxes, histogram_edges, missing_cr_0_5, 'FaceColor', [0, 0, 0], 'EdgeColor', 'k');
     hold on
-    bar(haxes, histogram_edges, missing_cr_1_5, 'FaceColor', [.4, .4, .4], 'EdgeColor', 'k');
-    bar(haxes, histogram_edges, missing_cr_4, 'FaceColor', [.8, .8, .8], 'EdgeColor', 'k');
-    set(haxes, 'Xlim', [0, max_ECI]);
+    hbar = bar(haxes, histogram_edges, [missing_cr_1, missing_cr_4, missing_cr_10], 'EdgeColor', 'k', 'BarLayout', 'grouped');
+    set(hbar(1), 'FaceColor', [0, 0, 0]);
+    set(hbar(2), 'FaceColor', [.4, .4, .4]);
+    set(hbar(3), 'FaceColor', [.8, .8, .8]);
+    set(haxes, 'Xlim', [-0.05, max_ECI + 0.05]);
     legend_labels = {'1:1.5', '1:2.5', '1:5'};
     hlegend = legend(legend_labels, 'Location', 'best');
     if verLessThan('matlab','8.4') % Stupid MATLAB changed lots of stuff about graphics
@@ -252,16 +255,71 @@ for dot_radius = dot_sizes
         hlt = text('Parent', hlegend.DecorationContainer, 'String', 'Contrast Ratio', 'HorizontalAlignment', 'center', ...
             'VerticalAlignment', 'bottom', 'Position', [0.5, 1.05], 'Units', 'normalized', 'FontSize', 10);
     end
-    title('Missing Responses Histogram of Regions', 'FontSize', 16);
+    title(['Missing Responses Histogram of ', num2str(dot_radius), ' nm Dots'], 'FontSize', 14);
     xlabel('Estimated Completeness Index','FontSize', 12);
     ylabel('Number Missing Responses','FontSize', 12);
     hold off
 
     % Save image
+    name = ['dots_', num2str(dot_radius), 'nm_missing.png'];
     if ~strcmp(output_directory, '');
-        filepath = [output_directory, '/region_missing.png'];
+        filepath = [output_directory, '/', name];
     else
-        filepath = 'region_missing.png';
+        filepath = name;
+    end
+    print(hfig, filepath, '-dpng');
+
+    % Cleanup
+    delete(hfig);
+    
+    % Extra answer histogram
+    % Create new figure
+    hfig = figure('Units', 'pixels', 'Position', [100, 100, 700, 500], 'PaperPositionMode', 'auto', 'InvertHardcopy', 'off', 'Color', [1, 1, 1]);
+
+    % Get vectors for the ECI
+    ECI_cr_1= select_summary_subset(s.extra_points, 'ECI', {'contrast_ratios'; 'radius'}, {1; dot_radius});
+    ECI_cr_4 = select_summary_subset(s.extra_points, 'ECI', {'contrast_ratios'; 'radius'}, {4; dot_radius});
+    ECI_cr_10 = select_summary_subset(s.extra_points, 'ECI', {'contrast_ratios'; 'radius'}, {10; dot_radius});
+
+    % Calcaulate histogram
+    max_ECI = 1;
+    histogram_edges = linspace(0, max_ECI, 11)';
+    extra_cr_1 = histc(ECI_cr_1, histogram_edges, 1);
+    if isempty(extra_cr_1); extra_cr_1 = zeros(size(histogram_edges)); end;
+    extra_cr_4 = histc(ECI_cr_4, histogram_edges, 1);
+    if isempty(extra_cr_4); extra_cr_4 = zeros(size(histogram_edges)); end;
+    extra_cr_10 = histc(ECI_cr_10, histogram_edges, 1);
+    if isempty(extra_cr_10); extra_cr_10 = zeros(size(histogram_edges)); end;
+
+
+    % Plot histogram for each contrast ratio
+    haxes = axes('Units', 'pixels', 'Position', [70, 50, 600, 400]);
+    hold on
+    hbar = bar(haxes, histogram_edges, [extra_cr_1, extra_cr_4, extra_cr_10], 'EdgeColor', 'k', 'BarLayout', 'grouped');
+    set(hbar(1), 'FaceColor', [0, 0, 0]);
+    set(hbar(2), 'FaceColor', [.4, .4, .4]);
+    set(hbar(3), 'FaceColor', [.8, .8, .8]);
+    set(haxes, 'Xlim', [-0.05, max_ECI + 0.05]);
+    legend_labels = {'1:1.5', '1:2.5', '1:5'};
+    hlegend = legend(legend_labels, 'Location', 'best');
+    if verLessThan('matlab','8.4') % Stupid MATLAB changed lots of stuff about graphics
+        hlt = get(hlegend, 'title');
+        set(hlt, 'String', 'Contrast Ratio');
+    else
+        hlt = text('Parent', hlegend.DecorationContainer, 'String', 'Contrast Ratio', 'HorizontalAlignment', 'center', ...
+            'VerticalAlignment', 'bottom', 'Position', [0.5, 1.05], 'Units', 'normalized', 'FontSize', 10);
+    end
+    title(['Extra Responses Histogram of ', num2str(dot_radius), ' nm Dots'], 'FontSize', 14);
+    xlabel('Estimated Completeness Index','FontSize', 12);
+    ylabel('Number Missing Responses','FontSize', 12);
+    hold off
+
+    % Save image
+    name = ['dots_', num2str(dot_radius), 'nm_extra.png'];
+    if ~strcmp(output_directory, '');
+        filepath = [output_directory, '/', name];
+    else
+        filepath = name;
     end
     print(hfig, filepath, '-dpng');
 
@@ -269,6 +327,179 @@ for dot_radius = dot_sizes
     delete(hfig);
 
 end % End looping through each dot radius
+
+% ---- Actin -----
+
+% Rename for convenience
+s = summary_struct.actin;
+
+% Found accuracy images
+
+% Repeat images for each dot size
+line_widths = [26, 9]; % nanometers
+for width = line_widths;
+
+    % Get vectors for the ECI
+    ECI_cr_1= select_summary_subset(s.found_lines, 'ECI', {'contrast_ratios'; 'width'}, {1; width});
+    ECI_cr_4 = select_summary_subset(s.found_lines, 'ECI', {'contrast_ratios'; 'width'}, {4; width});
+    ECI_cr_10 = select_summary_subset(s.found_lines, 'ECI', {'contrast_ratios'; 'width'}, {10; width});
+
+    % Get area vectors and calculate area/length
+    area_cr_1 = select_summary_subset(s.found_lines, 'area', {'contrast_ratios'; 'width'}, {1; width});
+    area_cr_4 = select_summary_subset(s.found_lines, 'area', {'contrast_ratios'; 'width'}, {4; width});
+    area_cr_10 = select_summary_subset(s.found_lines, 'area', {'contrast_ratios'; 'width'}, {10; width});
+    length_cr_1 = select_summary_subset(s.found_lines, 'true_length', {'contrast_ratios'; 'width'}, {1; width});
+    length_cr_4 = select_summary_subset(s.found_lines, 'true_length', {'contrast_ratios'; 'width'}, {4; width});
+    length_cr_10 = select_summary_subset(s.found_lines, 'true_length', {'contrast_ratios'; 'width'}, {10; width});
+    norm_area_cr_1 = area_cr_1 ./ length_cr_1;
+    norm_area_cr_4 = area_cr_4 ./ length_cr_4;
+    norm_area_cr_10 = area_cr_10 ./ length_cr_10;
+    
+    % Create new figure
+    hfig = figure('Units', 'pixels', 'Position', [100, 100, 700, 500], 'PaperPositionMode', 'auto', 'InvertHardcopy', 'off', 'Color', [1, 1, 1]);
+
+    % Plot scatter plot of each contrast ratio
+    haxes = axes('Units', 'pixels', 'Position', [70, 50, 600, 400]);
+    scatter(haxes, ECI_cr_1, norm_area_cr_1, 'Marker', 'o', 'MarkerEdgeColor', 'k');
+    hold on
+    scatter(haxes, ECI_cr_4, norm_area_cr_4, 'Marker', '^', 'MarkerEdgeColor', 'k');
+    scatter(haxes, ECI_cr_10, norm_area_cr_10, 'Marker', 's', 'MarkerEdgeColor', 'k');
+    set(haxes, 'Xlim', [0, 1]);
+    legend_labels = {'1:1.5', '1:2.5', '1:5'};
+    hlegend = legend(legend_labels, 'Location', 'best');
+    if verLessThan('matlab','8.4') % Stupid MATLAB changed lots of stuff about graphics
+        hlt = get(hlegend, 'title');
+        set(hlt, 'String', 'Contrast Ratio');
+    else
+        hlt = text('Parent', hlegend.DecorationContainer, 'String', 'Contrast Ratio', 'HorizontalAlignment', 'center', ...
+            'VerticalAlignment', 'bottom', 'Position', [0.5, 1.05], 'Units', 'normalized', 'FontSize', 10);
+    end
+    title(['Area Between Response and Ground Truth Curves ', num2str(width), ' nm Wide'], 'FontSize', 14);
+    xlabel('Estimated Completeness Index','FontSize', 12);
+    ylabel('Area/Curve Length (nm^2 / nm)','FontSize', 12);
+    hold off
+
+    % Save image
+    name = ['actin_', num2str(width), 'nm_area.png'];
+    if ~strcmp(output_directory, '');
+        filepath = [output_directory, '/', name];
+    else
+        filepath = name;
+    end
+    print(hfig, filepath, '-dpng');
+
+    % Cleanup
+    delete(hfig);
+
+    % Missing answer histogram
+    % Create new figure
+    hfig = figure('Units', 'pixels', 'Position', [100, 100, 700, 500], 'PaperPositionMode', 'auto', 'InvertHardcopy', 'off', 'Color', [1, 1, 1]);
+
+    % Get vectors for the ECI
+    ECI_cr_1= select_summary_subset(s.missing_lines, 'ECI', {'contrast_ratios'; 'width'}, {1; width});
+    ECI_cr_4 = select_summary_subset(s.missing_lines, 'ECI', {'contrast_ratios'; 'width'}, {4; width});
+    ECI_cr_10 = select_summary_subset(s.missing_lines, 'ECI', {'contrast_ratios'; 'width'}, {10; width});
+
+    % Calcaulate histogram
+    max_ECI = 1;
+    histogram_edges = linspace(0, max_ECI, 11)';
+    missing_cr_1 = histc(ECI_cr_1, histogram_edges, 1);
+    if isempty(missing_cr_1); missing_cr_1 = zeros(size(histogram_edges)); end;
+    missing_cr_4 = histc(ECI_cr_4, histogram_edges, 1);
+    if isempty(missing_cr_4); missing_cr_4 = zeros(size(histogram_edges)); end;
+    missing_cr_10 = histc(ECI_cr_10, histogram_edges, 1);
+    if isempty(missing_cr_10); missing_cr_10 = zeros(size(histogram_edges)); end;
+
+
+    % Plot histogram for each contrast ratio
+    haxes = axes('Units', 'pixels', 'Position', [70, 50, 600, 400]);
+    hold on
+    hbar = bar(haxes, histogram_edges, [missing_cr_1, missing_cr_4, missing_cr_10], 'EdgeColor', 'k', 'BarLayout', 'grouped');
+    set(hbar(1), 'FaceColor', [0, 0, 0]);
+    set(hbar(2), 'FaceColor', [.4, .4, .4]);
+    set(hbar(3), 'FaceColor', [.8, .8, .8]);
+    set(haxes, 'Xlim', [-0.05, max_ECI + 0.05]);
+    legend_labels = {'1:1.5', '1:2.5', '1:5'};
+    hlegend = legend(legend_labels, 'Location', 'best');
+    if verLessThan('matlab','8.4') % Stupid MATLAB changed lots of stuff about graphics
+        hlt = get(hlegend, 'title');
+        set(hlt, 'String', 'Contrast Ratio');
+    else
+        hlt = text('Parent', hlegend.DecorationContainer, 'String', 'Contrast Ratio', 'HorizontalAlignment', 'center', ...
+            'VerticalAlignment', 'bottom', 'Position', [0.5, 1.05], 'Units', 'normalized', 'FontSize', 10);
+    end
+    title(['Missing Responses Histogram of ', num2str(width), ' nm Curves'], 'FontSize', 14);
+    xlabel('Estimated Completeness Index','FontSize', 12);
+    ylabel('Number Missing Responses','FontSize', 12);
+    hold off
+
+    % Save image
+    name = ['actin_', num2str(width), 'nm_missing.png'];
+    if ~strcmp(output_directory, '');
+        filepath = [output_directory, '/', name];
+    else
+        filepath = name;
+    end
+    print(hfig, filepath, '-dpng');
+
+    % Cleanup
+    delete(hfig);
+    
+    % Extra answer histogram
+    % Create new figure
+    hfig = figure('Units', 'pixels', 'Position', [100, 100, 700, 500], 'PaperPositionMode', 'auto', 'InvertHardcopy', 'off', 'Color', [1, 1, 1]);
+
+    % Get vectors for the ECI
+    ECI_cr_1= select_summary_subset(s.extra_lines, 'ECI', {'contrast_ratios'; 'width'}, {1; width});
+    ECI_cr_4 = select_summary_subset(s.extra_lines, 'ECI', {'contrast_ratios'; 'width'}, {4; width});
+    ECI_cr_10 = select_summary_subset(s.extra_lines, 'ECI', {'contrast_ratios'; 'width'}, {10; width});
+
+    % Calcaulate histogram
+    max_ECI = 1;
+    histogram_edges = linspace(0, max_ECI, 11)';
+    extra_cr_1 = histc(ECI_cr_1, histogram_edges, 1);
+    if isempty(extra_cr_1); extra_cr_1 = zeros(size(histogram_edges)); end;
+    extra_cr_4 = histc(ECI_cr_4, histogram_edges, 1);
+    if isempty(extra_cr_4); extra_cr_4 = zeros(size(histogram_edges)); end;
+    extra_cr_10 = histc(ECI_cr_10, histogram_edges, 1);
+    if isempty(extra_cr_10); extra_cr_10 = zeros(size(histogram_edges)); end;
+
+
+    % Plot histogram for each contrast ratio
+    haxes = axes('Units', 'pixels', 'Position', [70, 50, 600, 400]);
+    hold on
+    hbar = bar(haxes, histogram_edges, [extra_cr_1, extra_cr_4, extra_cr_10], 'EdgeColor', 'k', 'BarLayout', 'grouped');
+    set(hbar(1), 'FaceColor', [0, 0, 0]);
+    set(hbar(2), 'FaceColor', [.4, .4, .4]);
+    set(hbar(3), 'FaceColor', [.8, .8, .8]);
+    set(haxes, 'Xlim', [-0.05, max_ECI + 0.05]);
+    legend_labels = {'1:1.5', '1:2.5', '1:5'};
+    hlegend = legend(legend_labels, 'Location', 'best');
+    if verLessThan('matlab','8.4') % Stupid MATLAB changed lots of stuff about graphics
+        hlt = get(hlegend, 'title');
+        set(hlt, 'String', 'Contrast Ratio');
+    else
+        hlt = text('Parent', hlegend.DecorationContainer, 'String', 'Contrast Ratio', 'HorizontalAlignment', 'center', ...
+            'VerticalAlignment', 'bottom', 'Position', [0.5, 1.05], 'Units', 'normalized', 'FontSize', 10);
+    end
+    title(['Extra Responses Histogram of ', num2str(width), ' nm Curves'], 'FontSize', 14);
+    xlabel('Estimated Completeness Index','FontSize', 12);
+    ylabel('Number Missing Responses','FontSize', 12);
+    hold off
+
+    % Save image
+    name = ['actin_', num2str(width), 'nm_extra.png'];
+    if ~strcmp(output_directory, '');
+        filepath = [output_directory, '/', name];
+    else
+        filepath = name;
+    end
+    print(hfig, filepath, '-dpng');
+
+    % Cleanup
+    delete(hfig);
+
+end % End looping through each line width
 
 end
 
@@ -329,14 +560,14 @@ s = summary_substructure;
 
 % If any of the arguments are single values, put them in a cell array.
 if ~iscell(value_fieldnames)
-    value_fieldnames ={value_fieldnames};
+    value_fieldnames = {value_fieldnames};
     remove_values_cell_array = true;
 end
 if ~iscell(selector_fieldnames)
-    selector_fieldnames ={selector_fieldnames};
+    selector_fieldnames = {selector_fieldnames};
 end
 if ~iscell(selector_values)
-    selector_values ={selector_values};
+    selector_values = {selector_values};
 end
 
 % Get size of the values
@@ -364,7 +595,7 @@ values = cell(size(value_fieldnames));
 
 % Put values into the value cell array
 for value_index = 1:length(value_fieldnames(:))
-    values{value_index} = s.(value_fieldnames{selector_index})(binary_selection_vector);
+    values{value_index} = s.(value_fieldnames{value_index})(binary_selection_vector);
 end
 
 % If there's only one value field, just return the values instead of a cell array

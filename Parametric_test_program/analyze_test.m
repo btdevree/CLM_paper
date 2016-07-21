@@ -53,9 +53,8 @@ if ~skip_ECI
 
     % Initalize variables
     ts = struct(); % For test_summary, shorten for convenience
-    ts.TCI_mean = cell(number_images, 1);
+    ts.TCI = cell(number_images, 1);
     ts.ECI_mean = cell(number_images, 1);
-    ts.TCI_stdev = cell(number_images, 1);
     ts.ECI_stdev = cell(number_images, 1);
 end
 
@@ -101,9 +100,8 @@ if ~skip_ECI
         ts.ECI_stdev{image_index} = std(ECI_data, 0, 2);
 
         % Calculate the corrosponding TCI 
-        TCI_data = 1 - (ideal_discrepency_results(end, :) ./ ideal_discrepency_results(1, :));
-        ts.TCI_mean{image_index} = mean(TCI_data, 2);
-        ts.TCI_stdev{image_index} = std(TCI_data, 0, 2);    
+        TCI = 1 - (ideal_discrepency_results(end, 1) ./ ideal_discrepency_results(1, 1));
+        ts.TCI{image_index} = TCI;
     end
 
     % Rename and save results
@@ -185,16 +183,14 @@ for image_index = region_indices'; % for loops only work with row vectors
         found_regions.net_area = [found_regions.net_area; extra_area - missing_area];
         found_regions.contrast_ratios = [found_regions.contrast_ratios; info.contrast_ratio];
         found_regions.ECI = [found_regions.ECI; ts.ECI_mean{image_index}];
-        found_regions.TCI = [found_regions.TCI; ts.TCI_mean{image_index}];
+        found_regions.TCI = [found_regions.TCI; ts.TCI{image_index}];
         found_regions.ECI_stdev = [found_regions.ECI_stdev; ts.ECI_stdev{image_index}];
-        found_regions.TCI_stdev = [found_regions.TCI_stdev; ts.TCI_stdev{image_index}];
     
     else % No response, record information for the too-hard problems
         missing_regions.contrast_ratios = [missing_regions.contrast_ratios; info.contrast_ratio];
         missing_regions.ECI = [missing_regions.ECI; ts.ECI_mean{image_index}];
-        missing_regions.TCI = [missing_regions.TCI; ts.TCI_mean{image_index}];
+        missing_regions.TCI = [missing_regions.TCI; ts.TCI{image_index}];
         missing_regions.ECI_stdev = [missing_regions.ECI_stdev; ts.ECI_stdev{image_index}];
-        missing_regions.TCI_stdev = [missing_regions.TCI_stdev; ts.TCI_stdev{image_index}];
     end
 end
 
@@ -247,15 +243,13 @@ for image_index = dots_indices';
     found_points.contrast_ratios = [found_points.contrast_ratios; repmat([info.contrast_ratio], size(distances, 1), 1)];
     found_points.radius = [found_points.radius; repmat([info.dot_sizes], size(distances, 1), 1)];
     found_points.ECI = [found_points.ECI; repmat([ts.ECI_mean{image_index}], size(distances, 1), 1)];
-    found_points.TCI = [found_points.TCI; repmat([ts.TCI_mean{image_index}], size(distances, 1), 1)];
+    found_points.TCI = [found_points.TCI; repmat([ts.TCI{image_index}], size(distances, 1), 1)];
     found_points.ECI_stdev = [found_points.ECI_stdev; repmat([ts.ECI_stdev{image_index}], size(distances, 1), 1)];
-    found_points.TCI_stdev = [found_points.TCI_stdev; repmat([ts.TCI_stdev{image_index}], size(distances, 1), 1)];
     extra_points.contrast_ratios = [extra_points.contrast_ratios; repmat([info.contrast_ratio], number_extra_points, 1)];
     extra_points.radius = [extra_points.radius; repmat([info.dot_sizes], size(distances, 1), 1)];
     extra_points.ECI = [extra_points.ECI; repmat([ts.ECI_mean{image_index}], number_extra_points, 1)];
-    extra_points.TCI = [extra_points.TCI; repmat([ts.TCI_mean{image_index}], number_extra_points, 1)];
+    extra_points.TCI = [extra_points.TCI; repmat([ts.TCI{image_index}], number_extra_points, 1)];
     extra_points.ECI_stdev = [extra_points.ECI_stdev; repmat([ts.ECI_stdev{image_index}], number_extra_points, 1)];
-    extra_points.TCI_stdev = [extra_points.TCI_stdev; repmat([ts.TCI_stdev{image_index}], number_extra_points, 1)];
     
     % Get the distance between the true coordinates and the nearest response to look for missed detections
     if ~isempty(responses.x{image_index});
@@ -270,9 +264,8 @@ for image_index = dots_indices';
     missing_points.contrast_ratios = [missing_points.contrast_ratios; repmat([info.contrast_ratio], number_missing_points, 1)];
     missing_points.radius = [missing_points.radius; repmat([info.dot_sizes], size(distances, 1), 1)];
     missing_points.ECI = [missing_points.ECI; repmat([ts.ECI_mean{image_index}], number_missing_points, 1)];
-    missing_points.TCI = [missing_points.TCI; repmat([ts.TCI_mean{image_index}], number_missing_points, 1)];
+    missing_points.TCI = [missing_points.TCI; repmat([ts.TCI{image_index}], number_missing_points, 1)];
     missing_points.ECI_stdev = [missing_points.ECI_stdev; repmat([ts.ECI_stdev{image_index}], number_missing_points, 1)];
-    missing_points.TCI_stdev = [missing_points.TCI_stdev; repmat([ts.TCI_stdev{image_index}], number_missing_points, 1)];
 end
 
 % Copy into summary structure
@@ -476,9 +469,8 @@ for image_index = actin_indices';
             if min_area <= matching_area_cutoff * true_arc_length(min_index)
                 found_lines.contrast_ratios = [found_lines.contrast_ratios; info.contrast_ratio];
                 found_lines.ECI = [found_lines.ECI; ts.ECI_mean{image_index}];
-                found_lines.TCI = [found_lines.TCI; ts.TCI_mean{image_index}];
+                found_lines.TCI = [found_lines.TCI; ts.TCI{image_index}];
                 found_lines.ECI_stdev = [found_lines.ECI_stdev; ts.ECI_stdev{image_index}];
-                found_lines.TCI_stdev = [found_lines.TCI_stdev; ts.TCI_stdev{image_index}];
                 found_lines.area = [found_lines.area; min_area];
                 found_lines.true_length = [found_lines.true_length; true_arc_length(min_index)];
                 found_lines.response_length = [found_lines.response_length; response_arc_length(curve_index)];
@@ -490,9 +482,8 @@ for image_index = actin_indices';
             else
                 extra_lines.contrast_ratios = [extra_lines.contrast_ratios; info.contrast_ratio];
                 extra_lines.ECI = [extra_lines.ECI; ts.ECI_mean{image_index}];
-                extra_lines.TCI = [extra_lines.TCI; ts.TCI_mean{image_index}];
+                extra_lines.TCI = [extra_lines.TCI; ts.TCI{image_index}];
                 extra_lines.ECI_stdev = [extra_lines.ECI_stdev; ts.ECI_stdev{image_index}];
-                extra_lines.TCI_stdev = [extra_lines.TCI_stdev; ts.TCI_stdev{image_index}];
                 extra_lines.response_length = [extra_lines.response_length; response_arc_length(curve_index)];
                 extra_lines.type = [extra_lines.type; info.line_type];
                 extra_lines.width = [extra_lines.width; info.line_width];
@@ -505,9 +496,8 @@ for image_index = actin_indices';
         if ~ismember(curve_index, found_true_curve_indices)
             missing_lines.contrast_ratios = [missing_lines.contrast_ratios; info.contrast_ratio];
             missing_lines.ECI = [missing_lines.ECI; ts.ECI_mean{image_index}];
-            missing_lines.TCI = [missing_lines.TCI; ts.TCI_mean{image_index}];
+            missing_lines.TCI = [missing_lines.TCI; ts.TCI{image_index}];
             missing_lines.ECI_stdev = [missing_lines.ECI_stdev; ts.ECI_stdev{image_index}];
-            missing_lines.TCI_stdev = [missing_lines.TCI_stdev; ts.TCI_stdev{image_index}];
             missing_lines.true_length = [missing_lines.true_length; true_arc_length(curve_index)];
             missing_lines.type = [missing_lines.type; info.line_type];
             missing_lines.width = [missing_lines.width; info.line_width];
@@ -523,11 +513,11 @@ ts.actin.missing_lines = missing_lines;
 % -------Border analysis-----------
 
 % Initalize results variables
-borders = template_struct;
-borders.net_area = [];
-borders.abs_area = [];
-borders.rmsd = [];
-borders.fractal_dim = [];
+all_borders = template_struct;
+all_borders.net_area = [];
+all_borders.abs_area = [];
+all_borders.rmsd = [];
+all_borders.fractal_dim = [];
 
 % Report
 fprintf('\nCalculating border matching analysis on image number   ');
@@ -559,21 +549,23 @@ for image_index = border_indices';
     rmsd = sqrt(mean(dist_x.^2, 1));
     
     % Copy information
-    borders.net_area = [borders.net_area; net_area];
-    borders.abs_area = [borders.abs_area; abs_area];
-    borders.rmsd = [borders.rmsd; rmsd];
-    borders.contrast_ratios = [borders.contrast_ratios; info.contrast_ratio];
-    borders.fractal_dim = [borders.fractal_dim; fractal_dim];
-    borders.ECI = [borders.ECI; ts.ECI_mean{image_index}];
-    borders.TCI = [borders.TCI; ts.TCI_mean{image_index}];
-    borders.ECI_stdev = [borders.ECI_stdev; ts.ECI_stdev{image_index}];
-    borders.TCI_stdev = [borders.TCI_stdev; ts.TCI_stdev{image_index}];
+    all_borders.net_area = [all_borders.net_area; net_area];
+    all_borders.abs_area = [all_borders.abs_area; abs_area];
+    all_borders.rmsd = [all_borders.rmsd; rmsd];
+    all_borders.contrast_ratios = [all_borders.contrast_ratios; info.contrast_ratio];
+    all_borders.fractal_dim = [all_borders.fractal_dim; fractal_dim];
+    all_borders.ECI = [all_borders.ECI; ts.ECI_mean{image_index}];
+    all_borders.TCI = [all_borders.TCI; ts.TCI{image_index}];
+    all_borders.ECI_stdev = [all_borders.ECI_stdev; ts.ECI_stdev{image_index}];
 end
 
 % Copy into summary structure
-ts.borders = borders;
+ts.borders.all_borders = all_borders;
 
 % ----- Final cleanup ------
+
+% Remove extra fields from ts structure
+ts = rmfield(ts, {'TCI'; 'ECI_mean'; 'ECI_stdev'});
 
 % Rename and save results
 test_summary = ts;
