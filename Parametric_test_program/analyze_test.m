@@ -64,7 +64,6 @@ template_struct.contrast_ratios = [];
 template_struct.ECI = [];
 template_struct.TCI = [];
 template_struct.ECI_stdev = [];
-template_struct.TCI_stdev = [];
 
 % ------Calculate the TCI and ECI of each image-------
 
@@ -210,7 +209,7 @@ found_points.radius = [];
 missing_points = template_struct;
 missing_points.radius = [];
 extra_points = template_struct;
-missing_points.radius = [];
+extra_points.radius = [];
 
 % Report
 fprintf('\nCalculating dot position analysis on image number   ');
