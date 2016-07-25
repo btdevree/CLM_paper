@@ -245,7 +245,7 @@ for image_index = dots_indices';
     found_points.TCI = [found_points.TCI; repmat([ts.TCI{image_index}], size(distances, 1), 1)];
     found_points.ECI_stdev = [found_points.ECI_stdev; repmat([ts.ECI_stdev{image_index}], size(distances, 1), 1)];
     extra_points.contrast_ratios = [extra_points.contrast_ratios; repmat([info.contrast_ratio], number_extra_points, 1)];
-    extra_points.radius = [extra_points.radius; repmat([info.dot_sizes], size(distances, 1), 1)];
+    extra_points.radius = [extra_points.radius; repmat([info.dot_sizes], number_extra_points, 1)];
     extra_points.ECI = [extra_points.ECI; repmat([ts.ECI_mean{image_index}], number_extra_points, 1)];
     extra_points.TCI = [extra_points.TCI; repmat([ts.TCI{image_index}], number_extra_points, 1)];
     extra_points.ECI_stdev = [extra_points.ECI_stdev; repmat([ts.ECI_stdev{image_index}], number_extra_points, 1)];
@@ -261,7 +261,7 @@ for image_index = dots_indices';
     
     % Record distances and related information for the found points and the extra points
     missing_points.contrast_ratios = [missing_points.contrast_ratios; repmat([info.contrast_ratio], number_missing_points, 1)];
-    missing_points.radius = [missing_points.radius; repmat([info.dot_sizes], size(distances, 1), 1)];
+    missing_points.radius = [missing_points.radius; repmat([info.dot_sizes], number_missing_points, 1)];
     missing_points.ECI = [missing_points.ECI; repmat([ts.ECI_mean{image_index}], number_missing_points, 1)];
     missing_points.TCI = [missing_points.TCI; repmat([ts.TCI{image_index}], number_missing_points, 1)];
     missing_points.ECI_stdev = [missing_points.ECI_stdev; repmat([ts.ECI_stdev{image_index}], number_missing_points, 1)];

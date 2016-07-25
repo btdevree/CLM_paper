@@ -168,7 +168,6 @@ s = summary_struct.dots;
 
 % Repeat images for each dot size
 dot_sizes = [20, 50, 100, 200, 500]; % nanometers
-dot_sizes = [1, 2, 3];
 for dot_radius = dot_sizes
 
 
@@ -500,6 +499,57 @@ for width = line_widths;
     delete(hfig);
 
 end % End looping through each line width
+
+% ---- Borders -----
+
+% Rename for convenience
+s = summary_struct.borders;
+
+% Accuracy images
+% Get vectors for the ECI
+ECI_cr_0_5 = select_summary_subset(s.all_borders, 'ECI', 'contrast_ratios', 0.5);
+ECI_cr_1_5 = select_summary_subset(s.all_borders, 'ECI', 'contrast_ratios', 1.5);
+ECI_cr_4 = select_summary_subset(s.all_borders, 'ECI', 'contrast_ratios', 4);
+
+% Get area vectors and calculate absolute area in square micrometers
+abs_area_cr_0_5 = select_summary_subset(s.all_borders, 'abs_area', 'contrast_ratios', 0.5) / 1e6; %square micrometers
+abs_area_cr_1_5 = select_summary_subset(s.all_borders, 'abs_area', 'contrast_ratios', 1.5) / 1e6;
+abs_area_cr_4 = select_summary_subset(s.all_borders, 'abs_area', 'contrast_ratios', 4) / 1e6;
+
+% Create new figure
+hfig = figure('Units', 'pixels', 'Position', [100, 100, 700, 500], 'PaperPositionMode', 'auto', 'InvertHardcopy', 'off', 'Color', [1, 1, 1]);
+
+% Plot scatter plot of each contrast ratio
+haxes = axes('Units', 'pixels', 'Position', [70, 50, 600, 400]);
+scatter(haxes, ECI_cr_0_5, abs_area_cr_0_5, 'Marker', 'o', 'MarkerEdgeColor', 'k');
+hold on
+scatter(haxes, ECI_cr_1_5, abs_area_cr_1_5, 'Marker', '^', 'MarkerEdgeColor', 'k');
+scatter(haxes, ECI_cr_4, abs_area_cr_4, 'Marker', 's', 'MarkerEdgeColor', 'k');
+set(haxes, 'Xlim', [0, 1]);
+legend_labels = {'1:1.5', '1:2.5', '1:5'};
+hlegend = legend(legend_labels, 'Location', 'best');
+if verLessThan('matlab','8.4') % Stupid MATLAB changed lots of stuff about graphics
+    hlt = get(hlegend, 'title');
+    set(hlt, 'String', 'Contrast Ratio');
+else
+    hlt = text('Parent', hlegend.DecorationContainer, 'String', 'Contrast Ratio', 'HorizontalAlignment', 'center', ...
+        'VerticalAlignment', 'bottom', 'Position', [0.5, 1.05], 'Units', 'normalized', 'FontSize', 10);
+end
+title('Absolute Area Between Response and Ground Truth Border', 'FontSize', 14);
+xlabel('Estimated Completeness Index','FontSize', 12);
+ylabel('Absolute Area (\mum^2)','FontSize', 12);
+hold off
+
+% Save image
+if ~strcmp(output_directory, '');
+    filepath = [output_directory, '/border_abs_area.png'];
+else
+    filepath = 'border_abs_area.png';
+end
+print(hfig, filepath, '-dpng');
+
+% Cleanup
+delete(hfig);
 
 end
 
