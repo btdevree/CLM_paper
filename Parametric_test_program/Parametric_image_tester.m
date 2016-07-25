@@ -1,6 +1,12 @@
 function Parametric_image_tester(GUI_info)
 %PARAMETRIC_IMAGE_TESTER Records human parametric interpretation of STORM
-% images prepared with function make_test. 
+% images prepared with function make_test. With no arguments, looks for the
+% file 'test_files.mat' in the current folder
+
+% Default file
+if nargin < 1;
+    load('test_files.mat');
+end
 
 % Set default graphs to black
 colordef black
