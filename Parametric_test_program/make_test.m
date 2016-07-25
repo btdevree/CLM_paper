@@ -27,10 +27,11 @@ gcp
 % ---- Define the test images -----
 
 % Define test characteristics
-test_version = '0.2';
+test_version = '0.3';
 
 % Change log: 
-%   v0.2 - reduce maximum event number to 3e6 to help avoind out of memory errors
+%   v0.2 - reduce maximum event number to 3e6 to help avoid out of memory errors
+%   v0.3 - change parameter ranges for more targeted test
 
 % Define important pdf and STORM image parameters just in case the given params don't have this set correctly
 % NOTE: If you want to change these, you'll probalby have to change the code below to make sure the ideal image is still correct.
@@ -38,32 +39,35 @@ params.ch1_distribution_params{2} = 3; % pdf_map resolution, nanometers, should 
 params.STORM_pixel_size = 21; % works fine for 25 nm STORM precision, ideal image is 1/7th the pdf map (0.024% alaised signal in Fourier domain)
 
 % Regions
-region_number_images = 6;
-region_contrast_ratios = [0.5, 1.5, 4]; % background:additional_density
-region_event_number_range = [3e2, 1e6];
-region_number_vertices = [5, 6, 6, 7]; % Don't want people to always know exactly how many points they should be able to find
+region_number_images = 10;
+region_contrast_ratios = [0.5; 1; 4]; % background:additional_density
+region_event_number_range = [3e2, 1e6; 2e2, 5e5; 1e2, 2e5]; % Multiple rows are for each contrast ratio
+region_event_number_focus = [3e2, 1e5; 2e2, 5e4; 1e2, 2e4];
+region_number_vertices = [5; 6; 6; 7]; % Don't want people to always know exactly how many points they should be able to find
 
 % Dots
 dots_number_images = 15;
-dots_contrast_ratios = [1, 4, 10];
-dots_sizes = [20, 50, 100, 200, 500]; % nanometers
+dots_sizes = [50; 100; 200]; % nanometers
+dots_contrast_ratios = [2, 9; 1, 4; 0.5, 2]; % Multiple rows are for each dot size
 dots_event_number_range = [3e2, 3e6];
-dots_number_dots = [8, 9, 9, 10, 10, 11, 11, 12]; % Don't want people to always know exactly how many points they should be able to find
+dots_event_number_focus = [1e3, 3e5];
+dots_number_dots = [8; 9; 9; 10; 10; 11; 11; 12]; % Don't want people to always know exactly how many points they should be able to find
 
 % Actin lines
-actin_number_images = 18;
-actin_contrast_ratios = [1, 4, 10];
+actin_number_images = 15;
+actin_line_widths = [9; 26]; % actin and microtubules, respectivly
+actin_contrast_ratios = [4, 14; 2, 9]; % Multiple rows are for each line width size
 actin_event_number_range = [3e2, 3e6];
+actin_event_number_focus = [1e3, 3e5];
 actin_line_types = {'line_segment', 'cubic', 'quadratic'};
-actin_line_widths = [9, 26]; % actin and microtubules, respectivly
-actin_number_lines = [4, 5, 5, 6]; % Don't want people to always know exactly how many lines they should be able to find
+actin_number_lines = [4; 5; 5; 6]; % Don't want people to always know exactly how many lines they should be able to find
 
 % Border
-border_number_images = 15;
-border_contrast_ratios = [0.5, 1.5, 4];
-border_event_number_range = [1e3, 3e6];
-border_roughness = [.35, .45, .55, .65, .75];
-border_displacement_factor = [.35, .325, .3, .25, .2]; % Apply together with the above roughness factor, not for all combinations possible
+border_number_images = 12;
+border_contrast_ratios = 4;
+border_event_number_choices = [3e3; 3e4; 3e5];
+border_roughness = [.35, .4, .45, .475, .5, .525, .55, .575, .6, .65, .7, .75];
+border_displacement_factor = [.38, .37, .36, .35, .34, .32, .3, .275, .25, .225, .2, .175]; % Apply together with the above roughness factor, not for all combinations possible
 
 % ---- Determine the required parameters for each image in the test ----
 
@@ -83,7 +87,14 @@ test_info.image_info = cell(total_number_images, 1);
 
 % Prep region info
 image_contrast_ratios = choose_evenly(region_number_images, region_contrast_ratios);
-image_event_numbers = round(choose_from_log_range(region_number_images, region_event_number_range));
+image_event_numbers = zeros(region_number_images, 1);
+for cr_index = 1:size(region_contrast_ratios, 1); % Set seperate event_number ranges for each contrast ratio
+    cr_value = region_contrast_ratios(cr_index);
+    selection_index_vector = image_contrast_ratios == cr_value;
+    num_needed = sum(selection_index_vector, 1);
+    event_number_values = round(choose_from_log_range(num_needed, region_event_number_range(cr_index, :), region_event_number_focus(cr_index, :)));
+    image_event_numbers(selection_index_vector) = event_number_values;
+end
 image_number_vertices = choose_evenly(region_number_images, region_number_vertices);
 info_cells = cell(region_number_images, 1);
 
@@ -100,9 +111,16 @@ test_info.image_info(1:region_number_images) = info_cells;
 current_image_number = region_number_images;
 
 % Prep dots info
-image_contrast_ratios = choose_evenly(dots_number_images, dots_contrast_ratios);
-image_event_numbers = round(choose_from_log_range(dots_number_images, dots_event_number_range));
 image_dot_sizes = choose_evenly(dots_number_images, dots_sizes);
+image_contrast_ratios = zeros(dots_number_images, 1);
+for size_index = 1:size(dots_sizes, 1); % Set seperate constrast ratio ranges for each size of dot
+    size_value = dots_sizes(size_index);
+    selection_index_vector = image_dot_sizes == size_value;
+    num_needed = sum(selection_index_vector, 1);
+    cr_values = choose_evenly(num_needed, dots_contrast_ratios(size_index, :));
+    image_contrast_ratios(selection_index_vector) = cr_values;
+end
+image_event_numbers = round(choose_from_log_range(dots_number_images, dots_event_number_range, dots_event_number_focus));
 image_number_dots = choose_evenly(dots_number_images, dots_number_dots);
 info_cells = cell(dots_number_images, 1);
 
@@ -120,9 +138,16 @@ test_info.image_info(current_image_number + 1:current_image_number + dots_number
 current_image_number = current_image_number + dots_number_images;
 
 % Prep actin info
-image_contrast_ratios = choose_evenly(actin_number_images, actin_contrast_ratios);
-image_event_numbers = round(choose_from_log_range(actin_number_images, actin_event_number_range));
 image_line_widths = choose_evenly(actin_number_images, actin_line_widths);
+image_contrast_ratios = zeros(actin_number_images, 1);
+for width_index = 1:size(actin_line_widths, 1); % Set seperate constrast ratio ranges for each line width
+    width_value = actin_line_widths(width_index);
+    selection_index_vector = image_line_widths == width_value;
+    num_needed = sum(selection_index_vector, 1);
+    cr_values = choose_evenly(num_needed, actin_contrast_ratios(width_index, :));
+    image_contrast_ratios(selection_index_vector) = cr_values;
+end
+image_event_numbers = round(choose_from_log_range(actin_number_images, actin_event_number_range, actin_event_number_focus));
 image_line_types = choose_evenly(actin_number_images, actin_line_types);
 image_number_lines = choose_evenly(actin_number_images, actin_number_lines);
 info_cells = cell(actin_number_images, 1);
@@ -143,7 +168,7 @@ current_image_number = current_image_number + actin_number_images;
 
 % Prep border info
 image_contrast_ratios = choose_evenly(border_number_images, border_contrast_ratios);
-image_event_numbers = round(choose_from_log_range(border_number_images, border_event_number_range));
+image_event_numbers = choose_evenly(border_number_images, border_event_number_choices);
 [image_roughness, image_displacements] = choose_evenly(border_number_images, border_roughness, border_displacement_factor);
 info_cells = cell(border_number_images, 1);
 
@@ -258,7 +283,8 @@ number_full_sets = floor(number_choices / length(choice_vector));
 number_random_choices = mod(number_choices, length(choice_vector));
 random_indices = randperm(length(choice_vector), number_random_choices);
 choices = repmat(choice_vector(:), number_full_sets, 1);
-choices = [choices; choice_vector(random_indices)'];
+rand_choices = choice_vector(random_indices);
+choices = [choices; rand_choices(:)];
 perm_indices = randperm(number_choices);
 choices = choices(perm_indices);
 if nargout > 1
@@ -268,12 +294,32 @@ if nargout > 1
 end
 end
 
-function choices = choose_from_log_range(number_choices, choice_range)
+function choices = choose_from_log_range(number_choices, choice_range, focus_range)
 % Local function for choosing a value randomly from a range with a 
-% logrithmic distribution. 
+% logrithmic distribution. Focus range gives option to concentrate on a
+% smaller part of the range.
 
+% Default focus is the same range
+if nargin < 3; focus_range = choice_range; end;
+
+% Split the choices into two groups - focus is doubled the rate of the full range
+full_number_choices = ceil(number_choices / 2);
+focus_number_choices = number_choices - full_number_choices;
+
+% Set choices
 log_min = log(choice_range(1));
 log_max = log(choice_range(2));
-log_choices = rand(number_choices, 1) * (log_max - log_min) + log_min;
-choices = exp(log_choices);
+log_choices = rand(full_number_choices, 1) * (log_max - log_min) + log_min;
+
+% Set focus choices
+focus_log_min = log(focus_range(1));
+focus_log_max = log(focus_range(2));
+focus_log_choices = rand(focus_number_choices, 1) * (focus_log_max - focus_log_min) + focus_log_min;
+
+% Mix up choices
+all_choices = [log_choices; focus_log_choices];
+mixed_choices = all_choices(randperm(length(all_choices(:))));
+
+% Exponentiate and return
+choices = exp(mixed_choices);
 end
