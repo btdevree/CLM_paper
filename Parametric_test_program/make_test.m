@@ -27,11 +27,13 @@ gcp
 % ---- Define the test images -----
 
 % Define test characteristics
-test_version = '0.3';
+test_version = '0.5';
 
 % Change log: 
 %   v0.2 - reduce maximum event number to 3e6 to help avoid out of memory errors
 %   v0.3 - change parameter ranges for more targeted test
+%   v0.4 - adjust parameter ranges for dots and actin, remove quatratic curves
+%   v0.5 - adjust parameter ranges for dots and actin, remove cubic curves
 
 % Define important pdf and STORM image parameters just in case the given params don't have this set correctly
 % NOTE: If you want to change these, you'll probalby have to change the code below to make sure the ideal image is still correct.
@@ -48,26 +50,26 @@ region_number_vertices = [5; 6; 6; 7]; % Don't want people to always know exactl
 % Dots
 dots_number_images = 15;
 dots_sizes = [50; 100; 200]; % nanometers
-dots_contrast_ratios = [2, 9; 1, 4; 0.5, 2]; % Multiple rows are for each dot size
-dots_event_number_range = [3e2, 3e6];
-dots_event_number_focus = [1e3, 3e5];
+dots_contrast_ratios = [4, 19; 2, 9; 1, 4]; % Multiple rows are for each dot size
+dots_event_number_range = [1e3, 3e6];
+dots_event_number_focus = [3e3, 1e6];
 dots_number_dots = [8; 9; 9; 10; 10; 11; 11; 12]; % Don't want people to always know exactly how many points they should be able to find
 
 % Actin lines
 actin_number_images = 15;
 actin_line_widths = [9; 26]; % actin and microtubules, respectivly
-actin_contrast_ratios = [4, 14; 2, 9]; % Multiple rows are for each line width size
-actin_event_number_range = [3e2, 3e6];
-actin_event_number_focus = [1e3, 3e5];
-actin_line_types = {'line_segment', 'cubic', 'quadratic'};
+actin_contrast_ratios = [5, 19; 3, 9]; % Multiple rows are for each line width size
+actin_event_number_range = [1e3, 3e6];
+actin_event_number_focus = [3e3, 1e6];
+actin_line_types = {'line_segment', 'quadratic'}; % 'cubic' also available, but not useful as it's too hard to match
 actin_number_lines = [4; 5; 5; 6]; % Don't want people to always know exactly how many lines they should be able to find
 
 % Border
-border_number_images = 12;
+border_number_images = 10;
 border_contrast_ratios = 4;
 border_event_number_choices = [3e3; 3e4; 3e5];
 border_roughness = [.35, .4, .45, .475, .5, .525, .55, .575, .6, .65, .7, .75];
-border_displacement_factor = [.38, .37, .36, .35, .34, .32, .3, .275, .25, .225, .2, .175]; % Apply together with the above roughness factor, not for all combinations possible
+border_displacement_factor = [.36, .35, .34, .33, .32, .3, .28, .26, .24, .22, .19, .16]; % Apply together with the above roughness factor, not for all combinations possible
 
 % ---- Determine the required parameters for each image in the test ----
 

@@ -862,9 +862,12 @@ function final_cleanup
     
     % Tell user they're done
     waitfor(msgbox('No more images, Thank You for your responses!', 'Test Done'));
-   
+    
     % Close figure - we already saved the last response at this point
     close(hfig)
+   
+    % Change the colordef back to default
+    colordef white
 end
 
 function save_response
