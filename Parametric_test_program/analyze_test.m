@@ -517,6 +517,7 @@ all_borders.net_area = [];
 all_borders.abs_area = [];
 all_borders.rmsd = [];
 all_borders.fractal_dim = [];
+all_borders.event_numbers = [];
 
 % Report
 fprintf('\nCalculating border matching analysis on image number   ');
@@ -551,6 +552,7 @@ for image_index = border_indices';
     all_borders.net_area = [all_borders.net_area; net_area];
     all_borders.abs_area = [all_borders.abs_area; abs_area];
     all_borders.rmsd = [all_borders.rmsd; rmsd];
+    all_borders.event_numbers = [all_borders.event_numbers; info.event_number];
     all_borders.contrast_ratios = [all_borders.contrast_ratios; info.contrast_ratio];
     all_borders.fractal_dim = [all_borders.fractal_dim; fractal_dim];
     all_borders.ECI = [all_borders.ECI; ts.ECI_mean{image_index}];

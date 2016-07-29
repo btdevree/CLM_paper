@@ -55,33 +55,36 @@ end
 s = summary_struct.region;
 
 % Found accuracy image
+% Define CR values and legend
+cr_values = [0.5, 1, 4];
+legend_labels = {'1:1.5', '1:2', '1:5'};
+
 % Get vectors for the ECI
-ECI_cr_0_5 = select_summary_subset(s.found_regions, 'ECI', 'contrast_ratios', 0.5);
-ECI_cr_1 = select_summary_subset(s.found_regions, 'ECI', 'contrast_ratios', 1);
-ECI_cr_4 = select_summary_subset(s.found_regions, 'ECI', 'contrast_ratios', 4);
+ECI_cr1 = select_summary_subset(s.found_regions, 'ECI', 'contrast_ratios', cr_values(1));
+ECI_cr2 = select_summary_subset(s.found_regions, 'ECI', 'contrast_ratios', cr_values(2));
+ECI_cr3 = select_summary_subset(s.found_regions, 'ECI', 'contrast_ratios', cr_values(3));
 
 % Get area vectors and calculate relative absolute area
-abs_area_cr_0_5 = select_summary_subset(s.found_regions, 'abs_area', 'contrast_ratios', 0.5);
-abs_area_cr_1 = select_summary_subset(s.found_regions, 'abs_area', 'contrast_ratios', 1);
-abs_area_cr_4 = select_summary_subset(s.found_regions, 'abs_area', 'contrast_ratios', 4);
-true_area_cr_0_5 = select_summary_subset(s.found_regions, 'true_area', 'contrast_ratios', 0.5);
-true_area_cr_1 = select_summary_subset(s.found_regions, 'true_area', 'contrast_ratios', 1);
-true_area_cr_4 = select_summary_subset(s.found_regions, 'true_area', 'contrast_ratios', 4);
-relative_area_cr_0_5 = abs_area_cr_0_5 ./ true_area_cr_0_5;
-relative_area_cr_1 = abs_area_cr_1 ./ true_area_cr_1;
-relative_area_cr_4 = abs_area_cr_4 ./ true_area_cr_4;
+abs_area_cr1 = select_summary_subset(s.found_regions, 'abs_area', 'contrast_ratios', cr_values(1));
+abs_area_cr2 = select_summary_subset(s.found_regions, 'abs_area', 'contrast_ratios', cr_values(2));
+abs_area_cr3 = select_summary_subset(s.found_regions, 'abs_area', 'contrast_ratios', cr_values(3));
+true_area_cr1 = select_summary_subset(s.found_regions, 'true_area', 'contrast_ratios', cr_values(1));
+true_area_cr2 = select_summary_subset(s.found_regions, 'true_area', 'contrast_ratios', cr_values(2));
+true_area_cr3 = select_summary_subset(s.found_regions, 'true_area', 'contrast_ratios', cr_values(3));
+relative_area_cr1 = abs_area_cr1 ./ true_area_cr1;
+relative_area_cr2 = abs_area_cr2 ./ true_area_cr2;
+relative_area_cr3 = abs_area_cr3 ./ true_area_cr3;
 
 % Create new figure
 hfig = figure('Units', 'pixels', 'Position', [100, 100, 700, 500], 'PaperPositionMode', 'auto', 'InvertHardcopy', 'off', 'Color', [1, 1, 1]);
 
 % Plot scatter plot of each contrast ratio
 haxes = axes('Units', 'pixels', 'Position', [70, 50, 600, 400]);
-scatter(haxes, ECI_cr_0_5, relative_area_cr_0_5, 'Marker', 'o', 'MarkerEdgeColor', 'k');
+scatter(haxes, ECI_cr1, relative_area_cr1, 'Marker', 'o', 'MarkerEdgeColor', 'k');
 hold on
-scatter(haxes, ECI_cr_1, relative_area_cr_1, 'Marker', '^', 'MarkerEdgeColor', 'k');
-scatter(haxes, ECI_cr_4, relative_area_cr_4, 'Marker', 's', 'MarkerEdgeColor', 'k');
+scatter(haxes, ECI_cr2, relative_area_cr2, 'Marker', '^', 'MarkerEdgeColor', 'k');
+scatter(haxes, ECI_cr3, relative_area_cr3, 'Marker', 's', 'MarkerEdgeColor', 'k');
 set(haxes, 'Xlim', [0, 1]);
-legend_labels = {'1:1.5', '1:2', '1:5'};
 hlegend = legend(legend_labels, 'Location', 'best');
 if verLessThan('matlab','8.4') % Stupid MATLAB changed lots of stuff about graphics
     hlt = get(hlegend, 'title');
@@ -112,29 +115,29 @@ delete(hfig);
 hfig = figure('Units', 'pixels', 'Position', [100, 100, 700, 500], 'PaperPositionMode', 'auto', 'InvertHardcopy', 'off', 'Color', [1, 1, 1]);
 
 % Get vectors for the ECI
-ECI_cr_0_5 = select_summary_subset(s.missing_regions, 'ECI', 'contrast_ratios', 0.5);
-ECI_cr_1 = select_summary_subset(s.missing_regions, 'ECI', 'contrast_ratios', 1);
-ECI_cr_4 = select_summary_subset(s.missing_regions, 'ECI', 'contrast_ratios', 4);
+ECI_cr1 = select_summary_subset(s.missing_regions, 'ECI', 'contrast_ratios', cr_values(1));
+ECI_cr2 = select_summary_subset(s.missing_regions, 'ECI', 'contrast_ratios', cr_values(2));
+ECI_cr3 = select_summary_subset(s.missing_regions, 'ECI', 'contrast_ratios', cr_values(3));
 
 % Calcaulate histogram
 max_ECI = 0.3;
 histogram_edges = linspace(0, max_ECI, 11)';
-missing_cr_0_5 = histc(ECI_cr_0_5, histogram_edges, 1);
-if isempty(missing_cr_0_5); missing_cr_0_5 = zeros(size(histogram_edges)); end;
-missing_cr_1 = histc(ECI_cr_1, histogram_edges, 1);
-if isempty(missing_cr_1); missing_cr_1 = zeros(size(histogram_edges)); end;
-missing_cr_4 = histc(ECI_cr_4, histogram_edges, 1);
-if isempty(missing_cr_4); missing_cr_4 = zeros(size(histogram_edges)); end;
+missing_cr1 = histc(ECI_cr1, histogram_edges, 1);
+if isempty(missing_cr1); missing_cr1 = zeros(size(histogram_edges)); end;
+missing_cr2 = histc(ECI_cr2, histogram_edges, 1);
+if isempty(missing_cr2); missing_cr2 = zeros(size(histogram_edges)); end;
+missing_cr3 = histc(ECI_cr3, histogram_edges, 1);
+if isempty(missing_cr3); missing_cr3 = zeros(size(histogram_edges)); end;
 
 
 % Plot histogram for each contrast ratio
 haxes = axes('Units', 'pixels', 'Position', [70, 50, 600, 400]);
     hold on
-    hbar = bar(haxes, histogram_edges, [missing_cr_0_5, missing_cr_1, missing_cr_4], 'EdgeColor', 'k', 'BarLayout', 'grouped');
+    hbar = bar(haxes, histogram_edges, [missing_cr1, missing_cr2, missing_cr3], 'EdgeColor', 'k', 'BarLayout', 'grouped');
     set(hbar(1), 'FaceColor', [0, 0, 0]);
     set(hbar(2), 'FaceColor', [.4, .4, .4]);
     set(hbar(3), 'FaceColor', [.8, .8, .8]);
-    set(haxes, 'Xlim', [-0.05, max_ECI + 0.05]);legend_labels = {'1:1.5', '1:2', '1:5'};
+    set(haxes, 'Xlim', [-0.05, max_ECI + 0.05]);
 hlegend = legend(legend_labels, 'Location', 'best');
 if verLessThan('matlab','8.4') % Stupid MATLAB changed lots of stuff about graphics
     hlt = get(hlegend, 'title');
@@ -167,31 +170,30 @@ s = summary_struct.dots;
 % Found accuracy images
 
 % Repeat images for each dot size
-dot_sizes = [50, 100, 200]; % nanometers
-for dot_radius = dot_sizes
-
+dot_sizes = [50; 100; 200]; % nanometers
+cr_values = [4, 19; 2, 9; 1, 4];
+legend_labels = {{'1:5', '1:20'}, {'1:3', '1:10'}, {'1:2', '1:5'}};
+for size_index = 1:size(dot_sizes, 1)
+    dot_radius = dot_sizes(size_index);
+    
     % Get vectors for the ECI
-    ECI_cr_1= select_summary_subset(s.found_points, 'ECI', {'contrast_ratios'; 'radius'}, {1; dot_radius});
-    ECI_cr_4 = select_summary_subset(s.found_points, 'ECI', {'contrast_ratios'; 'radius'}, {4; dot_radius});
-    ECI_cr_10 = select_summary_subset(s.found_points, 'ECI', {'contrast_ratios'; 'radius'}, {10; dot_radius});
-
+    ECI_cr1= select_summary_subset(s.found_points, 'ECI', {'contrast_ratios'; 'radius'}, {cr_values(size_index, 1); dot_radius});
+    ECI_cr2 = select_summary_subset(s.found_points, 'ECI', {'contrast_ratios'; 'radius'}, {cr_values(size_index, 2); dot_radius});
+    
     % Get distance vectors and calculate relative absolute area
-    dist_cr_1 = select_summary_subset(s.found_points, 'distances', {'contrast_ratios'; 'radius'}, {1; dot_radius});
-    dist_cr_4 = select_summary_subset(s.found_points, 'distances', {'contrast_ratios'; 'radius'}, {4; dot_radius});
-    dist_cr_10 = select_summary_subset(s.found_points, 'distances', {'contrast_ratios'; 'radius'}, {10; dot_radius});
+    dist_cr1 = select_summary_subset(s.found_points, 'distances', {'contrast_ratios'; 'radius'}, {cr_values(size_index, 1); dot_radius});
+    dist_cr2 = select_summary_subset(s.found_points, 'distances', {'contrast_ratios'; 'radius'}, {cr_values(size_index, 2); dot_radius});
     
     % Create new figure
     hfig = figure('Units', 'pixels', 'Position', [100, 100, 700, 500], 'PaperPositionMode', 'auto', 'InvertHardcopy', 'off', 'Color', [1, 1, 1]);
 
     % Plot scatter plot of each contrast ratio
     haxes = axes('Units', 'pixels', 'Position', [70, 50, 600, 400]);
-    scatter(haxes, ECI_cr_1, dist_cr_1, 'Marker', 'o', 'MarkerEdgeColor', 'k');
+    scatter(haxes, ECI_cr1, dist_cr1, 'Marker', 'o', 'MarkerEdgeColor', 'k');
     hold on
-    scatter(haxes, ECI_cr_4, dist_cr_4, 'Marker', '^', 'MarkerEdgeColor', 'k');
-    scatter(haxes, ECI_cr_10, dist_cr_10, 'Marker', 's', 'MarkerEdgeColor', 'k');
+    scatter(haxes, ECI_cr2, dist_cr2, 'Marker', '^', 'MarkerEdgeColor', 'k');
     set(haxes, 'Xlim', [0, 1]);
-    legend_labels = {'1:1.5', '1:2.5', '1:5'};
-    hlegend = legend(legend_labels, 'Location', 'best');
+    hlegend = legend(legend_labels{size_index}, 'Location', 'best');
     if verLessThan('matlab','8.4') % Stupid MATLAB changed lots of stuff about graphics
         hlt = get(hlegend, 'title');
         set(hlt, 'String', 'Contrast Ratio');
@@ -221,31 +223,25 @@ for dot_radius = dot_sizes
     hfig = figure('Units', 'pixels', 'Position', [100, 100, 700, 500], 'PaperPositionMode', 'auto', 'InvertHardcopy', 'off', 'Color', [1, 1, 1]);
 
     % Get vectors for the ECI
-    ECI_cr_1= select_summary_subset(s.missing_points, 'ECI', {'contrast_ratios'; 'radius'}, {1; dot_radius});
-    ECI_cr_4 = select_summary_subset(s.missing_points, 'ECI', {'contrast_ratios'; 'radius'}, {4; dot_radius});
-    ECI_cr_10 = select_summary_subset(s.missing_points, 'ECI', {'contrast_ratios'; 'radius'}, {10; dot_radius});
+    ECI_cr1= select_summary_subset(s.missing_points, 'ECI', {'contrast_ratios'; 'radius'}, {cr_values(size_index, 1); dot_radius});
+    ECI_cr2 = select_summary_subset(s.missing_points, 'ECI', {'contrast_ratios'; 'radius'}, {cr_values(size_index, 2); dot_radius});
 
     % Calcaulate histogram
     max_ECI = 1;
     histogram_edges = linspace(0, max_ECI, 11)';
-    missing_cr_1 = histc(ECI_cr_1, histogram_edges, 1);
-    if isempty(missing_cr_1); missing_cr_1 = zeros(size(histogram_edges)); end;
-    missing_cr_4 = histc(ECI_cr_4, histogram_edges, 1);
-    if isempty(missing_cr_4); missing_cr_4 = zeros(size(histogram_edges)); end;
-    missing_cr_10 = histc(ECI_cr_10, histogram_edges, 1);
-    if isempty(missing_cr_10); missing_cr_10 = zeros(size(histogram_edges)); end;
-
+    missing_cr1 = histc(ECI_cr1, histogram_edges, 1);
+    if isempty(missing_cr1); missing_cr1 = zeros(size(histogram_edges)); end;
+    missing_cr2 = histc(ECI_cr2, histogram_edges, 1);
+    if isempty(missing_cr2); missing_cr2 = zeros(size(histogram_edges)); end;
 
     % Plot histogram for each contrast ratio
     haxes = axes('Units', 'pixels', 'Position', [70, 50, 600, 400]);
     hold on
-    hbar = bar(haxes, histogram_edges, [missing_cr_1, missing_cr_4, missing_cr_10], 'EdgeColor', 'k', 'BarLayout', 'grouped');
+    hbar = bar(haxes, histogram_edges, [missing_cr1, missing_cr2], 'EdgeColor', 'k', 'BarLayout', 'grouped');
     set(hbar(1), 'FaceColor', [0, 0, 0]);
-    set(hbar(2), 'FaceColor', [.4, .4, .4]);
-    set(hbar(3), 'FaceColor', [.8, .8, .8]);
+    set(hbar(2), 'FaceColor', [.5, .5, .5])
     set(haxes, 'Xlim', [-0.05, max_ECI + 0.05]);
-    legend_labels = {'1:1.5', '1:2.5', '1:5'};
-    hlegend = legend(legend_labels, 'Location', 'best');
+    hlegend = legend(legend_labels{size_index}, 'Location', 'best');
     if verLessThan('matlab','8.4') % Stupid MATLAB changed lots of stuff about graphics
         hlt = get(hlegend, 'title');
         set(hlt, 'String', 'Contrast Ratio');
@@ -275,31 +271,25 @@ for dot_radius = dot_sizes
     hfig = figure('Units', 'pixels', 'Position', [100, 100, 700, 500], 'PaperPositionMode', 'auto', 'InvertHardcopy', 'off', 'Color', [1, 1, 1]);
 
     % Get vectors for the ECI
-    ECI_cr_1= select_summary_subset(s.extra_points, 'ECI', {'contrast_ratios'; 'radius'}, {1; dot_radius});
-    ECI_cr_4 = select_summary_subset(s.extra_points, 'ECI', {'contrast_ratios'; 'radius'}, {4; dot_radius});
-    ECI_cr_10 = select_summary_subset(s.extra_points, 'ECI', {'contrast_ratios'; 'radius'}, {10; dot_radius});
+    ECI_cr1= select_summary_subset(s.extra_points, 'ECI', {'contrast_ratios'; 'radius'}, {cr_values(size_index, 1); dot_radius});
+    ECI_cr2 = select_summary_subset(s.extra_points, 'ECI', {'contrast_ratios'; 'radius'}, {cr_values(size_index, 2); dot_radius});
 
     % Calcaulate histogram
     max_ECI = 1;
     histogram_edges = linspace(0, max_ECI, 11)';
-    extra_cr_1 = histc(ECI_cr_1, histogram_edges, 1);
-    if isempty(extra_cr_1); extra_cr_1 = zeros(size(histogram_edges)); end;
-    extra_cr_4 = histc(ECI_cr_4, histogram_edges, 1);
-    if isempty(extra_cr_4); extra_cr_4 = zeros(size(histogram_edges)); end;
-    extra_cr_10 = histc(ECI_cr_10, histogram_edges, 1);
-    if isempty(extra_cr_10); extra_cr_10 = zeros(size(histogram_edges)); end;
-
+    extra_cr1 = histc(ECI_cr1, histogram_edges, 1);
+    if isempty(extra_cr1); extra_cr1 = zeros(size(histogram_edges)); end;
+    extra_cr2 = histc(ECI_cr2, histogram_edges, 1);
+    if isempty(extra_cr2); extra_cr2 = zeros(size(histogram_edges)); end;
 
     % Plot histogram for each contrast ratio
     haxes = axes('Units', 'pixels', 'Position', [70, 50, 600, 400]);
     hold on
-    hbar = bar(haxes, histogram_edges, [extra_cr_1, extra_cr_4, extra_cr_10], 'EdgeColor', 'k', 'BarLayout', 'grouped');
+    hbar = bar(haxes, histogram_edges, [extra_cr1, extra_cr2], 'EdgeColor', 'k', 'BarLayout', 'grouped');
     set(hbar(1), 'FaceColor', [0, 0, 0]);
-    set(hbar(2), 'FaceColor', [.4, .4, .4]);
-    set(hbar(3), 'FaceColor', [.8, .8, .8]);
+    set(hbar(2), 'FaceColor', [.5, .5, .5]);
     set(haxes, 'Xlim', [-0.05, max_ECI + 0.05]);
-    legend_labels = {'1:1.5', '1:2.5', '1:5'};
-    hlegend = legend(legend_labels, 'Location', 'best');
+    hlegend = legend(legend_labels{size_index}, 'Location', 'best');
     if verLessThan('matlab','8.4') % Stupid MATLAB changed lots of stuff about graphics
         hlt = get(hlegend, 'title');
         set(hlt, 'String', 'Contrast Ratio');
@@ -334,37 +324,37 @@ s = summary_struct.actin;
 % Found accuracy images
 
 % Repeat images for each dot size
-line_widths = [26, 9]; % nanometers
-for width = line_widths;
+% line_widths = [26; 9]; % nanometers
+% cr_values = [5, 19; 3, 9];
+% legend_labels = {{'1:6', '1:20'}, {'1:4', '1:10'}};
+line_widths = [9; 26]; % nanometers
+cr_values = [4, 19; 2, 9];
+legend_labels = {{'1:5', '1:20'}, {'1:3', '1:10'}};
+for width_index = 1:size(line_widths, 1);
+    width = line_widths(width_index);
 
     % Get vectors for the ECI
-    ECI_cr_1= select_summary_subset(s.found_lines, 'ECI', {'contrast_ratios'; 'width'}, {1; width});
-    ECI_cr_4 = select_summary_subset(s.found_lines, 'ECI', {'contrast_ratios'; 'width'}, {4; width});
-    ECI_cr_10 = select_summary_subset(s.found_lines, 'ECI', {'contrast_ratios'; 'width'}, {10; width});
+    ECI_cr1= select_summary_subset(s.found_lines, 'ECI', {'contrast_ratios'; 'width'}, {cr_values(width_index, 1); width});
+    ECI_cr2 = select_summary_subset(s.found_lines, 'ECI', {'contrast_ratios'; 'width'}, {cr_values(width_index, 2); width});
 
     % Get area vectors and calculate area/length
-    area_cr_1 = select_summary_subset(s.found_lines, 'area', {'contrast_ratios'; 'width'}, {1; width});
-    area_cr_4 = select_summary_subset(s.found_lines, 'area', {'contrast_ratios'; 'width'}, {4; width});
-    area_cr_10 = select_summary_subset(s.found_lines, 'area', {'contrast_ratios'; 'width'}, {10; width});
-    length_cr_1 = select_summary_subset(s.found_lines, 'true_length', {'contrast_ratios'; 'width'}, {1; width});
-    length_cr_4 = select_summary_subset(s.found_lines, 'true_length', {'contrast_ratios'; 'width'}, {4; width});
-    length_cr_10 = select_summary_subset(s.found_lines, 'true_length', {'contrast_ratios'; 'width'}, {10; width});
-    norm_area_cr_1 = area_cr_1 ./ length_cr_1;
-    norm_area_cr_4 = area_cr_4 ./ length_cr_4;
-    norm_area_cr_10 = area_cr_10 ./ length_cr_10;
+    area_cr1 = select_summary_subset(s.found_lines, 'area', {'contrast_ratios'; 'width'}, {cr_values(width_index, 1); width});
+    area_cr2 = select_summary_subset(s.found_lines, 'area', {'contrast_ratios'; 'width'}, {cr_values(width_index, 2); width});
+    length_cr1 = select_summary_subset(s.found_lines, 'true_length', {'contrast_ratios'; 'width'}, {cr_values(width_index, 1); width});
+    length_cr2 = select_summary_subset(s.found_lines, 'true_length', {'contrast_ratios'; 'width'}, {cr_values(width_index, 2); width});
+    norm_area_cr1 = area_cr1 ./ length_cr1;
+    norm_area_cr2 = area_cr2 ./ length_cr2;
     
     % Create new figure
     hfig = figure('Units', 'pixels', 'Position', [100, 100, 700, 500], 'PaperPositionMode', 'auto', 'InvertHardcopy', 'off', 'Color', [1, 1, 1]);
 
     % Plot scatter plot of each contrast ratio
     haxes = axes('Units', 'pixels', 'Position', [70, 50, 600, 400]);
-    scatter(haxes, ECI_cr_1, norm_area_cr_1, 'Marker', 'o', 'MarkerEdgeColor', 'k');
+    scatter(haxes, ECI_cr1, norm_area_cr1, 'Marker', 'o', 'MarkerEdgeColor', 'k');
     hold on
-    scatter(haxes, ECI_cr_4, norm_area_cr_4, 'Marker', '^', 'MarkerEdgeColor', 'k');
-    scatter(haxes, ECI_cr_10, norm_area_cr_10, 'Marker', 's', 'MarkerEdgeColor', 'k');
+    scatter(haxes, ECI_cr2, norm_area_cr2, 'Marker', '^', 'MarkerEdgeColor', 'k');
     set(haxes, 'Xlim', [0, 1]);
-    legend_labels = {'1:1.5', '1:2.5', '1:5'};
-    hlegend = legend(legend_labels, 'Location', 'best');
+    hlegend = legend(legend_labels{width_index}, 'Location', 'best');
     if verLessThan('matlab','8.4') % Stupid MATLAB changed lots of stuff about graphics
         hlt = get(hlegend, 'title');
         set(hlt, 'String', 'Contrast Ratio');
@@ -394,31 +384,25 @@ for width = line_widths;
     hfig = figure('Units', 'pixels', 'Position', [100, 100, 700, 500], 'PaperPositionMode', 'auto', 'InvertHardcopy', 'off', 'Color', [1, 1, 1]);
 
     % Get vectors for the ECI
-    ECI_cr_1= select_summary_subset(s.missing_lines, 'ECI', {'contrast_ratios'; 'width'}, {1; width});
-    ECI_cr_4 = select_summary_subset(s.missing_lines, 'ECI', {'contrast_ratios'; 'width'}, {4; width});
-    ECI_cr_10 = select_summary_subset(s.missing_lines, 'ECI', {'contrast_ratios'; 'width'}, {10; width});
+    ECI_cr1= select_summary_subset(s.missing_lines, 'ECI', {'contrast_ratios'; 'width'}, {cr_values(width_index, 1); width});
+    ECI_cr2 = select_summary_subset(s.missing_lines, 'ECI', {'contrast_ratios'; 'width'}, {cr_values(width_index, 2); width});
 
     % Calcaulate histogram
     max_ECI = 1;
     histogram_edges = linspace(0, max_ECI, 11)';
-    missing_cr_1 = histc(ECI_cr_1, histogram_edges, 1);
-    if isempty(missing_cr_1); missing_cr_1 = zeros(size(histogram_edges)); end;
-    missing_cr_4 = histc(ECI_cr_4, histogram_edges, 1);
-    if isempty(missing_cr_4); missing_cr_4 = zeros(size(histogram_edges)); end;
-    missing_cr_10 = histc(ECI_cr_10, histogram_edges, 1);
-    if isempty(missing_cr_10); missing_cr_10 = zeros(size(histogram_edges)); end;
-
+    missing_cr1 = histc(ECI_cr1, histogram_edges, 1);
+    if isempty(missing_cr1); missing_cr1 = zeros(size(histogram_edges)); end;
+    missing_cr2 = histc(ECI_cr2, histogram_edges, 1);
+    if isempty(missing_cr2); missing_cr2 = zeros(size(histogram_edges)); end;
 
     % Plot histogram for each contrast ratio
     haxes = axes('Units', 'pixels', 'Position', [70, 50, 600, 400]);
     hold on
-    hbar = bar(haxes, histogram_edges, [missing_cr_1, missing_cr_4, missing_cr_10], 'EdgeColor', 'k', 'BarLayout', 'grouped');
+    hbar = bar(haxes, histogram_edges, [missing_cr1, missing_cr2], 'EdgeColor', 'k', 'BarLayout', 'grouped');
     set(hbar(1), 'FaceColor', [0, 0, 0]);
-    set(hbar(2), 'FaceColor', [.4, .4, .4]);
-    set(hbar(3), 'FaceColor', [.8, .8, .8]);
+    set(hbar(2), 'FaceColor', [.5, .5, .5]);
     set(haxes, 'Xlim', [-0.05, max_ECI + 0.05]);
-    legend_labels = {'1:1.5', '1:2.5', '1:5'};
-    hlegend = legend(legend_labels, 'Location', 'best');
+    hlegend = legend(legend_labels{width_index}, 'Location', 'best');
     if verLessThan('matlab','8.4') % Stupid MATLAB changed lots of stuff about graphics
         hlt = get(hlegend, 'title');
         set(hlt, 'String', 'Contrast Ratio');
@@ -448,31 +432,25 @@ for width = line_widths;
     hfig = figure('Units', 'pixels', 'Position', [100, 100, 700, 500], 'PaperPositionMode', 'auto', 'InvertHardcopy', 'off', 'Color', [1, 1, 1]);
 
     % Get vectors for the ECI
-    ECI_cr_1= select_summary_subset(s.extra_lines, 'ECI', {'contrast_ratios'; 'width'}, {1; width});
-    ECI_cr_4 = select_summary_subset(s.extra_lines, 'ECI', {'contrast_ratios'; 'width'}, {4; width});
-    ECI_cr_10 = select_summary_subset(s.extra_lines, 'ECI', {'contrast_ratios'; 'width'}, {10; width});
+    ECI_cr1= select_summary_subset(s.extra_lines, 'ECI', {'contrast_ratios'; 'width'}, {cr_values(width_index, 1); width});
+    ECI_cr2 = select_summary_subset(s.extra_lines, 'ECI', {'contrast_ratios'; 'width'}, {cr_values(width_index, 2); width});
 
     % Calcaulate histogram
     max_ECI = 1;
     histogram_edges = linspace(0, max_ECI, 11)';
-    extra_cr_1 = histc(ECI_cr_1, histogram_edges, 1);
-    if isempty(extra_cr_1); extra_cr_1 = zeros(size(histogram_edges)); end;
-    extra_cr_4 = histc(ECI_cr_4, histogram_edges, 1);
-    if isempty(extra_cr_4); extra_cr_4 = zeros(size(histogram_edges)); end;
-    extra_cr_10 = histc(ECI_cr_10, histogram_edges, 1);
-    if isempty(extra_cr_10); extra_cr_10 = zeros(size(histogram_edges)); end;
-
+    extra_cr1 = histc(ECI_cr1, histogram_edges, 1);
+    if isempty(extra_cr1); extra_cr1 = zeros(size(histogram_edges)); end;
+    extra_cr2 = histc(ECI_cr2, histogram_edges, 1);
+    if isempty(extra_cr2); extra_cr2 = zeros(size(histogram_edges)); end;
 
     % Plot histogram for each contrast ratio
     haxes = axes('Units', 'pixels', 'Position', [70, 50, 600, 400]);
     hold on
-    hbar = bar(haxes, histogram_edges, [extra_cr_1, extra_cr_4, extra_cr_10], 'EdgeColor', 'k', 'BarLayout', 'grouped');
+    hbar = bar(haxes, histogram_edges, [extra_cr1, extra_cr2], 'EdgeColor', 'k', 'BarLayout', 'grouped');
     set(hbar(1), 'FaceColor', [0, 0, 0]);
-    set(hbar(2), 'FaceColor', [.4, .4, .4]);
-    set(hbar(3), 'FaceColor', [.8, .8, .8]);
+    set(hbar(2), 'FaceColor', [.5, .5, .5]);
     set(haxes, 'Xlim', [-0.05, max_ECI + 0.05]);
-    legend_labels = {'1:1.5', '1:2.5', '1:5'};
-    hlegend = legend(legend_labels, 'Location', 'best');
+    hlegend = legend(legend_labels{width_index}, 'Location', 'best');
     if verLessThan('matlab','8.4') % Stupid MATLAB changed lots of stuff about graphics
         hlt = get(hlegend, 'title');
         set(hlt, 'String', 'Contrast Ratio');
@@ -505,37 +483,46 @@ end % End looping through each line width
 s = summary_struct.borders;
 
 % Accuracy images
-% Get vectors for the ECI
-ECI_cr_0_5 = select_summary_subset(s.all_borders, 'ECI', 'contrast_ratios', 0.5);
-ECI_cr_1_5 = select_summary_subset(s.all_borders, 'ECI', 'contrast_ratios', 1.5);
-ECI_cr_4 = select_summary_subset(s.all_borders, 'ECI', 'contrast_ratios', 4);
+event_number_values = [3e3; 3e4; 3e5];
+% Get average ECI values for each event number group
+ECI1_vector = select_summary_subset(s.all_borders, 'ECI', 'event_numbers', event_number_values(1));
+ECI2_vector = select_summary_subset(s.all_borders, 'ECI', 'event_numbers', event_number_values(2));
+ECI3_vector = select_summary_subset(s.all_borders, 'ECI', 'event_numbers', event_number_values(3));
+ECI1_mean = mean(ECI1_vector, 1);
+ECI2_mean = mean(ECI2_vector, 1);
+ECI3_mean = mean(ECI3_vector, 1);
+legend_labels = {num2str(ECI1_mean, 2), num2str(ECI2_mean, 2), num2str(ECI3_mean, 2)};
+
+% Get vectors for the fractal dim
+FD_ECI1 = select_summary_subset(s.all_borders, 'fractal_dim', 'event_numbers', event_number_values(1));
+FD_ECI2 = select_summary_subset(s.all_borders, 'fractal_dim', 'event_numbers', event_number_values(2));
+FD_ECI3 = select_summary_subset(s.all_borders, 'fractal_dim', 'event_numbers', event_number_values(3));
 
 % Get area vectors and calculate absolute area in square micrometers
-abs_area_cr_0_5 = select_summary_subset(s.all_borders, 'abs_area', 'contrast_ratios', 0.5) / 1e6; %square micrometers
-abs_area_cr_1_5 = select_summary_subset(s.all_borders, 'abs_area', 'contrast_ratios', 1.5) / 1e6;
-abs_area_cr_4 = select_summary_subset(s.all_borders, 'abs_area', 'contrast_ratios', 4) / 1e6;
+abs_area_ECI1 = select_summary_subset(s.all_borders, 'abs_area', 'event_numbers', event_number_values(1)) / 1e6; %square micrometers
+abs_area_ECI2 = select_summary_subset(s.all_borders, 'abs_area', 'event_numbers', event_number_values(2)) / 1e6;
+abs_area_ECI3 = select_summary_subset(s.all_borders, 'abs_area', 'event_numbers', event_number_values(3)) / 1e6;
 
 % Create new figure
 hfig = figure('Units', 'pixels', 'Position', [100, 100, 700, 500], 'PaperPositionMode', 'auto', 'InvertHardcopy', 'off', 'Color', [1, 1, 1]);
 
 % Plot scatter plot of each contrast ratio
 haxes = axes('Units', 'pixels', 'Position', [70, 50, 600, 400]);
-scatter(haxes, ECI_cr_0_5, abs_area_cr_0_5, 'Marker', 'o', 'MarkerEdgeColor', 'k');
+scatter(haxes, FD_ECI1, abs_area_ECI1, 'Marker', 'o', 'MarkerEdgeColor', 'k');
 hold on
-scatter(haxes, ECI_cr_1_5, abs_area_cr_1_5, 'Marker', '^', 'MarkerEdgeColor', 'k');
-scatter(haxes, ECI_cr_4, abs_area_cr_4, 'Marker', 's', 'MarkerEdgeColor', 'k');
-set(haxes, 'Xlim', [0, 1]);
-legend_labels = {'1:1.5', '1:2.5', '1:5'};
+scatter(haxes, FD_ECI2, abs_area_ECI2, 'Marker', '^', 'MarkerEdgeColor', 'k');
+scatter(haxes, FD_ECI3, abs_area_ECI3, 'Marker', 's', 'MarkerEdgeColor', 'k');
+set(haxes, 'Xlim', [1, 1.5]);
 hlegend = legend(legend_labels, 'Location', 'best');
 if verLessThan('matlab','8.4') % Stupid MATLAB changed lots of stuff about graphics
     hlt = get(hlegend, 'title');
-    set(hlt, 'String', 'Contrast Ratio');
+    set(hlt, 'String', 'Average ECI');
 else
-    hlt = text('Parent', hlegend.DecorationContainer, 'String', 'Contrast Ratio', 'HorizontalAlignment', 'center', ...
+    hlt = text('Parent', hlegend.DecorationContainer, 'String', 'Average ECI', 'HorizontalAlignment', 'center', ...
         'VerticalAlignment', 'bottom', 'Position', [0.5, 1.05], 'Units', 'normalized', 'FontSize', 10);
 end
 title('Absolute Area Between Response and Ground Truth Border', 'FontSize', 14);
-xlabel('Estimated Completeness Index','FontSize', 12);
+xlabel('Fractal Dimension','FontSize', 12);
 ylabel('Absolute Area (\mum^2)','FontSize', 12);
 hold off
 

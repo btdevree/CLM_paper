@@ -27,13 +27,14 @@ gcp
 % ---- Define the test images -----
 
 % Define test characteristics
-test_version = '0.5';
+test_version = '0.6';
 
 % Change log: 
 %   v0.2 - reduce maximum event number to 3e6 to help avoid out of memory errors
 %   v0.3 - change parameter ranges for more targeted test
 %   v0.4 - adjust parameter ranges for dots and actin, remove quatratic curves
 %   v0.5 - adjust parameter ranges for dots and actin, remove cubic curves
+%   v0.6 - adjust dots range
 
 % Define important pdf and STORM image parameters just in case the given params don't have this set correctly
 % NOTE: If you want to change these, you'll probalby have to change the code below to make sure the ideal image is still correct.
@@ -52,7 +53,7 @@ dots_number_images = 15;
 dots_sizes = [50; 100; 200]; % nanometers
 dots_contrast_ratios = [4, 19; 2, 9; 1, 4]; % Multiple rows are for each dot size
 dots_event_number_range = [1e3, 3e6];
-dots_event_number_focus = [3e3, 1e6];
+dots_event_number_focus = [5e3, 2e6];
 dots_number_dots = [8; 9; 9; 10; 10; 11; 11; 12]; % Don't want people to always know exactly how many points they should be able to find
 
 % Actin lines
