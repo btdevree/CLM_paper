@@ -18,6 +18,7 @@ function [ discrepency_value, optimized_scale ] = calculate_discrepency( experim
 %       'normalized_variation_of_information': 1 - variation of information
 %           (i.e. the mutual information normalized by the joint entropy 
 %           calculated from intensity histograms.
+%       'normalized_compression_distance': 
 %   optimize_scaling: boolean, if true the experimental image is scaled in
 %       order to minimize the returned discrepency value. Default = true.
 %   NVI_entropy_bins: number of bins to use in for the normalized variation

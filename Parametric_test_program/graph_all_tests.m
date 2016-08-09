@@ -328,8 +328,8 @@ s = summary_struct.actin;
 % cr_values = [5, 19; 3, 9];
 % legend_labels = {{'1:6', '1:20'}, {'1:4', '1:10'}};
 line_widths = [9; 26]; % nanometers
-cr_values = [4, 19; 2, 9];
-legend_labels = {{'1:5', '1:20'}, {'1:3', '1:10'}};
+cr_values = [5, 19; 3, 9];
+legend_labels = {{'1:6', '1:20'}, {'1:4', '1:10'}};
 for width_index = 1:size(line_widths, 1);
     width = line_widths(width_index);
 
