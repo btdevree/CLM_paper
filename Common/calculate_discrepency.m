@@ -1,4 +1,4 @@
-function [ discrepency_value, optimized_scale ] = calculate_discrepency( experimental_image, ideal_image, method, optimize_scaling, NVI_entropy_bins)
+function [ discrepency_value, optimized_scale ] = calculate_discrepency( experimental_image, ideal_image, method, optimize_scaling, number_bins)
 %CALCULATE_DISCREPENCY Calculate a discrepency measure of the experimental
 %   image to the ideal image according the the chosen method.
 %
@@ -18,20 +18,28 @@ function [ discrepency_value, optimized_scale ] = calculate_discrepency( experim
 %       'normalized_variation_of_information': 1 - variation of information
 %           (i.e. the mutual information normalized by the joint entropy 
 %           calculated from intensity histograms.
-%       'normalized_compression_distance': 
+%       'normalized_compression_distance': 1 - normalized compression 
+%           distance, based on the 7zip LZMA2 algorithm.
 %   optimize_scaling: boolean, if true the experimental image is scaled in
 %       order to minimize the returned discrepency value. Default = true.
-%   NVI_entropy_bins: number of bins to use in for the normalized variation
-%       of information method. Integer, ignored for other methods. 
-%       Default = 20
+%   number_bins: number of bins to use in for the normalized variation
+%       of information method or the normalized_compression_distance. 
+%       Integer, ignored for other methods. Default = 100 for NVI, 256 for
+%       NCD.
 % Outputs:
-%   discrepency_value: floating-point double, value of discrpency between 
+%   discrepency_value: floating-point double, value of discrepency between 
 %       the experimental and ideal image.
 %   optimized_scale: optimized scaling factor for the experimental image
 
 % Set defaults
 if nargin < 4; optimize_scaling = true; end;
-if nargin < 5; NVI_entropy_bins = 20; end;
+if nargin < 5
+    if strcmp(method, 'normalized_variation_of_information')
+        number_bins = 100;
+    elseif strcmp(method, 'normalized_compression_distance')
+        number_bins = 256;
+    end
+end
 
 % Convert to full matrices, if needed
 if issparse(experimental_image)
@@ -85,7 +93,13 @@ if optimize_scaling
     % Calculate the discrepency with mutual information based Normalized Variation of Information
     if strcmp(method, 'normalized_variation_of_information')
         % Calc discrepency
-        f = @(scale_factor)calc_NVI(scale_factor, ideal_image, experimental_image, '2', NVI_entropy_bins);
+        f = @(scale_factor)calc_NVI(scale_factor, ideal_image, experimental_image, '2', number_bins);
+    end
+    
+    % Calculate the discrepency with mutual information based Normalized Variation of Information
+    if strcmp(method, 'normalized_compression_distance')
+        % Calc discrepency
+        f = @(scale_factor)calc_NCD(scale_factor, ideal_image, experimental_image, number_bins);
     end
     
     % Run the optimization
@@ -147,4 +161,14 @@ end
 function [error] = calc_l2_norm(scale_factor, A, B)
     squares = (A - scale_factor .* B).^2;
     error = sum(sqrt(squares(:)));
+end
+
+% Local function to calculate the NCD
+function [NCD] = calc_NCD(scale_factor, A, B, number_bins)
+    sB = scale_factor .* B;
+    AB = [A, sB];
+    C_a = calc_image_compression_size(A, number_bins);
+    C_b = calc_image_compression_size(sB, number_bins);
+    C_ab = calc_image_compression_size(AB, number_bins);  
+    NCD = (C_ab - min(C_a, C_b)) / max(C_a, C_b); % Nominally bounded between 1 and 0; 0 = perfect identity, can get to values of 1.1 due to compressor inefficiencies
 end
