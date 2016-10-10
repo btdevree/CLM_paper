@@ -7,7 +7,7 @@
 
 % Get path for output
 figure_path_parts = strsplit(pwd, 'CLM_paper');
-figure_path = [figure_path_parts{1}, 'CLM_figures_and_data/Fig3/'];
+figure_path = [figure_path_parts{1}, 'CLM_figures_and_data/Fig3_v2/'];
 
 % Load in parameters structure
 load('parameters_Fig3.mat'); % loads 'params' into local namespace
@@ -35,7 +35,7 @@ pixel_size = 20; % Normal grid
 params.STORM_pixel_size = pixel_size; 
 
 % ---- Fig3B IIC curves ----
-% 
+
 % % Define fraction of events, number of events, and replicates
 % fraction_vector = [0; .005; .01; .02; .04; .06; .08; .1; .15; .2; .25; .3; .35; .4; .5; .6; .7; .8; .9; 1];
 % number_events_vector = [1e2; 3e2; 1e3; 3e3; 1e4; 3e4];
@@ -64,8 +64,8 @@ fraction_vector = [0; .005; .01; .02; .04; .06; .08; .1; .15; .2; .25; .3; .35; 
 number_events_vector = round(logspace(1, 5, 15));
 number_replicates = 30; % Number of new datsets
 number_pseudoreplicates = 3; % Number of times to split up each dataset
-method_list = {'sum_of_squares', 'l2_norm', 'normalized_variation_of_information'};
-legend_method_list = {'Sum of Squares', 'Absolute Distance', 'Normalized Variation of Information'};
+method_list = {'sum_of_squares', 'l2_norm', 'normalized_variation_of_information', 'normalized_compression_distance'};
+legend_method_list = {'Sum of Squares', 'Absolute Distance', 'Normalized Variation of Information', 'Normalized Compression Distance'};
 
 % Get the ideal image
 ideal_image = calculate_ideal_image(params);

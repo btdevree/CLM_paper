@@ -1,4 +1,4 @@
-function [ file_size ] = calc_image_compression_size(image, number_bins)
+function [ file_size ] = calc_image_compression_size(image, number_bins, command_flag)
 %CALC_IMAGE_COMPRESSION_SIZE Calcualte the file size of a compressed image 
 %   using the LZMA2 algorithm from p7zip.
 %
@@ -9,6 +9,10 @@ function [ file_size ] = calc_image_compression_size(image, number_bins)
 %   number_bins: number of discrete values used when writing the image 
 %       files to be compressed. Default = []; no changes to the number of
 %       values.
+%   command_flag: flag value telling function which commands to use. 0 =
+%       use "p7zip" simple command from installed Ubuntu package p7zip. 1 = 
+%       use locally installed 7za program, will probably need to custumize 
+%       for each machine. Default = 0;
 % Outputs:
 %   file_size: floating-point double value, given in bytes
 
@@ -50,8 +54,13 @@ fwrite(fileID, image, 'uint16');
 fclose(fileID);
 
 % Call p7zip to compress file
-command = ['p7zip ', filename];
-[status, cmdout] = system(command);
+if command_flag == 0
+    command = ['~/p7zip ', filename];
+    [status, cmdout] = system(command);
+elseif command_flag == 1
+    command = ['~/p7zip_16.02/bin/7za a -sdel ', filename, ' ', filename, '.7z'];
+    [status, cmdout] = system(command);
+end
 
 % Check status, print message if not 0
 if ~status == 0
