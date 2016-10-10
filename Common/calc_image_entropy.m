@@ -1,35 +1,54 @@
-function [ file_size ] = calc_image_compression_size(image, number_bins)
-%CALC_IMAGE_COMPRESSION_SIZE Calcualte the file size of a compressed image 
-%   using the LZMA2 algorithm from p7zip.
+function [ entropy_value ] = calc_image_entropy( image, log_base, number_bins )
+%CALC_IMAGE_ENTROPY Calcualte the entropy of an image using the histogram
+%   of the intensity distribution.
+%
+%   Calculates the Shannon entropy of the intensity distribution.
 % 
 % Inputs:
 %   image: possibly sparse array of floating-point doubles or uint16.
-%   number_bins: number of discrete values used when writing the image 
-%       files to be compressed. Default = []; no changes to the number of
-%       values.
+%   log_base: base of the logarithm used to calculate the Shannon entropy.
+%       options are: 
+%           '2' - entropy given in bits (default)
+%           'e' - entropy given in nats
+%           '10' - entropy given in Hartleys 
+%   number_bins: number of bins used to form the histogram. Any number may 
+%       be used, but default is 256 (same as calculated by  conversion to 
+%       uint8 by MATLAB entropy() function).
 % Outputs:
 %   entropy_value: floating-point double value, given in units determined
 %       by the log_base input
 
 % Set defaults
-if nargin < 2; number_bins = []; end;
+if nargin < 3; number_bins = 256; end;
+if nargin < 2; log_base = '2'; end;
 
 % Make sure image is a full matrix
 if issparse(image)
     image = full(image);
 end
 
-% Make binned image, if requested 
-if ~isempty(number_bins)
+% Find the minimum and maximum values of the image
+min_value = min(image(:));
+max_value = max(image(:));
 
-    % Convert the image to integer levels
-    image = image - min(image(:));
-    image = image / max(image(:));
-    image = image * (number_bins - 1);
-    image = round(image);
+% Make bin ranges
+step = (max_value - min_value) / number_bins;
+if step ~= 0
+    bin_edges = [min_value:step:max_value];
+else % If step == 0, it means the image is flat. We'll assume that we want a flat, zero-valued image.
+    step = 1/number_bins;
+    max_value = min_value + 1;
+    bin_edges = [min_value:step:max_value];
 end
+assert(length(bin_edges) == number_bins + 1); % double check that floating-point errors didn't throw us off
 
+% Get bin counts and add endpoint to last true bin
+bincounts = histc(image(:), bin_edges);
+bincounts = [bincounts(1:end-2); bincounts(end-1) + bincounts(end)];
 
+% Normalize to a pdf
+total_counts = sum(bincounts(:));
+pdf = bincounts ./ total_counts;
 
 % Calculate entropy
 if strcmp(log_base, '2')
