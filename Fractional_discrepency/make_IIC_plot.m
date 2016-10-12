@@ -46,7 +46,7 @@ hold off
 
 % Finish graph
 set(haxes, 'Xlim', [0, 1], 'Ylim', [0, 1]);
-hlegend = legend(plot_handles, legend_labels, 'Location', 'southeast'); % Errorbar legend markers don't show up, use Plot curves for legend 
+hlegend = legend(plot_handles, legend_labels, 'Location', 'northwest'); % Errorbar legend markers don't show up, use Plot curves for legend 
 if verLessThan('matlab','8.4') % Stupid MATLAB changed lots of stuff about graphics
     hlt = get(hlegend, 'title');
     set(hlt, 'String', 'Total Number of Events');

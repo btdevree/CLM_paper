@@ -64,6 +64,10 @@ for result_cell_index = 1:length(discrepency_method)
     end
 end
 
+% start timer
+elapsed_time = 0;
+tic
+
 % Loop through each set of parameters to make an IIC curve
 for num_events_index = 1:length(number_events_vector)
     number_events = number_events_vector(num_events_index);
@@ -72,9 +76,10 @@ for num_events_index = 1:length(number_events_vector)
         % Report
         if verbose_flag
             if replicate_index == 1
-                fprintf('\nWorking on event number %1.1E replicate  1', number_events);
+                fprintf('\n Working on event number %1.1E replicate  1 t = %3d min', number_events, round(elapsed_time/60));
             else
-                fprintf('\b\b\b %2d', replicate_index);
+                elapsed_time = toc;
+                fprintf('\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b %2d t = %3d min', replicate_index, round(elapsed_time/60));
             end
         end
 

@@ -134,7 +134,7 @@ end
 
 % Calculate the discrepency with mutual information based Normalized Variation of Information
 if strcmp(method, 'normalized_variation_of_information')
-    [discrepency_value] = calc_NVI(optimized_scale, ideal_image, experimental_image, '2', NVI_entropy_bins);
+    [discrepency_value] = calc_NVI(optimized_scale, ideal_image, experimental_image, '2', number_bins);
 end
 
 % Calculate the discrepency with mutual information based Normalized Compression Distance

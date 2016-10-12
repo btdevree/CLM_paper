@@ -58,7 +58,7 @@ if command_flag == 0
     command = ['~/p7zip ', filename];
     [status, cmdout] = system(command);
 elseif command_flag == 1
-    command = ['~/p7zip_16.02/bin/7za a -sdel ', filename, ' ', filename, '.7z'];
+    command = ['~/p7zip_16.02/bin/7za a -sdel ', filename, '.7z ', filename];
     [status, cmdout] = system(command);
 end
 
