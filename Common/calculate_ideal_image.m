@@ -1,14 +1,24 @@
-function [ideal_image, exact_image] = calculate_ideal_image(parameters_structure)
+function [ideal_image, exact_image] = calculate_ideal_image(parameters_structure, doughnut_width)
 %CALCULATE_IDEAL_IMAGE Calculate the ideal STORM image for the given test
-%   movie parameters.
+%   movie parameters. Makes a circular region of constant density or a ring
+%   of specified width
+%
+%   Note: This is not the best way to create ideal images; better to
+%   supersample exact values, blur, and then take the appropreate pixels to
+%   get the desired resolution. Works for the current applications, though.
 % 
 % Inputs:
 %   parameter_structure: parameter structure generated with
 %       test_movie_parameters_dv
+%   doughnut_width: optional, the width of the ring in nanometers. The
+%       middle of the ring is put at the cell_radius value.
 %   
 % Outputs:
 %   ideal_image: the ideal, no noise image that would be made given the
 %       options in the given parameter_structure
+
+% Set defaults
+if nargin < 2; doughnut_width = []; end;
 
 % Rename parameters_structure for convenience
 params = parameters_structure; 
@@ -58,8 +68,20 @@ distance = sqrt((x_mesh - cell_center_x).^2 + (y_mesh - cell_center_y).^2);
 % Initialize the image
 ideal_image = zeros(total_number_pixels_y, total_number_pixels_x);
 
-% Set to 1.0 if distance is within the circle
-ideal_image(distance <= cell_radius) = 1.0;
+% Making a straighforward circle region
+if isempty(doughnut_width)
+
+    % Set to 1.0 if distance is within the circle
+    ideal_image(distance <= cell_radius) = 1.0;
+
+% Making a ring region
+else
+    
+    % Set to a cosine intensity profile if distance is within the ring
+    selection = (distance <= cell_radius + doughnut_width / 2) & (distance >= cell_radius - doughnut_width / 2);
+    cosine_image = cos(((distance - cell_radius) / (doughnut_width / 2)) * (pi / 2));
+    ideal_image(selection) = cosine_image(selection);
+end
 
 if nargout > 1
     exact_image = ideal_image;

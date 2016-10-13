@@ -8,11 +8,16 @@
 figure_path_parts = strsplit(pwd, 'CLM_paper');
 figure_path = [figure_path_parts{1}, 'CLM_figures_and_data/Fig3_v3/'];
 
+% Define Signal/Noise ratio for spurious localizations
+SNratio = 4;
+
+% Define various parameters
+doughnut_width = 100; % nanometers
+
 % Load in parameters structure
 load('parameters_Fig3.mat'); % loads 'params' into local namespace
 
-% Define Signal/Noise ratio for spurious localizations
-SNratio = 4;
+% Prep circle and doughnut images
 
 % Randomize the center and radius
 center_offset_x = 200 * (.5-rand); % +- 200 nm offset
@@ -24,6 +29,12 @@ params.cell_center = [750 + center_offset_x; 750 + center_offset_y];
 params.cell_radius = 500 + radius_offset;
 pixel_size = 20; % Normal grid
 params.STORM_pixel_size = pixel_size; 
+
+% Get the ideal image
+ideal_image_circle = calculate_ideal_image(params);
+ideal_image_doughnut = calculate_ideal_image(params, doughnut_width);
+
+
 
 % ---- Figure TCI and ECI curves ----
 
