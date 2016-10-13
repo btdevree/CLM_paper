@@ -1,0 +1,135 @@
+% Script to generate the picures used in figure 3 
+% Run in Fractional_discrepency folder
+
+% Make simulated images of different types
+% Use tophat circle image, microtubule images, dots, and a cosine doughnut
+
+% Get path for output
+figure_path_parts = strsplit(pwd, 'CLM_paper');
+figure_path = [figure_path_parts{1}, 'CLM_figures_and_data/Fig3_v3/'];
+
+% Define Signal/Noise ratio for spurious localizations
+SNratio = 4;
+
+% Define various parameters
+doughnut_width = 100; % nanometers
+
+% Load in parameters structure
+load('parameters_Fig3.mat'); % loads 'params' into local namespace
+
+% Prep circle and doughnut images
+
+% Randomize the center and radius
+center_offset_x = 200 * (.5-rand); % +- 200 nm offset
+center_offset_y = 200 * (.5-rand); % +- 200 nm offset
+radius_offset = 200 * (.5-rand); % +- 100 nm offset
+
+% Edit parameters
+params.cell_center = [750 + center_offset_x; 750 + center_offset_y];
+params.cell_radius = 500 + radius_offset;
+pixel_size = 20; % Normal grid
+params.STORM_pixel_size = pixel_size; 
+
+% Get the ideal image
+[ideal_image_circle, exact_image_circle] = calculate_ideal_image(params);
+[ideal_image_doughnut, exact_image_doughnut] = calculate_ideal_image(params, doughnut_width);
+
+
+% Repeat image creation loop
+for image_index = 1:total_number_images
+    
+    % Feedback to the console
+    fprintf('\b\b\b %2u', image_index);
+    
+    % Get and set parameters common to all images
+    info = test_info.image_info{image_index};
+    params.number_events_ch1 = info.event_number;
+    
+    % Create the pdf image for sampling and reference coordinates
+    if strcmp(info.image_type, 'region')
+        [pdf_map, polygon_coords] = region_pdf_map(params, info.number_vertices, info.contrast_ratio);
+        test_info.ground_truth_coords{image_index} = polygon_coords;
+    elseif strcmp(info.image_type, 'dots')
+        [pdf_map, dot_coords] = dots_pdf_map(params, info.number_dots, info.dot_sizes, info.contrast_ratio);
+        test_info.ground_truth_coords{image_index} = dot_coords;
+    elseif strcmp(info.image_type, 'actin')
+        [pdf_map, control_points_x, control_points_y] = lines_pdf_map(params, info.number_lines, info.line_width, info.contrast_ratio, info.line_type);
+        test_info.ground_truth_coords{image_index} = cat(3, control_points_x, control_points_y);
+    elseif strcmp(info.image_type, 'border')
+        [pdf_map, border_coords] = border_pdf_map(params, info.displacement, info.roughness, info.contrast_ratio);
+        test_info.ground_truth_coords{image_index} = border_coords;
+    end
+    
+    % Generate event datapoint using pdf map
+    [dataset_coords, ~, STORM_vars] = create_test_data_dv(params); % Uses pdf_map based on params setttings
+    test_info.event_data{image_index} = single(dataset_coords); % Single precision is more than accurate enough
+    
+    % Create STORM image
+    STORM_image = create_test_STORM_images_dv(params, dataset_coords, [], STORM_vars, false, true, true);
+    test_info.STORM_images{image_index} = single(STORM_image); % Single precision is more than accurate enough for this work, would want doubles for fourier-domain math
+    
+    % Create display STORM image, there's no reason to keep more precision than 0-255 values.
+    min_value = min(STORM_image(:));
+    max_value = max(STORM_image(:));
+    GUI_info.STORM_images{image_index} = uint8(256 * (STORM_image - min_value) / (max_value - min_value));
+    
+    % Calculate ideal image
+    sigma = params.STORM_precision / params.ch1_distribution_params{2};
+    filter = fspecial('gaussian', ceil(sigma*5), sigma);
+    pdf_map = imfilter(pdf_map, filter, 'replicate'); 
+    ideal_image = pdf_map(4:7:end, 4:7:end); % Sample middle pixel of 7x7 field, maintains origin position.
+    test_info.ideal_images{image_index} = ideal_image;
+end
+
+
+% ---- Figure TCI and ECI curves ----
+
+% Define fraction of events, number of events, and replicates
+fraction_vector = [0; .005; .01; .02; .04; .06; .08; .1; .15; .2; .25; .3; .35; .4; .5; .6; .7; .8; .9; 1];
+%number_events_vector = round(logspace(1, 5, 15));
+number_events_vector = round(logspace(3, 5, 1));
+number_replicates = 30; % Number of new datsets
+number_pseudoreplicates = 3; % Number of times to split up each dataset
+method_list = {'sum_of_squares', 'l2_norm', 'normalized_variation_of_information', 'normalized_compression_distance'};
+legend_method_list = {'Sum of Squares', 'Absolute Distance', 'Normalized Variation of Information', 'Normalized Compression Distance'};
+
+% Get the ideal image
+ideal_image = calculate_ideal_image(params);
+
+% Get the IIC and ideal discrepency results
+[IIC_results, ~, ideal_discrepency_results] = generate_IIC_curve(params, fraction_vector, number_events_vector,...
+    SNratio, number_replicates, number_pseudoreplicates, method_list, ideal_image, true, true);
+
+% Loop through each discrepency method
+ECI_mean = cell(0);
+ECI_stdev = cell(0);
+TCI_mean = cell(0);
+TCI_stdev = cell(0);
+ for method_cell_index = 1:length(method_list)
+
+    % Calculate the AOC and ECI of the sum of squares IIC curves
+    dFrac = fraction_vector(2:end) - fraction_vector(1:end-1);
+    midpoint_II = (IIC_results{method_cell_index}(2:end, :, :) + IIC_results{method_cell_index}(1:end-1, :, :))/2;
+    AOC = sum(repmat(dFrac, 1, size(midpoint_II, 2), size(midpoint_II, 3)) .* midpoint_II, 1);
+    ECI_data = (2 * AOC - 1);
+    ECI_mean{method_cell_index} = squeeze(mean(ECI_data, 3))';
+    ECI_stdev{method_cell_index} = squeeze(std(ECI_data, 0, 3))';
+
+    % Calculate the corrosponding TCI 
+    TCI_data = 1 - (ideal_discrepency_results{method_cell_index}(end, :, :) ./ ideal_discrepency_results{method_cell_index}(1, :, :));
+    TCI_mean{method_cell_index} = squeeze(mean(TCI_data, 3))';
+    TCI_stdev{method_cell_index} = squeeze(std(TCI_data, 0, 3))';    
+ end
+
+% Save data
+filename = [figure_path, 'Fig3CD_ECI_TCI_data.mat'];
+save(filename, 'fraction_vector', 'number_events_vector', 'number_replicates', 'number_pseudoreplicates', 'TCI_mean',...
+    'TCI_stdev', 'ECI_mean', 'ECI_stdev');
+
+% Make figure
+filename = [figure_path, 'Fig3C_SSQ_TCI_ECI_graph.png'];
+make_ECI_TCI_plot(filename, number_events_vector, ECI_mean{1}, TCI_mean{1}, ECI_stdev{1}, TCI_stdev{1});
+
+% Make figure
+filename = [figure_path, 'Fig3D_TCI_vs_ECI_graph.png'];
+make_ECI_vs_TCI_plot(filename, ECI_mean, TCI_mean, method_list, legend_method_list, ECI_stdev, TCI_stdev);
