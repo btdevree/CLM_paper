@@ -64,6 +64,12 @@ for result_cell_index = 1:length(discrepency_method)
     end
 end
 
+ % Need to move the pdf_map variable into current namespace if the ch1 distribution type is 'mapped'
+if strcmp(params.ch1_distribution, 'mapped')
+    pdf_map = evalin('caller', params.ch1_distribution_params{1});
+    eval([params.ch1_distribution_params{1}, ' = pdf_map;']); % Just in case the pdf_map should actually be named something else. 
+end
+
 % start timer
 elapsed_time = 0;
 tic
@@ -87,7 +93,7 @@ for num_events_index = 1:length(number_events_vector)
         true_events = round(number_events / (1 + 1 / SNratio));
         params.number_events_ch1 = true_events;
         params.number_background_events_ch1 = number_events - true_events;
-
+        
         % Generate new data
         seed = randi(1e6);
         [dataset] = create_test_data_dv(params, seed);

@@ -1,4 +1,4 @@
-function make_nonparameteric_plot(filename, image, pixel_size)
+function make_nonparameteric_plot(filename, image, pixel_size, no_line_flag)
 %MAKE_NONPARAMETRIC_PLOT Creates a .png image of a profile line on a 
 %   simulated circular cell image 
 
@@ -8,8 +8,13 @@ function make_nonparameteric_plot(filename, image, pixel_size)
 %   filename - string, full filename and path of image to be created
 %   image - image data matrix
 %   pixel_size - size of pixel, in nanometers.
+%   no_line_flag; boolean flag, if true, don't draw the profile line on
+%       image. Default = false
 % Output:
 %   Image saved with given filename, no return arguments.
+
+% Set defaults
+if nargin < 4; no_line_flag = false; end; 
 
 % Get image size
 [image_height, image_width] = size(image);
@@ -33,8 +38,10 @@ set(hbackaxes, 'XTickLabel', [], 'YTickLabel', [], 'XTick', [], 'YTick', []);
 colormap(hbackaxes, gray);
 
 % Plot a line across the center
-line([0.1 * image_width, 0.9 * image_width], [0.5 * image_height, 0.5 * image_height], 'Color', [1, 0, 0],...
-    'LineStyle', '-', 'LineWidth', 4, 'Parent', haxes);
+if ~no_line_flag
+    line([0.1 * image_width, 0.9 * image_width], [0.5 * image_height, 0.5 * image_height], 'Color', [1, 0, 0],...
+        'LineStyle', '-', 'LineWidth', 4, 'Parent', haxes);
+end
 
 % Print a scale bar
 scalebar_position = [30, 30, 100, 20] ./ pixel_size;

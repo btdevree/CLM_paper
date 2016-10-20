@@ -1,4 +1,4 @@
-function [ pdf_map, center_coords] = dots_pdf_map(parameter_struct, number_of_dots, dot_radius, dot_to_background_ratio)
+function [pdf_map, center_coords] = dots_pdf_map(parameter_struct, number_of_dots, dot_radius, dot_to_background_ratio)
 %DOTS_PDF_MAP Makes a pdf map of circular regions with uniform density 
 % randomly distributed in an image.
 %
@@ -10,13 +10,13 @@ function [ pdf_map, center_coords] = dots_pdf_map(parameter_struct, number_of_do
 % are accurate to 2 picometers.
 %
 % Inputs:
+%   parameter_struct: parameter structure made with
+%       test_movie_parameters_dv.
 %   number_of_dots: number of regions to put in the pdf map.
 %   dot_radius: radius of each circular region.
 %   dot_to_background_ratio: ratio of the density of events inside the
 %       dot region to the general background. Use Inf for a image with no 
 %       background.
-%   parameter_struct: parameter structure made with
-%       test_movie_parameters_dv.
 % Outputs:
 %   pdf_map: array of floating-point doubles, normalized sampling of the
 %       analytical pdf.

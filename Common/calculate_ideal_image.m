@@ -91,6 +91,5 @@ end
 STORM_sigma_in_pixels = STORM_sigma / STORM_resolution;
 filter_kernel = fspecial('gaussian', ceil(7 * STORM_sigma_in_pixels), STORM_sigma_in_pixels);
 ideal_image = imfilter(ideal_image, filter_kernel);
-
 end
 
