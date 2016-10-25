@@ -27,7 +27,7 @@ gcp
 % ---- Define the test images -----
 
 % Define test characteristics
-test_version = '0.6';
+test_version = '1.0';
 
 % Change log: 
 %   v0.2 - reduce maximum event number to 3e6 to help avoid out of memory errors
@@ -35,6 +35,7 @@ test_version = '0.6';
 %   v0.4 - adjust parameter ranges for dots and actin, remove quatratic curves
 %   v0.5 - adjust parameter ranges for dots and actin, remove cubic curves
 %   v0.6 - adjust dots range
+%   v1.0 - change border tests to having three different fractal dimensions and variable ECI
 
 % Define important pdf and STORM image parameters just in case the given params don't have this set correctly
 % NOTE: If you want to change these, you'll probalby have to change the code below to make sure the ideal image is still correct.
@@ -44,8 +45,8 @@ params.STORM_pixel_size = 21; % works fine for 25 nm STORM precision, ideal imag
 % Regions
 region_number_images = 10;
 region_contrast_ratios = [0.5; 1; 4]; % background:additional_density
-region_event_number_range = [3e2, 1e6; 2e2, 5e5; 1e2, 2e5]; % Multiple rows are for each contrast ratio
-region_event_number_focus = [3e2, 1e5; 2e2, 5e4; 1e2, 2e4];
+region_event_number_range = [3e2, 1e6; 2e2, 1e6; 1e2, 1e6]; % Multiple rows are for each contrast ratio
+region_event_number_focus = [3e2, 3e5; 2e2, 2e5; 1e2, 1e5];
 region_number_vertices = [5; 6; 6; 7]; % Don't want people to always know exactly how many points they should be able to find
 
 % Dots
@@ -57,20 +58,23 @@ dots_event_number_focus = [5e3, 2e6];
 dots_number_dots = [8; 9; 9; 10; 10; 11; 11; 12]; % Don't want people to always know exactly how many points they should be able to find
 
 % Actin lines
-actin_number_images = 15;
+actin_number_images = 12;
 actin_line_widths = [9; 26]; % actin and microtubules, respectivly
 actin_contrast_ratios = [5, 19; 3, 9]; % Multiple rows are for each line width size
 actin_event_number_range = [1e3, 3e6];
-actin_event_number_focus = [3e3, 1e6];
+actin_event_number_focus = [5e3, 2e6];
 actin_line_types = {'line_segment', 'quadratic'}; % 'cubic' also available, but not useful as it's too hard to match
-actin_number_lines = [4; 5; 5; 6]; % Don't want people to always know exactly how many lines they should be able to find
+actin_number_lines = [3; 4; 4; 5; 5]; % Don't want people to always know exactly how many lines they should be able to find
 
 % Border
 border_number_images = 10;
 border_contrast_ratios = 4;
-border_event_number_choices = [3e3; 3e4; 3e5];
-border_roughness = [.35, .4, .45, .475, .5, .525, .55, .575, .6, .65, .7, .75];
-border_displacement_factor = [.36, .35, .34, .33, .32, .3, .28, .26, .24, .22, .19, .16]; % Apply together with the above roughness factor, not for all combinations possible
+border_event_number_range = [1e3, 3e5];
+border_roughness = [.45, .6, .75];
+border_displacement_factor = [.35, .25, .15];
+% border_event_number_choices = [3e3; 3e4; 3e5];
+% border_roughness = [.35, .4, .45, .475, .5, .525, .55, .575, .6, .65, .7, .75];
+% border_displacement_factor = [.36, .35, .34, .33, .32, .3, .28, .26, .24, .22, .19, .16]; % Apply together with the above roughness factor, not for all combinations possible
 
 % ---- Determine the required parameters for each image in the test ----
 
@@ -171,7 +175,8 @@ current_image_number = current_image_number + actin_number_images;
 
 % Prep border info
 image_contrast_ratios = choose_evenly(border_number_images, border_contrast_ratios);
-image_event_numbers = choose_evenly(border_number_images, border_event_number_choices);
+%image_event_numbers = choose_evenly(border_number_images, border_event_number_choices);
+image_event_numbers = round(choose_from_log_range(border_number_images, border_event_number_range));
 [image_roughness, image_displacements] = choose_evenly(border_number_images, border_roughness, border_displacement_factor);
 info_cells = cell(border_number_images, 1);
 
@@ -222,6 +227,20 @@ for image_index = 1:total_number_images
         test_info.ground_truth_coords{image_index} = cat(3, control_points_x, control_points_y);
     elseif strcmp(info.image_type, 'border')
         [pdf_map, border_coords] = border_pdf_map(params, info.displacement, info.roughness, info.contrast_ratio);
+        
+        % Test if the border goes off the edges of the image, and if so, draw a new one, maximum 5 re-tries
+        max_retries = 5;
+        for retry_number = [1:max_retries + 1]
+            if ~test_border_for_bounds(params, border_coords)
+                if retry_number > max_retries 
+                    warning('Poorly chosen border roughness/displacement parameters, border is outside of image bounds');
+                    break
+                end
+                [pdf_map, border_coords] = border_pdf_map(params, info.displacement, info.roughness, info.contrast_ratio);
+            else
+                break
+            end
+        end
         test_info.ground_truth_coords{image_index} = border_coords;
     end
     
@@ -297,7 +316,7 @@ if nargout > 1
 end
 end
 
-function choices = choose_from_log_range(number_choices, choice_range, focus_range)
+function [choices] = choose_from_log_range(number_choices, choice_range, focus_range)
 % Local function for choosing a value randomly from a range with a 
 % logrithmic distribution. Focus range gives option to concentrate on a
 % smaller part of the range.
@@ -325,4 +344,22 @@ mixed_choices = all_choices(randperm(length(all_choices(:))));
 
 % Exponentiate and return
 choices = exp(mixed_choices);
+end
+
+function [border_OK] = test_border_for_bounds(params, border_coords)
+% Local function to test if the given border stays within the image bounds
+
+% Get x coordinate bounds
+min_x_bound = params.bounds(1);
+max_x_bound = params.bounds(3);
+
+% Test for out of bounds values
+out_of_bounds_booleans = border_coords(:, 1) < min_x_bound | border_coords(:, 1) > max_x_bound;
+
+% Set return flag
+if any(out_of_bounds_booleans)
+    border_OK = false;
+else
+    border_OK = true;
+end
 end
