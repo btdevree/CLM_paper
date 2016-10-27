@@ -5,9 +5,13 @@ function [line_points] = calc_bezier_line(bezier_control_points, number_points)
 % Inputs:
 %   bezier_control_points: n by 2 matrix of (x, y) control points, n must
 %       be 4, 3, or 2. 
-%   number_points: number of points to draw along the bezier line.
+%   number_points: number of points to draw along the bezier line. Minimum
+%       = 2 points.
 % Output:
 %   number_points by 2 matrix of (x, y) control points.
+
+% Check that the line is at least two points long
+if number_points < 2; number_points = 2; end;
 
 % Generate parameter vector
 t = linspace(0, 1, number_points);

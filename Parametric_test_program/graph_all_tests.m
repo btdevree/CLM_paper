@@ -582,8 +582,8 @@ function [values] = select_summary_subset(summary_substructure, value_fieldnames
 %       desired values to be returned. 
 %   selector_fieldnames: String or cell array of strings of fieldnames for 
 %       the desired values to be returned.
-%   selector_valeus: String/numeric value or cell array of strings/numeric 
-%       values  of fieldnames for the desired values to be returned.
+%   selector_values: String/numeric value or cell array of strings/numeric 
+%       values of fieldnames for the desired values to be returned.
 % Output:
 %   values: matrix or cell array of matricies of the same shape as
 %       value_fieldnames. 
@@ -608,7 +608,7 @@ end
 
 % Get size of the values
 number_entries = size(s.(value_fieldnames{1}), 1);
-
+  
 % Get binary selection vectors for each selector fieldname
 binary_selection_vector = true(number_entries, 1);
 for selector_index = 1:length(selector_fieldnames(:))
@@ -623,7 +623,7 @@ for selector_index = 1:length(selector_fieldnames(:))
     end
 
     % Get intersection of existing and new binary vectors
-    binary_selection_vector = binary_selection_vector & new_binary_vector;
+    binary_selection_vector = binary_selection_vector & new_binary_vector(:);
 end
 
 % Create output cell array
