@@ -27,7 +27,7 @@ gcp
 % ---- Define the test images -----
 
 % Define test characteristics
-test_version = '1.0';
+test_version = '1.1';
 
 % Change log: 
 %   v0.2 - reduce maximum event number to 3e6 to help avoid out of memory errors
@@ -36,6 +36,7 @@ test_version = '1.0';
 %   v0.5 - adjust parameter ranges for dots and actin, remove cubic curves
 %   v0.6 - adjust dots range
 %   v1.0 - change border tests to having three different fractal dimensions and variable ECI
+%   v1.1 - adjust region values,...
 
 % Define important pdf and STORM image parameters just in case the given params don't have this set correctly
 % NOTE: If you want to change these, you'll probalby have to change the code below to make sure the ideal image is still correct.
@@ -45,8 +46,8 @@ params.STORM_pixel_size = 21; % works fine for 25 nm STORM precision, ideal imag
 % Regions
 region_number_images = 10;
 region_contrast_ratios = [0.5; 1; 4]; % background:additional_density
-region_event_number_range = [3e2, 1e6; 2e2, 1e6; 1e2, 1e6]; % Multiple rows are for each contrast ratio
-region_event_number_focus = [3e2, 3e5; 2e2, 2e5; 1e2, 1e5];
+region_event_number_range = [1e2, 5e5; 1e2, 5e5; 1e2, 5e5]; % Multiple rows are for each contrast ratio
+region_event_number_focus = [2e2, 1e5; 2e2, 5e4; 2e2, 2e4];
 region_number_vertices = [5; 6; 6; 7]; % Don't want people to always know exactly how many points they should be able to find
 
 % Dots
