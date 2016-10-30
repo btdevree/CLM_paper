@@ -259,7 +259,7 @@ for size_index = 1:size(dot_sizes, 1)
     haxes = axes('Units', 'pixels', 'Position', [70, 50, 400, 400]);
     hold on
     hbar = bar(haxes, histogram_edges, [extra_cr1_normalized, missing_cr1_normalized, extra_cr2_normalized, missing_cr2_normalized],...
-        'EdgeColor', 'none', 'BarLayout', 'grouped', 'BarWidth', .9);
+        'EdgeColor', [], 'BarLayout', 'grouped', 'BarWidth', .9);
     set(hbar(1), 'FaceColor', [.5, .5, .5]);
     set(hbar(2), 'FaceColor', [1, 1, 1]); % Add .5 grey hatches
     set(hbar(3), 'FaceColor', [0, 0, 0]);
