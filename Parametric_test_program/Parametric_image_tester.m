@@ -83,13 +83,12 @@ image_number_text = uicontrol('Parent', hfig, 'Style', 'text',...
 image_type_text = uicontrol('Parent', hfig, 'Style', 'text',...
     'Position', [25, 850, 225, 25], 'String', 'Press Start to Begin', 'FontSize', 14);
 
-% Top of the button stack
-top = 800;
+% Top of the GUI control stack
+top = 900;
 
 % Create button for getting help
-help_button = uicontrol('Parent', hfig, 'Style', 'pushbutton',...
-    'Position', [25, top-25, 225, 25], 'String', 'Display Instructions',...
-    'Callback', @help_button_callback);
+help_text = uicontrol('Parent', hfig, 'Style', 'text',...
+    'Position', [25, top-25, 225, 125], 'String', 'Press button below to Start test', 'FontSize', 12);
 
 % Create button for save and continue.
 next_button = uicontrol('Parent', hfig, 'Style', 'pushbutton',...
@@ -228,12 +227,16 @@ function next_button_callback(source, callbackdata)
     set(image_number_text, 'String', ['Image Number ', num2str(current_image_index)]);
     if strcmp(current_image_type, 'region')
         set(image_type_text, 'String', 'Outline Central Region');
+        set(help_text, 'String', 'Draw the sides of the central polygon region./nLeft click = make new vertex/nLeft click & drag = move vertex/nRight click = remove vertex/nCenter button = toggle zoom mode');
     elseif strcmp(current_image_type, 'dots')
         set(image_type_text, 'String', 'Mark Dot Centers');
+        set(help_text, 'String', 'Put a mark on the center of the small, bright regions./nLeft click = make new center mark/nLeft click & drag = move center mark/nRight click = remove center mark/nCenter button = toggle zoom mode');
     elseif strcmp(current_image_type, 'actin')
         set(image_type_text, 'String', 'Trace Curves or Lines');
+        set(help_text, 'String', 'Draw a curve that follows the line or curve in the image./nLift click and drag on empty space to set out a new curve./nIf needed, left click and drag center point to line up highlighted curve./nRight click = remove highlight curve/nCenter button = toggle zoom mode');
     elseif strcmp(current_image_type, 'border')
         set(image_type_text, 'String', 'Determine Border Between Regions');
+        set(help_text, 'String', 'Push line to the border between lighter and darker regions./nLeft click & drag = push border to the right of the mouse/nRight click & drag = push border to the left of the mouse/nCenter button = toggle zoom mode');
     end    
     
      % Clear the response and undo setpoints
@@ -287,15 +290,15 @@ end
 function undo_button_callback(source, callbackdata)
     
     % If list is used up, give a message saying so
-    if isempty(undo_setpoints_x)
+    if length(undo_setpoints_x) == 1
         waitfor(msgbox('No more stored values for Undo function', 'Undo Failure'));
    
     % Otherwise, back the answer up
     else
         
-        % Put the last answer of the undo list into current_answer_x/y
-        current_answer_x = undo_setpoints_x{end};
-        current_answer_y = undo_setpoints_y{end};
+        % Put the previous answer of the undo list into current_answer_x/y
+        current_answer_x = undo_setpoints_x{end-1};
+        current_answer_y = undo_setpoints_y{end-1};
         
         % Delete the last answer in the undo list
         undo_setpoints_x(end) = [];
@@ -303,11 +306,6 @@ function undo_button_callback(source, callbackdata)
 
         graph_update
     end
-end
-
-function help_button_callback(source, callbackdata)
-% Call help function at end of file
-    help_message(current_image_type);
 end
 
 % -- Mouse stuff --
@@ -745,8 +743,6 @@ function [X, Y, C] = get_point_data
         Y = [];
         C = zeros(0, 3);
     end
-    
-    
 end
 
 function [X, Y, C, P] = get_line_data
@@ -875,6 +871,10 @@ function save_response
     % Copy current_answer_x/y into response structure
     responses.x{current_image_index} = current_answer_x;
     responses.y{current_image_index} = current_answer_y;
+    
+    % Record that a response has been made in the test_info structure
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% WORK HERE
     
     % Save structure
     save('response_info', 'responses', '-append');  

@@ -36,7 +36,7 @@ test_version = '1.1';
 %   v0.5 - adjust parameter ranges for dots and actin, remove cubic curves
 %   v0.6 - adjust dots range
 %   v1.0 - change border tests to having three different fractal dimensions and variable ECI
-%   v1.1 - adjust region values,...
+%   v1.1 - test_info.completed_flag, adjust region values,...
 
 % Define important pdf and STORM image parameters just in case the given params don't have this set correctly
 % NOTE: If you want to change these, you'll probalby have to change the code below to make sure the ideal image is still correct.
@@ -109,6 +109,7 @@ info_cells = cell(region_number_images, 1);
 % Write region info into image info cells
 for image_index = 1:region_number_images
     info_struct = struct();
+    info_struct.completed_flag = false;
     info_struct.image_type = 'region';
     info_struct.contrast_ratio = image_contrast_ratios(image_index);
     info_struct.event_number = image_event_numbers(image_index);
@@ -135,6 +136,7 @@ info_cells = cell(dots_number_images, 1);
 % Write dots info into image info cells
 for image_index = 1:dots_number_images
     info_struct = struct();
+    info_struct.completed_flag = false;
     info_struct.image_type = 'dots';
     info_struct.contrast_ratio = image_contrast_ratios(image_index);
     info_struct.event_number = image_event_numbers(image_index);
@@ -163,6 +165,7 @@ info_cells = cell(actin_number_images, 1);
 % Write actin info into image info cells
 for image_index = 1:actin_number_images
     info_struct = struct();
+    info_struct.completed_flag = false;
     info_struct.image_type = 'actin';
     info_struct.contrast_ratio = image_contrast_ratios(image_index);
     info_struct.event_number = image_event_numbers(image_index);
@@ -184,6 +187,7 @@ info_cells = cell(border_number_images, 1);
 % Write border info into image info cells
 for image_index = 1:border_number_images
     info_struct = struct();
+    info_struct.completed_flag = false;
     info_struct.image_type = 'border';
     info_struct.contrast_ratio = image_contrast_ratios(image_index);
     info_struct.event_number = image_event_numbers(image_index);
