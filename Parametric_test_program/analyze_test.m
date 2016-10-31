@@ -518,6 +518,8 @@ all_borders.abs_area = [];
 all_borders.rmsd = [];
 all_borders.fractal_dim = [];
 all_borders.event_numbers = [];
+all_borders.roughness = [];
+all_borders.displacement = [];
 
 % Report
 fprintf('\nCalculating border matching analysis on image number   ');
@@ -558,6 +560,8 @@ for image_index = border_indices';
     all_borders.ECI = [all_borders.ECI; ts.ECI_mean{image_index}];
     all_borders.TCI = [all_borders.TCI; ts.TCI{image_index}];
     all_borders.ECI_stdev = [all_borders.ECI_stdev; ts.ECI_stdev{image_index}];
+    all_borders.roughness = [all_borders.roughness; info.roughness];
+    all_borders.displacement = [all_borders.displacement; info.displacement];
 end
 
 % Copy into summary structure
