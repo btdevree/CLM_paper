@@ -872,9 +872,8 @@ function save_response
     responses.x{current_image_index} = current_answer_x;
     responses.y{current_image_index} = current_answer_y;
     
-    % Record that a response has been made in the test_info structure
-    
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% WORK HERE
+    % Record that a response has been made in the GUI_info.test_info structure
+    GUI_info{current_image_index}.test_info.completed_flag = true;
     
     % Save structure
     save('response_info', 'responses', '-append');  
