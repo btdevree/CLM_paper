@@ -181,6 +181,7 @@ for image_index = region_indices'; % for loops only work with row vectors
         found_regions.abs_area = [found_regions.abs_area; extra_area + missing_area];
         found_regions.net_area = [found_regions.net_area; extra_area - missing_area];
         found_regions.contrast_ratios = [found_regions.contrast_ratios; info.contrast_ratio];
+        if ~skip_ECI
         found_regions.ECI = [found_regions.ECI; ts.ECI_mean{image_index}];
         found_regions.TCI = [found_regions.TCI; ts.TCI{image_index}];
         found_regions.ECI_stdev = [found_regions.ECI_stdev; ts.ECI_stdev{image_index}];

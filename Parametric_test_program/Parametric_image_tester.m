@@ -1,11 +1,14 @@
-function Parametric_image_tester(GUI_info)
+function Parametric_image_tester(GUI_info, completed_flags)
 %PARAMETRIC_IMAGE_TESTER Records human parametric interpretation of STORM
 % images prepared with function make_test. With no arguments, looks for the
 % file 'test_files.mat' in the current folder
 
 % Default file
 if nargin < 1;
-    load('test_files.mat');
+    load('test_files.mat'); 
+end
+if nargin == 1; % If we only passed in a GUI_info structre, we'll assume we want a new completed_flags matrix, but we won't replace one that was loaded in with a test_files.mat file.
+    completed_flags = false(length(GUI_info.STORM_images), 1);
 end
 
 % Set default graphs to black
@@ -105,6 +108,11 @@ start_over_button = uicontrol('Parent', hfig, 'Style', 'pushbutton',...
     'Position', [25, top-195, 225, 25], 'String', 'Start Over (this image only)',...
     'Callback', @start_over_button_callback);
 
+% Create skip button
+skip_image_button = uicontrol('Parent', hfig, 'Style', 'pushbutton',...
+    'Position', [25, top-235, 225, 25], 'String', 'Skip Image (do not save answer)',...
+    'Callback', @skip_image_button_callback);
+
 % Create pan button
 pan_button = uicontrol('Parent', hfig, 'Style', 'togglebutton',...
     'Position', [25, top-285, 225, 25], 'String', 'Pan View',...
@@ -198,14 +206,19 @@ function overlay_toggle_callback(source, callbackdata)
     graph_update
 end
 
-function next_button_callback(source, callbackdata)
+function next_button_callback(source, callbackdata, skip_save_flag)
+    
+    % Default is not to skip the saving step
+    if nargin < 3; skip_save_flag = false; end;
     
     % If it's the first time clicked, change button text
     if current_image_index == 0
         set(next_button, 'String', 'Save and Load Next Image');
+        skip_save_flag = true;
+    end
     
-    % If it's not the first time, we'll have a response to save
-    else
+    % Save response, unless we are told to skip or if it's the very first blank image
+    if ~skip_save_flag
         save_response
     end
     
@@ -265,6 +278,13 @@ function next_button_callback(source, callbackdata)
         set(haxes, 'ButtonDownFcn', @border_clickdown_callback);
     end
     
+    % Grey/Black text for skip button depending on status
+    if completed_flags(current_image_index)
+        set(skip_image_button, 'ForegroundColor', [0, 0, 0]);
+    else
+        set(skip_image_button, 'ForegroundColor', [.4, .4, .4]);
+    end
+    
     % Reset figure zoom and update graph 
     reset_callback(source, callbackdata);
 end
@@ -287,11 +307,35 @@ function start_over_button_callback(source, callbackdata)
     reset_callback(source, callbackdata);
 end
 
+function skip_image_button_callback(source, callbackdata)
+    
+    % Popup warning if there is not recored answer already 
+    if ~completed_flags(current_image_index)
+        
+        % Ask to skip anyway
+        button_choice = questdlg( 'There is no previously recorded response for this image. Continue skipping anyway?',...
+            'No Recorded Answer', 'OK', 'Cancel','Cancel');
+        
+        % Cancel choice or closing of dialog
+        if strcmp(button_choice, 'Cancel') || strcmp(button_choice, '');
+            do_skip = false;
+        else
+            do_skip = true;
+        end
+    else
+        do_skip = true;
+    end
+    
+    % Call the next button without saving
+    if do_skip;
+        next_button_callback(source, callbackdata, true)
+    end   
+end
+
 function undo_button_callback(source, callbackdata)
     
     % If list is used up, give a message saying so
     if length(undo_setpoints_x) == 1
-        waitfor(msgbox('No more stored values for Undo function', 'Undo Failure'));
    
     % Otherwise, back the answer up
     else
@@ -873,10 +917,11 @@ function save_response
     responses.y{current_image_index} = current_answer_y;
     
     % Record that a response has been made in the GUI_info.test_info structure
-    GUI_info{current_image_index}.test_info.completed_flag = true;
+    completed_flags(current_image_index) = true;
     
-    % Save structure
-    save('response_info', 'responses', '-append');  
+    % Save structures
+    save('response_info', 'responses', '-append');
+    save('test_files.mat', 'completed_flags', '-append');
 end
 
 function set_undo_savepoint

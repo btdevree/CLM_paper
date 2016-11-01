@@ -83,7 +83,7 @@ border_displacement_factor = [.35, .25, .15];
 total_number_images = region_number_images + dots_number_images + actin_number_images + border_number_images;
 
 % Create the completed_flags matrix
-completed_flags = false(total_number_images, 1);
+completed_flags = false(total_number_images, 1
 
 % Shuffle the RNG
 rng('shuffle');
@@ -286,7 +286,7 @@ GUI_info.test_version = test_info.test_version;
 
 % Save GUI info
 pathname = [output_directory, '/Test_', num2str(test_number),'/test_files.mat'];
-save(pathname, 'GUI_info', 'completed_flags');
+save(pathname, 'GUI_info');
 
 % Save archive info
 pathname = [output_directory, '/Test_', num2str(test_number),'/test_archive.mat'];
