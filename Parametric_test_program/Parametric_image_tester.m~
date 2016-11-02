@@ -848,7 +848,7 @@ function [X, Y, C, P] = get_line_data
     % Drawing control net and bezier lines 
     elseif strcmp(current_image_type, 'actin')
                  
-        % Get coordinates for control net lines
+       % Get coordinates for 
         if size(current_answer_x, 2) == 2
             X_mat = current_answer_x(end, :)';
             Y_mat = current_answer_y(end, :)';
@@ -861,17 +861,50 @@ function [X, Y, C, P] = get_line_data
         else % no answer yet
             X_mat = [];
             Y_mat = [];
-        end
-        X_cn = cell(size(X_mat, 2), 1);
+    end
+    
+     % Red for current control net line
+    X_cn = cell(size(X_mat, 2), 1);
         Y_cn = cell(size(Y_mat, 2), 1);
         for index = 1:size(X_mat, 2)
             X_cn{index} = X_mat(:, index);
             Y_cn{index} = Y_mat(:, index);
         end
-        
-        % Red for current control net line, control net not pickable
-        C_cn = repmat([1, 0, 0], size(X_mat, 2), 1);
+        C_cn = repmat([.5, .25, .25], size(X_mat, 2), 1);
+        if size(C_cn, 1) > 0;
+            C_cn(last_line_indices, :) = repmat([1, 0, 0], size(last_line_indices, 2), 1);
+        end
         P_cn = zeros(size(X_cn));
+        
+%         % Red for all control net lines
+%         % All but the last set of control points are greyish
+%         if size(current_answer_x, 2) == 2
+%             X_mat = current_answer_x';
+%             Y_mat = current_answer_y';
+%             last_line_indices = [size(current_answer_x, 1)];
+%         elseif size(current_answer_x, 2) == 3
+%             X_mat = horzcat(current_answer_x(:, 1:2)', current_answer_x(:, 2:3)');
+%             Y_mat = horzcat(current_answer_y(:, 1:2)', current_answer_y(:, 2:3)');
+%             last_line_indices = [1:2] .* size(current_answer_x, 1);
+%         elseif size(current_answer_x, 2) == 4
+%             X_mat = horzcat(current_answer_x(:, 1:2)', current_answer_x(:, 2:3)', current_answer_x(:, 3:4)');
+%             Y_mat = horzcat(current_answer_y(:, 1:2)', current_answer_y(:, 2:3)', current_answer_y(:, 3:4)');
+%             last_line_indices = [1:3] .* size(current_answer_x, 1);
+%         else % no answer yet
+%             X_mat = [];
+%             Y_mat = [];
+%         end  
+%         X_cn = cell(size(X_mat, 2), 1);
+%         Y_cn = cell(size(Y_mat, 2), 1);
+%         for index = 1:size(X_mat, 2)
+%             X_cn{index} = X_mat(:, index);
+%             Y_cn{index} = Y_mat(:, index);
+%         end
+%         C_cn = repmat([.5, .25, .25], size(X_mat, 2), 1);
+%         if size(C_cn, 1) > 0;
+%             C_cn(last_line_indices, :) = repmat([1, 0, 0], size(last_line_indices, 2), 1);
+%         end
+%         P_cn = zeros(size(X_cn));
         
         % Calculate and graph the bezier lines
         % Beziers are orange; all but the last one is greyish        
