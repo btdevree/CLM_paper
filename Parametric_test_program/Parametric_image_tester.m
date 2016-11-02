@@ -47,6 +47,16 @@ undo_setpoints_x = cell(0, 1);
 undo_setpoints_y = cell(0, 1);
 save('response_info', 'responses');
 
+% Help dialog variables and text
+show_region_dialog = true;
+show_dots_dialog = true;
+show_lines_dialog = true;
+show_border_dialog = true;
+region_help_text = {'Draw the sides of the central polygon region.'; 'Left click = make new vertex'; 'Left click & drag = move vertex'; 'Right click = remove vertex'; 'Center button = toggle zoom mode'};
+dots_help_text = {'Put a mark on the center of the small, bright regions'; 'Left click = make new center mark'; 'Left click & drag = move center mark'; 'Right click = remove center mark'; 'Center button = toggle zoom mode'};
+lines_help_text = {'Draw a curve that follows the line or curve in the image.'; 'Lift click and drag on empty space to set out a new curve.'; 'If needed, left click and drag center point to line up highlighted curve.'; 'Right click = remove highlight curve'; 'Center button = toggle zoom mode'};
+border_help_text = {'Push line to the border between lighter and darker regions.'; 'Left click & drag = push border to the right of the mouse'; 'Right click & drag = push border to the left of the mouse'; 'Center button = toggle zoom mode'};
+
 %  ---------------Create graphs and objects-------------------
 
 % Create point data variables
@@ -177,7 +187,7 @@ function pan_callback(source, callbackdata)
         set(hpan, 'Enable', 'on');
     elseif toggle_val == 0
         set(hpan, 'Enable', 'off');
-    end
+    end/n
 end
 
 function reset_callback(source, callbackdata)
@@ -240,17 +250,21 @@ function next_button_callback(source, callbackdata, skip_save_flag)
     set(image_number_text, 'String', ['Image Number ', num2str(current_image_index)]);
     if strcmp(current_image_type, 'region')
         set(image_type_text, 'String', 'Outline Central Region');
-        set(help_text, 'String', 'Draw the sides of the central polygon region./nLeft click = make new vertex/nLeft click & drag = move vertex/nRight click = remove vertex/nCenter button = toggle zoom mode');
+        set(help_text, 'String', region_help_text);
     elseif strcmp(current_image_type, 'dots')
         set(image_type_text, 'String', 'Mark Dot Centers');
-        set(help_text, 'String', 'Put a mark on the center of the small, bright regions./nLeft click = make new center mark/nLeft click & drag = move center mark/nRight click = remove center mark/nCenter button = toggle zoom mode');
+        set(help_text, 'String', dots_help_text);
     elseif strcmp(current_image_type, 'actin')
         set(image_type_text, 'String', 'Trace Curves or Lines');
-        set(help_text, 'String', 'Draw a curve that follows the line or curve in the image./nLift click and drag on empty space to set out a new curve./nIf needed, left click and drag center point to line up highlighted curve./nRight click = remove highlight curve/nCenter button = toggle zoom mode');
+        set(help_text, 'String', lines_help_text);
     elseif strcmp(current_image_type, 'border')
         set(image_type_text, 'String', 'Determine Border Between Regions');
-        set(help_text, 'String', 'Push line to the border between lighter and darker regions./nLeft click & drag = push border to the right of the mouse/nRight click & drag = push border to the left of the mouse/nCenter button = toggle zoom mode');
+        set(help_text, 'String', border_help_text);
     end    
+    
+    % Display a help dialog if this is the first time we've seen this image type
+    
+    %-----------------START HERE--------------------
     
      % Clear the response and undo setpoints
     current_answer_x = [];
