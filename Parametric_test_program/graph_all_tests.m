@@ -99,6 +99,7 @@ ylabel('Relative Area','FontSize', 12);
 hold off
 
 % Save image
+refresh
 if ~strcmp(output_directory, '');
     filepath = [output_directory, '/region_abs_area.png'];
 else
@@ -152,6 +153,7 @@ ylabel('Number Missing Responses','FontSize', 12);
 hold off
 
 % Save image
+refresh
 if ~strcmp(output_directory, '');
     filepath = [output_directory, '/region_missing.png'];
 else
@@ -188,15 +190,15 @@ for size_index = 1:size(dot_sizes, 1)
     dist_cr2 = select_summary_subset(s.found_points, 'distances', {'contrast_ratios'; 'radius'}, {cr_values(size_index, 2); dot_radius});
     
     % Create new figure
-    hfig = figure('Units', 'pixels', 'Position', [100, 100, 700, 500], 'PaperPositionMode', 'auto', 'InvertHardcopy', 'off', 'Color', [1, 1, 1]);
+    hfig = figure('Units', 'pixels', 'Position', [100, 100, 700, 450], 'PaperPositionMode', 'auto', 'InvertHardcopy', 'off', 'Color', [1, 1, 1]);
 
     % Plot scatter plot of each contrast ratio
-    haxes = axes('Units', 'pixels', 'Position', [70, 50, 600, 400]);
+    haxes = axes('Units', 'pixels', 'Position', [70, 50, 600, 350]);
     scatter(haxes, ECI_cr1, dist_cr1, 'Marker', 'o', 'MarkerEdgeColor', 'k', 'MarkerFaceColor', [1, 1, 1]);
     hold on
     scatter(haxes, ECI_cr2, dist_cr2, 'Marker', 'o', 'MarkerEdgeColor', 'k', 'MarkerFaceColor', [.5, .5, .5]);
     set(haxes, 'Xlim', [0, 1]);
-    hlegend = legend(legend_labels_distance{size_index}, 'Position', [550, 350, 90, 30]);
+    hlegend = legend(legend_labels_distance{size_index}, 'Position', [580, 350, 90, 30]);
     if verLessThan('matlab','8.4') % Stupid MATLAB changed lots of stuff about graphics
         hlt = get(hlegend, 'title');
         set(hlt, 'String', 'Contrast Ratio');
@@ -210,6 +212,7 @@ for size_index = 1:size(dot_sizes, 1)
     hold off
 
     % Save image
+    refresh
     name = ['dots_', num2str(dot_radius), 'nm_distance.png'];
     if ~strcmp(output_directory, '');
         filepath = [output_directory, '/', name];
@@ -266,7 +269,8 @@ for size_index = 1:size(dot_sizes, 1)
     set(hbar(4), 'FaceColor','none'); % Add black hatches   
     set(haxes, 'Xlim', [-0.05, max_ECI + 0.05]);
     set(haxes, 'Ylim', [0, 1.05]);
-    hlegend = legend(legend_labels_errors{size_index}, 'Position', [300, 330, 150, 80]);
+    set(haxes, 'Xtick', [0:.1:1]);
+    hlegend = legend(legend_labels_errors{size_index}, 'Position', [320, 330, 150, 80]);
     
     % Add hatchs and legend title - must happen after legend is made
     if verLessThan('matlab','8.4') % Stupid MATLAB changed lots of stuff about graphics
@@ -285,12 +289,13 @@ for size_index = 1:size(dot_sizes, 1)
         hlt = text('Parent', hlegend.DecorationContainer, 'String', 'Contrast Ratio', 'HorizontalAlignment', 'center', ...
             'VerticalAlignment', 'bottom', 'Position', [0.5, 1.05], 'Units', 'normalized', 'FontSize', 10);
     end
-    title(['Extra and Missing Responses Histogram of ', num2str(dot_radius), ' nm Dots'], 'FontSize', 14);
+    title(['Extra and Missing Responses for ', num2str(dot_radius), ' nm Dots'], 'FontSize', 14);
     xlabel('Estimated Completeness Index','FontSize', 12);
-    ylabel('Number of Responses','FontSize', 12);
+    ylabel('Fraction of Ground Truth Dots','FontSize', 12);
     hold off
 
     % Save image
+    refresh
     name = ['dots_', num2str(dot_radius), 'nm_detection_errors.png'];
     if ~strcmp(output_directory, '');
         filepath = [output_directory, '/', name];
@@ -299,8 +304,8 @@ for size_index = 1:size(dot_sizes, 1)
     end
     print(hfig, filepath, '-dpng');
 
-     % Cleanup
-     T = evalc('close(hfig)'); % Something is wrong with the hatching listeners, but we'll supress output and ignore it because the saved images are fine.
+    % Cleanup
+    T = evalc('close(hfig)'); % Something is wrong with the hatching listeners, but we'll supress output and ignore it because the saved images are fine.
 
 end % End looping through each dot radius
 
@@ -335,11 +340,11 @@ for width_index = 1:size(line_widths, 1);
 
     % Plot scatter plot of each contrast ratio
     haxes = axes('Units', 'pixels', 'Position', [70, 50, 600, 400]);
-    scatter(haxes, ECI_cr1, norm_area_cr1, 'Marker', 'o', 'MarkerEdgeColor', 'k');
+    scatter(haxes, ECI_cr1, norm_area_cr1, 'Marker', 'o', 'MarkerEdgeColor', 'k', 'MarkerFaceColor', [1, 1, 1]);
     hold on
-    scatter(haxes, ECI_cr2, norm_area_cr2, 'Marker', '^', 'MarkerEdgeColor', 'k');
+    scatter(haxes, ECI_cr2, norm_area_cr2, 'Marker', 'o', 'MarkerEdgeColor', 'k', 'MarkerFaceColor', [.5, .5, .5]);
     set(haxes, 'Xlim', [0, 1]);
-    hlegend = legend(legend_labels_distance{size_index}, 'Position', [550, 350, 90, 30]);
+    hlegend = legend(legend_labels_distance{size_index}, 'Position', [570, 370, 90, 30]);
     if verLessThan('matlab','8.4') % Stupid MATLAB changed lots of stuff about graphics
         hlt = get(hlegend, 'title');
         set(hlt, 'String', 'Contrast Ratio');
@@ -353,6 +358,7 @@ for width_index = 1:size(line_widths, 1);
     hold off
 
     % Save image
+    refresh
     name = ['actin_', num2str(width), 'nm_area.png'];
     if ~strcmp(output_directory, '');
         filepath = [output_directory, '/', name];
@@ -409,6 +415,7 @@ for width_index = 1:size(line_widths, 1);
     set(hbar(4), 'FaceColor','none'); % Add black hatches   
     set(haxes, 'Xlim', [-0.05, max_ECI + 0.05]);
     set(haxes, 'Ylim', [0, 1.05]);
+    set(haxes, 'XTick', [0:.1:1]);
     hlegend = legend(legend_labels_errors{width_index}, 'Position', [300, 330, 150, 80]);
     
     % Add hatchs and legend title - must happen after legend is made
@@ -428,12 +435,13 @@ for width_index = 1:size(line_widths, 1);
         hlt = text('Parent', hlegend.DecorationContainer, 'String', 'Contrast Ratio', 'HorizontalAlignment', 'center', ...
             'VerticalAlignment', 'bottom', 'Position', [0.5, 1.05], 'Units', 'normalized', 'FontSize', 10);
     end
-    title(['Extra and Missing Responses Histogram of ', num2str(dot_radius), ' nm Dots'], 'FontSize', 14);
+    title(['Extra and Missing Responses for ', num2str(dot_radius), ' nm Wide Curves'], 'FontSize', 14);
     xlabel('Estimated Completeness Index','FontSize', 12);
-    ylabel('Number of Responses','FontSize', 12);
+    ylabel('Fraction of Ground Truth Lines','FontSize', 12);
     hold off
 
     % Save image
+    refresh
     name = ['actin_', num2str(dot_radius), 'nm_detection_errors.png'];
     if ~strcmp(output_directory, '');
         filepath = [output_directory, '/', name];
@@ -452,58 +460,70 @@ end % End looping through each line width
 % Rename for convenience
 s = summary_struct.borders;
 
-% Accuracy images
-event_number_values = [3e3; 3e4; 3e5];
+% Roughness classes
+roughness_values = [.45; .6; .75];
 
 % Get average ECI values for each event number group
-ECI1_vector = select_summary_subset(s.all_borders, 'ECI', 'event_numbers', event_number_values(1));
-ECI2_vector = select_summary_subset(s.all_borders, 'ECI', 'event_numbers', event_number_values(2));
-ECI3_vector = select_summary_subset(s.all_borders, 'ECI', 'event_numbers', event_number_values(3));
-ECI1_mean = mean(ECI1_vector, 1);
-ECI2_mean = mean(ECI2_vector, 1);
-ECI3_mean = mean(ECI3_vector, 1);
-legend_labels = {num2str(ECI1_mean, 2), num2str(ECI2_mean, 2), num2str(ECI3_mean, 2)};
+ECI1_vector = select_summary_subset(s.all_borders, 'ECI', 'roughness', roughness_values(1));
+ECI2_vector = select_summary_subset(s.all_borders, 'ECI', 'roughness', roughness_values(2));
+ECI3_vector = select_summary_subset(s.all_borders, 'ECI', 'roughness', roughness_values(3));
 
 % Get vectors for the fractal dim
-FD_ECI1 = select_summary_subset(s.all_borders, 'fractal_dim', 'event_numbers', event_number_values(1));
-FD_ECI2 = select_summary_subset(s.all_borders, 'fractal_dim', 'event_numbers', event_number_values(2));
-FD_ECI3 = select_summary_subset(s.all_borders, 'fractal_dim', 'event_numbers', event_number_values(3));
+FD1_vector = select_summary_subset(s.all_borders, 'fractal_dim', 'roughness', roughness_values(1));
+FD2_vector = select_summary_subset(s.all_borders, 'fractal_dim', 'roughness', roughness_values(2));
+FD3_vector = select_summary_subset(s.all_borders, 'fractal_dim', 'roughness', roughness_values(3));
+FD1_mean = mean(FD1_vector, 1);
+FD2_mean = mean(FD2_vector, 1);
+FD3_mean = mean(FD3_vector, 1);
+FD1_stdev = std(FD1_vector, 0, 1);
+FD2_stdev = std(FD2_vector, 0, 1);
+FD3_stdev = std(FD3_vector, 0, 1);
+legend_labels = {num2str(FD1_mean, 3), num2str(FD2_mean, 3), num2str(FD3_mean, 3)};
+
 
 % Get area vectors and calculate absolute area in square micrometers
-abs_area_ECI1 = select_summary_subset(s.all_borders, 'abs_area', 'event_numbers', event_number_values(1)) / 1e6; %square micrometers
-abs_area_ECI2 = select_summary_subset(s.all_borders, 'abs_area', 'event_numbers', event_number_values(2)) / 1e6;
-abs_area_ECI3 = select_summary_subset(s.all_borders, 'abs_area', 'event_numbers', event_number_values(3)) / 1e6;
+abs_area_ECI1 = select_summary_subset(s.all_borders, 'abs_area', 'roughness', roughness_values(1)) / 1e6; %square micrometers
+abs_area_ECI2 = select_summary_subset(s.all_borders, 'abs_area', 'roughness', roughness_values(2)) / 1e6;
+abs_area_ECI3 = select_summary_subset(s.all_borders, 'abs_area', 'roughness', roughness_values(3)) / 1e6;
 
 % Create new figure
-hfig = figure('Units', 'pixels', 'Position', [100, 100, 700, 500], 'PaperPositionMode', 'auto', 'InvertHardcopy', 'off', 'Color', [1, 1, 1]);
+hfig = figure('Units', 'pixels', 'Position', [100, 100, 600, 375], 'PaperPositionMode', 'auto', 'InvertHardcopy', 'off', 'Color', [1, 1, 1]);
 
 % Plot scatter plot of each contrast ratio
-haxes = axes('Units', 'pixels', 'Position', [70, 50, 600, 400]);
-scatter(haxes, FD_ECI1, abs_area_ECI1, 'Marker', 'o', 'MarkerEdgeColor', 'k');
+haxes = axes('Units', 'pixels', 'Position', [70, 50, 500, 275]);
+scatter(haxes, ECI1_vector, abs_area_ECI1, 'Marker', 'o', 'MarkerEdgeColor', 'k', 'MarkerFaceColor', [1,1,1]);
 hold on
-scatter(haxes, FD_ECI2, abs_area_ECI2, 'Marker', '^', 'MarkerEdgeColor', 'k');
-scatter(haxes, FD_ECI3, abs_area_ECI3, 'Marker', 's', 'MarkerEdgeColor', 'k');
-set(haxes, 'Xlim', [1, 1.5]);
-hlegend = legend(legend_labels, 'Location', 'best');
+scatter(haxes, ECI2_vector, abs_area_ECI2, 'Marker', 'o', 'MarkerEdgeColor','k', 'MarkerFaceColor', [0.7,0.7,0.7]);
+scatter(haxes, ECI3_vector, abs_area_ECI3, 'Marker', 'o', 'MarkerEdgeColor', 'k', 'MarkerFaceColor', [0.4,0.4,0.4]);
+set(haxes, 'Xlim', [0, 0.5]);
+hlegend = legend(legend_labels, 'Position', [450, 260, 90, 35]);
 if verLessThan('matlab','8.4') % Stupid MATLAB changed lots of stuff about graphics
     hlt = get(hlegend, 'title');
-    set(hlt, 'String', 'Average ECI');
+    set(hlt, 'String', 'Fractal Dimension of Border');
 else
-    hlt = text('Parent', hlegend.DecorationContainer, 'String', 'Average ECI', 'HorizontalAlignment', 'center', ...
+    hlt = text('Parent', hlegend.DecorationContainer, 'String', 'Fractal Dimension of Border', 'HorizontalAlignment', 'center', ...
         'VerticalAlignment', 'bottom', 'Position', [0.5, 1.05], 'Units', 'normalized', 'FontSize', 10);
 end
-title('Absolute Area Between Response and Ground Truth Border', 'FontSize', 14);
-xlabel('Fractal Dimension','FontSize', 12);
-ylabel('Absolute Area (\mum^2)','FontSize', 12);
+title('Area Between Response and Ground Truth Region Border', 'FontSize', 14);
+xlabel('Estimated Completeness Index','FontSize', 12);
+ylabel('Area (micrometers squared)','FontSize', 12);
 hold off
 
 % Save image
+refresh
 if ~strcmp(output_directory, '');
     filepath = [output_directory, '/border_abs_area.png'];
 else
     filepath = 'border_abs_area.png';
 end
 print(hfig, filepath, '-dpng');
+
+% Save border group uncertantity info
+fileID = fopen('border_group_data.txt','w');
+fprintf(fileID,'Mean fractal dimension = %4.3f with standard deviation = %6.5f\n', FD1_mean, FD1_stdev);
+fprintf(fileID,'Mean fractal dimension = %4.3f with standard deviation = %6.5f\n', FD2_mean, FD2_stdev);
+fprintf(fileID,'Mean fractal dimension = %4.3f with standard deviation = %6.5f\n', FD3_mean, FD3_stdev);
+fclose(fileID);
 
 % Cleanup
 delete(hfig);
