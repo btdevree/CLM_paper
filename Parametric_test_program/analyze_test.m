@@ -578,4 +578,7 @@ else
     filepath = 'test_summary.mat';
 end
 save(filepath, 'test_summary', 'ECI_data', '-append');
+
+% Delete the un-zipped archive file
+delete([test_directory, '/test_archive.mat']);
 end

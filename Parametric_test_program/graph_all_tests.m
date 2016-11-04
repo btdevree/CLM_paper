@@ -570,7 +570,7 @@ function [values] = select_summary_subset(summary_substructure, value_fieldnames
 % Input:
 %   summary_substructure: substructure from a summary, i.e. s.region.found_regions
 %   value_fieldnames: String or cell array of strings of fieldnames for the
-%       desired values to be returned. 
+%       desired values to be returned.
 %   selector_fieldnames: String or cell array of strings of fieldnames for 
 %       the desired values to be returned.
 %   selector_values: String/numeric value or cell array of strings/numeric 
