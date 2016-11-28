@@ -5,7 +5,7 @@ function make_ECI_vs_TCI_plot(filename, ECI_mean, TCI_mean, method_list, legend_
 % Inputs:
 %   filename: string, full filename and path of image to be created
 %   ECI/TCI_mean: column vectors of experimental and theoretical
-%       completeness index mean values, a seperate cuve for each
+%       completeness index mean values, a seperate curve for each column
 %   method_list: cell array of strings representing the discrepency method 
 %       used to calculate each pair of TCI and ECI curves
 %   legend_method_list: cell array of strings with the names of the 
@@ -45,7 +45,7 @@ for method_cell_index = 1:length(method_list)
 end
   
 % Finish graph
-set(haxes, 'Xlim', [0, 1], 'Ylim', [0, 1]);
+set(haxes, 'Xlim', [0, 1], 'Ylim', [-1, 1]);
 legend(plot_handles, legend_method_list, 'Location', 'northwest'); % Errorbar legend markers don't show up, use Plot curves for legend 
 title('Theoretical vs. Experimental Completeness Index', 'FontSize', 16);
 xlabel('Theoretical Completeness Index', 'FontSize', 12);

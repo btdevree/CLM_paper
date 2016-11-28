@@ -64,7 +64,7 @@ ideal_image_lines = bin_matrix(ideal_image_lines_ss, 7);
 % Define fraction of events, number of events, and replicates
 fraction_vector = [0; .005; .01; .02; .04; .06; .08; .1; .15; .2; .25; .3; .35; .4; .5; .6; .7; .8; .9; 1];
 number_events_vector = round(logspace(1, 5, 15));
-number_replicates = 30; % Number of new datsets
+number_replicates = 10; % Number of new datsets
 number_pseudoreplicates = 3; % Number of times to split up each dataset
 
 % Get the IIC and ideal discrepency results

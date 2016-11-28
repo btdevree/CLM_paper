@@ -55,16 +55,12 @@ end
 
 % Enforce double conversion and normalize images
 experimental_image = double(experimental_image);
-exp_min = min(experimental_image(:));
 exp_max = max(experimental_image(:));
-experimental_image = experimental_image - exp_min;
 if exp_max ~= 0 % Don't divide by zero!
     experimental_image = experimental_image / exp_max;
 end
 ideal_image = double(ideal_image);
-ideal_min = min(ideal_image(:));
 ideal_max = max(ideal_image(:));
-ideal_image = ideal_image - ideal_min;
 if ideal_max ~= 0 % Don't divide by zero!
     ideal_image = ideal_image / ideal_max;
 end
