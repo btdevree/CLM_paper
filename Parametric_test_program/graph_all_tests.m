@@ -319,7 +319,9 @@ s = summary_struct.actin;
 % Repeat images for each dot size
 line_widths = [9; 26]; % nanometers
 cr_values = [5, 19; 3, 9];
-legend_labels = {{'1:6', '1:20'}, {'1:4', '1:10'}};
+legend_labels_distance = {{'1:6', '1:20'}, {'1:4', '1:10'}};
+legend_labels_errors = {{'1:6 extra', '1:6 missing', '1:20 extra', '1:20 missing'},...
+                          {'1:4 extra', '1:4 missing', '1:10 extra', '1:10 missing'}};
 for width_index = 1:size(line_widths, 1);
     width = line_widths(width_index);
 
