@@ -16,8 +16,9 @@ colordef black
 
 % Create figure, setting up properties
 hfig = figure('Name','Parametric STORM Image Interpretation Tester', 'Toolbar', 'none', 'Menubar', 'none',...
-              'Position', [25, 50, 1200, 950], 'NumberTitle', 'off', 'Visible', 'off', 'Renderer', 'zbuffer');
+              'Position', [10, 50, 1100, 700], 'NumberTitle', 'off', 'Visible', 'off', 'Renderer', 'zbuffer');
 set(hfig, 'WindowButtonUpFcn', @clickup_callback);
+set(gcf, 'Position', get(0, 'Screensize'));
           
 %  --------------Initialize parameters and set options-----------
 
@@ -65,7 +66,7 @@ Y_graph = [];
 C_graph = [];
 
 % Create main axes objects and handles
-haxes = axes('Units', 'pixels', 'Position', [300, 50, 850, 850]);
+haxes = axes('Units', 'pixels', 'Position', [300, 25, 600, 600]);
 hscatter = scatter(haxes, X_graph, Y_graph, 35, C_graph);
 if verLessThan('matlab','8.4')
     set(hscatter,  'HitTest', 'off'); % Points won't cover up clicking on the axes
@@ -93,12 +94,12 @@ set(hpan, 'ActionPostCallback',@graph_update_callback);
 
 % Create image heading
 image_number_text = uicontrol('Parent', hfig, 'Style', 'text',...
-    'Position', [25, 890, 225, 25], 'String', 'Image Number -', 'FontSize', 16);
+    'Position', [25, 550, 225, 25], 'String', 'Image Number -', 'FontSize', 16);
 image_type_text = uicontrol('Parent', hfig, 'Style', 'text',...
-    'Position', [25, 850, 225, 25], 'String', 'Press Start to Begin', 'FontSize', 14);
+    'Position', [25, 470, 225, 25], 'String', 'Press Start to Begin', 'FontSize', 14);
 
 % Top of the GUI control stack
-top = 900;
+top = 470;
 
 % Create button for getting help
 help_text = uicontrol('Parent', hfig, 'Style', 'text',...
@@ -218,7 +219,6 @@ function overlay_toggle_callback(source, callbackdata)
 end
 
 function next_button_callback(source, callbackdata, skip_save_flag)
-    
     % Default is not to skip the saving step
     if nargin < 3; skip_save_flag = false; end;
     

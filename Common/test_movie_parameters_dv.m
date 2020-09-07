@@ -46,7 +46,7 @@ params.ch1_distribution_params = choice2;
 choice1 = 'random'; % ch2 events assigned to a ch1 event at random
 choice2 = 'once_then_random'; % ch2 event assigned to each ch1 event, and then additional ch2 events assigned to a ch1 event at random
 choice3 = 'evenly_distributed'; % ch2 event assigned as evenly as possible to ch1 events
-params.ch2_distribution = choice2;
+params.ch2_distribution = choice1;
 
 % Define channel 2 assignment distribution model parameters
 choice1 = [1]; % fraction of ch2 points that are assigned to ch1 events

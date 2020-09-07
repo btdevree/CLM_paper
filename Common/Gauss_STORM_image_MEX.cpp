@@ -31,14 +31,14 @@
  *  image: MATLAB array of floating-point double values. 
 */
 
+// Get the math constants from the math.h header - Needs to be defined before including math.h
+# define _USE_MATH_DEFINES // to get pi
+
 // Include needed libraries
 # include <math.h>
 # include <matrix.h>
 # include <mex.h>
 # include <algorithm> // min_element, max_element
-
-// Get the math constants from the math.h header
-# define _USE_MATH_DEFINES // to get pi
 
 // Define the input and output names for convenience
 # define XY_DATA_IN     prhs[0]

@@ -249,6 +249,7 @@ for image_index = 1:total_number_images
     end
     
     % Generate event datapoint using pdf map
+    params
     [dataset_coords, ~, STORM_vars] = create_test_data_dv(params); % Uses pdf_map based on params setttings
     test_info.event_data{image_index} = single(dataset_coords); % Single precision is more than accurate enough
     
